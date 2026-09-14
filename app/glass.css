@@ -204,9 +204,17 @@
     border-radius: var(--glass-radius);
     box-shadow: var(--glass-shadow);
     /* The compositor re-samples everything behind this on every frame the
-       element changes, so keep it on its own layer and off the main thread. */
+       element changes, so keep it on its own layer and off the main thread.
+
+       Never hand-write `-webkit-backdrop-filter` next to this. Lightning CSS
+       treats the two spellings as one property and keeps whichever is written
+       last, so an unprefixed-then-prefixed pair compiles to the *prefixed one
+       alone* — and Chromium does not support `-webkit-backdrop-filter` at all
+       (`CSS.supports` returns false for it). That shipped every glass surface
+       in the site with no blur in anything but Safari. Written unprefixed on
+       its own, Lightning CSS emits both spellings, correctly ordered, for the
+       browsers the build actually targets. */
     backdrop-filter: blur(var(--glass-blur-regular)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur-regular)) saturate(var(--glass-saturate));
   }
 
   /* The interior sheen: light raking across the surface from above-left, and
@@ -275,13 +283,11 @@
 
   .glass-thin {
     backdrop-filter: blur(var(--glass-blur-thin)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur-thin)) saturate(var(--glass-saturate));
   }
 
   .glass-thick {
     background-color: var(--glass-fill-strong);
     backdrop-filter: blur(var(--glass-blur-thick)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur-thick)) saturate(var(--glass-saturate));
   }
 
   .glass-clear {
@@ -292,7 +298,6 @@
      of twenty cards has no business running twenty backdrop filters. */
   .glass-static {
     backdrop-filter: none;
-    -webkit-backdrop-filter: none;
     background-color: var(--glass-fill-strong);
   }
 
@@ -366,17 +371,24 @@
   z-index: 0;
   pointer-events: none;
   background-color: var(--ground);
+
+  /* Light carries roughly a third of dark's alpha, which looks wrong written
+     down and is right on screen: the same blue over white reads as paint,
+     over near-black as atmosphere. The field exists to give the glass
+     something to refract — the moment you notice it as a colour rather than
+     as depth, it is too strong. These were briefly three times higher, from
+     compensating for glass that turned out not to be compositing at all. */
   background-image:
-    radial-gradient(52rem 44rem at 6% 0%, rgb(53 165 213 / 0.44), transparent 70%),
-    radial-gradient(44rem 38rem at 94% 10%, rgb(27 110 146 / 0.34), transparent 70%),
-    radial-gradient(48rem 42rem at 76% 46%, rgb(53 165 213 / 0.3), transparent 70%),
-    radial-gradient(44rem 38rem at 14% 62%, rgb(27 110 146 / 0.3), transparent 70%),
-    radial-gradient(48rem 40rem at 60% 92%, rgb(53 165 213 / 0.28), transparent 72%),
+    radial-gradient(52rem 44rem at 6% 0%, rgb(53 165 213 / 0.14), transparent 70%),
+    radial-gradient(44rem 38rem at 94% 10%, rgb(27 110 146 / 0.11), transparent 70%),
+    radial-gradient(48rem 42rem at 76% 46%, rgb(53 165 213 / 0.1), transparent 70%),
+    radial-gradient(44rem 38rem at 14% 62%, rgb(27 110 146 / 0.1), transparent 70%),
+    radial-gradient(48rem 40rem at 60% 92%, rgb(53 165 213 / 0.09), transparent 72%),
     linear-gradient(
       152deg,
-      rgb(53 165 213 / 0.2) 0%,
-      rgb(53 165 213 / 0.08) 42%,
-      rgb(27 110 146 / 0.16) 100%
+      rgb(53 165 213 / 0.07) 0%,
+      rgb(53 165 213 / 0.03) 42%,
+      rgb(27 110 146 / 0.06) 100%
     );
 }
 
@@ -573,4 +585,157 @@ html:not([data-theme='light']) {
    page's single held moment and reads as a slab, not as glass. */
 .bg-inverse {
   background-color: var(--inverse) !important;
+}
+
+/* ==========================================================================
+   THE OPENING
+   --------------------------------------------------------------------------
+   Hidden unless html carries `.pp-intro`, which only the pre-paint script
+   adds — and only on a first arrival, with motion allowed. Every other visit
+   renders the overlay with `display: none` and it costs nothing.
+
+   The hard deadline is a CSS animation rather than a timer, so the panel
+   clears even if the component never hydrates. A loader that can trap someone
+   behind it because a script failed is a worse failure than having no loader.
+   ========================================================================== */
+
+.pp-loader {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pp-intro .pp-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    background-color: var(--glass-fill-strong);
+    backdrop-filter: blur(var(--glass-blur-thick)) saturate(var(--glass-saturate));
+    /* The floor: clears itself after 3s no matter what else happens. */
+    animation: pp-loader-failsafe 3s steps(1, end) forwards;
+  }
+
+  @keyframes pp-loader-failsafe {
+    0%,
+    99% {
+      opacity: 1;
+      visibility: visible;
+    }
+    100% {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+
+  /* The exit, once the page is actually ready. */
+  .pp-intro.pp-ready .pp-loader {
+    animation: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(1.02);
+    transition:
+      opacity 0.62s var(--ease-standard),
+      transform 0.62s var(--ease-standard),
+      visibility 0s linear 0.62s;
+  }
+
+  .pp-loader-inner {
+    position: relative;
+    width: min(30rem, 74vw);
+  }
+
+  .pp-loader-art {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .pp-loader-path {
+    stroke-dashoffset: 1;
+    animation: pp-loader-draw 1.15s var(--ease-emphasis) 0.08s forwards;
+  }
+
+  @keyframes pp-loader-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* Horizontal travel outside, vertical inside — the same two-axis approach
+     as the section dividers, because a motion path cannot follow a box whose
+     width is a viewport fraction. */
+  .pp-loader-plane {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    width: 1.25rem;
+    height: 100%;
+    animation: pp-loader-fly-x 1.5s cubic-bezier(0.36, 0, 0.12, 1) 0.14s forwards;
+  }
+
+  .pp-loader-plane > * {
+    position: absolute;
+    top: 78%;
+    display: block;
+    width: 1.25rem;
+    height: 1rem;
+    rotate: -14deg;
+    animation: pp-loader-fly-y 1.5s cubic-bezier(0.4, 0.1, 0.25, 1) 0.14s forwards;
+  }
+
+  @keyframes pp-loader-fly-x {
+    from {
+      left: 0;
+    }
+    to {
+      left: calc(100% - 1.25rem);
+    }
+  }
+
+  @keyframes pp-loader-fly-y {
+    from {
+      top: 78%;
+      rotate: -14deg;
+    }
+    to {
+      top: 4%;
+      rotate: -3deg;
+    }
+  }
+
+  .pp-loader-word {
+    display: block;
+    margin-top: 1.25rem;
+    font-family: var(--font-display);
+    font-size: var(--text-title-2);
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    text-align: center;
+    opacity: 0;
+    animation: pp-loader-word 0.8s var(--ease-standard) 0.5s forwards;
+  }
+
+  @keyframes pp-loader-word {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* The page behind is deliberately NOT hidden.
+     An earlier version set `main` to opacity 0 and restored it with the same
+     class the script adds — which meant that if the script never ran, the
+     failsafe cleared the overlay and left a blank page underneath. A loader
+     that can hide the site forever because one file failed to load is a worse
+     outcome than no loader at all.
+     The panel is glass at 28px, so the page behind it is already obscured
+     into abstraction and simply resolves as the panel lifts. Fewer moving
+     parts, and no state in which content can be stranded. */
 }

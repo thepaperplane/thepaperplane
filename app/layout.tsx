@@ -5,6 +5,7 @@ import { expertiseJsonLd, jsonLdScript, websiteJsonLd } from '@/lib/schema';
 import { SiteHeader } from '@/components/site/site-header';
 import { SiteFooter } from '@/components/site/site-footer';
 import { THEME_SCRIPT } from '@/components/site/theme';
+import { LOADER_SCRIPT, Loader } from '@/components/site/loader';
 import { Reveal } from '@/components/site/reveal';
 import { AmbientField } from '@/components/glass';
 import './globals.css';
@@ -130,10 +131,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Applies the stored theme before first paint. Without this, anyone
             who chose dark gets a white flash on every navigation. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        {/* Decides whether the opening plays, before anything is painted. */}
+        <script dangerouslySetInnerHTML={{ __html: LOADER_SCRIPT }} />
       </head>
       <body className="bg-ground text-ink min-h-dvh antialiased">
         {/* Behind everything: the light the glass refracts. */}
         <AmbientField />
+        <Loader />
 
         <script
           type="application/ld+json"
