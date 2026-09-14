@@ -11,3 +11,10 @@ coverage/
 next-env.d.ts
 .vercel
 *.tsbuildinfo
+
+# Scratch and archived experiments never belong in the deployed bundle.
+_archive/
+
+# Audit screenshot output
+.audit/
+.next-audit/
