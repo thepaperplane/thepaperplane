@@ -6,7 +6,7 @@ import { pageOg } from '@/lib/site';
 export const metadata: Metadata = {
   title: 'Copyright',
   description:
-    'What belongs to this practice, what belongs to the publications the news page links to, what belongs to clients — and the route to take if something here infringes your rights.',
+    'What belongs to this practice, to the publications the news page links to, and to clients — and the route to take if something here infringes your rights.',
   alternates: { canonical: '/copyright' },
   openGraph: pageOg({
     title: 'Copyright',

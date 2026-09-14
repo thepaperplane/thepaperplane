@@ -73,7 +73,7 @@ jobs:
           retention-days: 3
 
   audit:
-    name: Accessibility, contrast and link audit
+    name: Accessibility, contrast, link and search audit
     runs-on: ubuntu-latest
     needs: build
     steps:
@@ -99,6 +99,7 @@ jobs:
           npx next start -p 3000 &
           npx wait-on http://localhost:3000 --timeout 90000
           npm run audit -- http://localhost:3000
+          npm run seo -- http://localhost:3000
 
       - name: Upload audit log
         if: failure()

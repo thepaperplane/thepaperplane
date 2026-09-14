@@ -12,6 +12,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,css,md,json}\"",
     "db:types": "npx supabase gen types typescript --project-id seceoygaesgbjqzurbpr > lib/database.types.generated.ts",
     "audit": "node scripts/audit.mjs",
+    "seo": "node scripts/seo.mjs",
     "verify": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {

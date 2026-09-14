@@ -6,7 +6,7 @@ import { pageOg } from '@/lib/site';
 export const metadata: Metadata = {
   title: 'Accessibility',
   description:
-    'This site targets WCAG 2.2 Level AA. Rather than claim compliance, this sets out exactly which criteria are checked programmatically, what is known to be imperfect, and how to tell us when something does not work.',
+    'This site targets WCAG 2.2 Level AA. Which criteria are checked programmatically, what is known to be imperfect, and how to tell us when something is wrong.',
   alternates: { canonical: '/accessibility' },
   openGraph: pageOg({
     title: 'Accessibility',

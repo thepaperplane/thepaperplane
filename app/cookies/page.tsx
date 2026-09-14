@@ -6,7 +6,7 @@ import { pageOg } from '@/lib/site';
 export const metadata: Metadata = {
   title: 'Cookies',
   description:
-    'The public pages of this site set no cookies at all. This explains what that means, what the one stored value actually is, and why you are not being asked to consent to anything.',
+    'The public pages of this site set no cookies at all. What that means, what the single stored value is, and why you are never asked to consent to anything.',
   alternates: { canonical: '/cookies' },
   openGraph: pageOg({
     title: 'Cookies',

@@ -16,6 +16,7 @@ npm run dev        # http://localhost:3000
 | `npm run format`    | Prettier, writes                                            |
 | `npm run verify`    | typecheck + lint + build                                    |
 | `npm run audit`     | Accessibility, contrast, diagram and link audit — see below |
+| `npm run seo`       | Search, answer and generative engine audit — see below      |
 
 ---
 
@@ -68,6 +69,32 @@ once and must never go wrong silently again":
 CI runs this on every push. If it fails, the thing it names is real — the audit
 has been wrong twice and both times the fix was to the audit, so check it with
 a second method before changing the site.
+
+---
+
+## Search, answer and generative engines
+
+`npm run seo` — a second sweep against the same running server, because three
+different consumers read this site and want different things:
+
+|         | What it wants                                                                                                                                                               |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **SEO** | A unique title and description per URL, a canonical pointing at itself, a sitemap that agrees with what is routable, and structured data that does not contradict the page. |
+| **AEO** | The question asked in a heading and answered directly beneath it, plus `FAQPage` / `HowTo` / `DefinedTerm` markup to lift the answer out of.                                |
+| **GEO** | Specific, checkable facts near the claim — a section number, a due date, a threshold. Thin pages get summarised away; dense ones get quoted.                                |
+
+Current state: 14 indexable pages, 14 unique titles and descriptions, all under
+160 characters; `ProfessionalService`, `WebSite`, `BreadcrumbList`, `FAQPage`,
+`HowTo` and `DefinedTermSet` present and parsing; 12,418 words carrying 134
+citable facts. `/lab` is `noindex`, disallowed in `robots.ts` and absent from
+the sitemap, and the audit fails if any of those three drift apart.
+
+Two checks are deliberately narrower than they first appear. The
+question-heading check ignores anything without a real answer under it —
+"Holding a notice?" above a contact form is a question by punctuation only. And
+it skips `/news` entirely: those headlines belong to other publishers, and
+marking them up as answers this practice gives would misrepresent authorship
+for a rich result.
 
 ---
 

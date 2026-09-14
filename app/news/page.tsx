@@ -10,7 +10,7 @@ import { cn, displayHost, formatRelative } from '@/lib/utils';
 export const metadata: Metadata = {
   title: 'News',
   description:
-    'Daily tax, GST, corporate and economy updates aggregated from TaxGuru, the Economic Times, Mint and BusinessLine — headlines and summaries, linked back to the publisher.',
+    'Daily tax, GST, corporate and economy updates from TaxGuru, the Economic Times, Mint and BusinessLine — headlines and summaries, linked back to the publisher.',
   alternates: { canonical: '/news' },
   openGraph: pageOg({
     title: 'News',

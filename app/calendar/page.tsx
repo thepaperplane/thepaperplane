@@ -10,7 +10,7 @@ import { loadContent, pick } from '@/lib/content';
 export const metadata: Metadata = {
   title: 'Compliance Calendar',
   description:
-    'Every statutory due date for Indian tax, GST, payroll, audit and MCA compliance — month by month, with the penalty for missing each one. Subscribe for a monthly reminder.',
+    'Every statutory due date for Indian tax, GST, payroll and MCA compliance, month by month, with the penalty for missing each one. Monthly reminders by email.',
   alternates: { canonical: '/calendar' },
   openGraph: pageOg({
     title: 'Compliance Calendar',

@@ -11,7 +11,7 @@ import { FlightRule } from '@/components/site/flight-rule';
 export const metadata: Metadata = {
   title: 'Services',
   description:
-    'Tax and GST compliance, scrutiny defence and appeals, incorporation, book-keeping and audit readiness — and the web, product, identity and automation work built alongside them.',
+    'Tax and GST compliance, scrutiny defence and appeals, incorporation and audit-ready books — with the web, product, identity and automation work built alongside.',
   alternates: { canonical: '/services' },
   openGraph: pageOg({
     title: 'Services',

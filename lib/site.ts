@@ -11,7 +11,7 @@ export const SITE = {
   shortName: 'Paper Plane',
   tagline: 'We handle the Papers, You Handle the Takeoff',
   description:
-    'Tax and GST compliance, scrutiny defence, incorporation, book-keeping and audit readiness — alongside the websites, portals and automation built around them, for founders and finance teams across India.',
+    'Tax and GST compliance, scrutiny defence, incorporation and audit-ready books — alongside the websites, portals and automation built around them.',
   url: 'https://www.thepaperplane.co.in',
   locale: 'en_IN',
   email: 'contact@thepaperplane.co.in',
