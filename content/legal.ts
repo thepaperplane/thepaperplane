@@ -108,8 +108,56 @@ export const PRIVACY: LegalSection[] = [
     id: 'rights',
     heading: 'What you can ask for',
     body: [
-      'You can ask what is held about you, ask for it to be corrected, ask for it to be deleted, or withdraw consent to the calendar email at any time. Write to the address below and expect a reply from a person, not a queue.',
-      'This reflects the position under the Digital Personal Data Protection Act, 2023. Where an engagement is already under way, some records must be retained for the period the relevant professional and tax legislation requires, and that obligation is explained at the time rather than used as a blanket refusal.',
+      'Under the Digital Personal Data Protection Act, 2023 you have specific rights over the data this practice holds about you, and none of them require a reason:',
+    ],
+    rows: [
+      {
+        term: 'Access',
+        detail:
+          'A summary of the personal data held about you, what it is being processed for, and which of the providers below it has been shared with.',
+      },
+      {
+        term: 'Correction',
+        detail:
+          'Correction of anything inaccurate, completion of anything incomplete, and updating of anything out of date.',
+      },
+      {
+        term: 'Erasure',
+        detail:
+          'Deletion, unless a statutory retention obligation applies to an engagement already under way — in which case you are told which one and for how long.',
+      },
+      {
+        term: 'Withdraw consent',
+        detail:
+          'As easily as it was given. The calendar email carries a one-click unsubscribe; for anything else, one line to the address below.',
+      },
+      {
+        term: 'Nominate',
+        detail:
+          'Nominate someone to exercise these rights on your behalf in the event of death or incapacity, under section 14.',
+      },
+      {
+        term: 'Complain',
+        detail:
+          'Raise a grievance with us first — see below — and, if you are not satisfied with how it is handled, complain to the Data Protection Board of India.',
+      },
+    ],
+  },
+  {
+    id: 'grievance',
+    heading: 'Who answers, and how fast',
+    body: [
+      `Grievances about personal data are handled by the practice’s Data Protection contact, reachable at ${SITE.email} with “Data protection” in the subject line, or on ${SITE.phone}.`,
+      'You will get an acknowledgement within two working days and a substantive answer within thirty days, which is the period the Act works to. If a request is refused you are told which provision it is refused under, not simply that it cannot be done.',
+      'If that does not resolve it, you can escalate to the Data Protection Board of India. Doing so does not require our permission and will not affect any engagement.',
+    ],
+  },
+  {
+    id: 'children',
+    heading: 'Children',
+    body: [
+      'This is a website for businesses and the people who run them. It is not directed at children, it does not knowingly collect data from anyone under eighteen, and there is no behavioural tracking or advertising on it of the kind section 9 prohibits in relation to children — because there is none of that on it for anyone.',
+      'If you believe a child has sent us personal data through this site, tell us and it will be deleted.',
     ],
   },
   {

@@ -184,6 +184,22 @@ export function ContactForm() {
         <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
       </div>
 
+
+      {/* Section 5 of the DPDP Act requires notice at or before the point
+          personal data is collected — what is taken, what for, and how to
+          exercise rights over it. A privacy policy three clicks away does not
+          satisfy that; it has to be here, next to the submit button. */}
+      <p className="text-ink-3 mt-5 max-w-[52ch] text-[0.8125rem] leading-relaxed">
+        Sending this gives us your name, email and message — and your phone number and company if
+        you filled them in — so that somebody can reply to it. Nothing else is inferred, and it is
+        never used for anything but answering you. You can ask to see it, correct it or have it
+        deleted at any time: see the{' '}
+        <a href="/privacy" className="link-underline text-accent font-medium">
+          privacy notice
+        </a>
+        .
+      </p>
+
       <button
         type="submit"
         disabled={status === 'submitting'}

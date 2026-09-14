@@ -69,7 +69,7 @@ export function Masthead({
           {[
             ['Founded', String(SITE.foundedYear)],
             ['Practice', 'Remote-first, across India'],
-            ['Advisory', 'Tax · GST · Audit · Litigation support'],
+            ['Advisory', 'Tax · GST · Books · Litigation support'],
             ['Engineering', 'Web · Product · Identity · Automation'],
           ].map(([term, detail], i) => (
             <div key={term} className="reveal pr-6" data-reveal-delay={String(160 + i * 70)}>

@@ -182,9 +182,15 @@ export function SubscribeForm({ compact = false }: { compact?: boolean }) {
         </p>
       ) : null}
 
-      <p id="sub-help" className="text-ink-3 mt-4 text-[0.8125rem] leading-relaxed">
+      <p id="sub-help" className="text-ink-3 mt-4 max-w-[52ch] text-[0.8125rem] leading-relaxed">
         One email a month, at the start of the month, listing what is due and when. No sales
-        sequences. Unsubscribe from any email in one click.
+        sequences. Unsubscribe from any email in one click — withdrawing consent is as easy as
+        giving it, which is what the DPDP Act asks for. Subscribing stores your email address, and
+        your name if you gave one, for nothing but sending that email. See the{' '}
+        <a href="/privacy" className="link-underline text-accent font-medium">
+          privacy notice
+        </a>
+        .
       </p>
     </form>
   );

@@ -99,7 +99,7 @@ export const FOOTER_NAV: { heading: string; items: NavItem[] }[] = [
       { href: '/services#tax', label: 'Tax & GST' },
       { href: '/services#scrutiny', label: 'Scrutiny defence' },
       { href: '/services#incorporation', label: 'Incorporation' },
-      { href: '/services#audit', label: 'Audit & payroll' },
+      { href: '/services#books', label: 'Books & payroll' },
     ],
   },
   {

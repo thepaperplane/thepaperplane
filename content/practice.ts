@@ -51,7 +51,7 @@ export const PRACTICE: PracticeSide[] = [
           'Private Limited, LLP, partnership and proprietorship. MCA filings and constitutional drafting.',
       },
       {
-        title: 'Audit & financial systems',
+        title: 'Books & audit readiness',
         detail:
           'Book-keeping, monthly verification, internal audit and payroll — the records kept so an examination is a formality.',
       },
