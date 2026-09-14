@@ -25,12 +25,20 @@ npm run dev        # http://localhost:3000
 running site:
 
 ```bash
-npm run build
-npx next start -p 3000 &
-npm run audit -- http://localhost:3000
+NEXT_DIST_DIR=.next-audit npm run build
+NEXT_DIST_DIR=.next-audit npx next start -p 3104 &
+npm run audit -- http://localhost:3104
 ```
 
-It sweeps 14 pages across three viewports and both themes, and exits non-zero on
+The separate `distDir` is not optional if you have `npm run dev` running.
+`next dev` and `next start` share `.next`, so the dev server rewrites the
+production build underneath the one being audited and every stylesheet starts
+returning 400. The audit then measures an unstyled document. That produced a
+six-hundred-line failure report in which every single entry was an artefact —
+which is why the run now refuses to start unless it can prove the target is
+serving its stylesheets.
+
+It sweeps 15 pages across three viewports and both themes, and exits non-zero on
 any failure. Every check in it exists because something actually broke — the
 selection criterion is not "what could a linter assert" but "what went wrong
 once and must never go wrong silently again":
@@ -54,6 +62,8 @@ once and must never go wrong silently again":
   error that gets a domain distrusted rather than ignored.
 - **Internal links** resolve. `/privacy` and `/terms` shipped in every footer and
   in the sitemap while returning 404.
+- **Preflight**: that the target is serving its stylesheets at all, before a
+  single pixel is measured. See the warning above.
 
 CI runs this on every push. If it fails, the thing it names is real — the audit
 has been wrong twice and both times the fix was to the audit, so check it with
@@ -93,8 +103,17 @@ every frame it changes, so the material carries a budget:
 | `clear`   | Barely there; only needs an edge.                 |
 | `static`  | **No filter.** Anything that repeats down a list. |
 
-Cards are static. `/calendar` carries 16 glass surfaces and **2** live filters.
-Keep it that way.
+Cards are static. `/calendar` carries 16 glass surfaces and **2** live filters;
+`/services` carries 24 and the same 2. Keep it that way.
+
+**Never hand-write `-webkit-backdrop-filter`.** Lightning CSS treats the two
+spellings as one property and keeps whichever comes last, so the conventional
+unprefixed-then-prefixed pair compiles to _the prefixed one alone_ — and
+Chromium does not support `-webkit-backdrop-filter` at all (`CSS.supports`
+returns false for it). Written that way, every glass surface on the site shipped
+with no blur in any browser but Safari, which was a legibility bug rather than a
+cosmetic one: page content read straight through the header. Write the standard
+property by itself and let the compiler prefix it.
 
 Glass also needs something behind it — `.ambient-field` in `app/layout.tsx`. It
 is a `position: fixed` element at `z-index: 0` with content lifted above it,
