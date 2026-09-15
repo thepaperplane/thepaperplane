@@ -307,11 +307,32 @@ async function run() {
         if (paths.includes(path)) fail('sitemap.xml', `lists ${path}, which is noindex`);
       }
 
-      // Anything listed must actually resolve.
+      // Anything listed must actually resolve. Against a remote host these are
+      // sequential requests to the same origin, and one of them throwing at the
+      // network level -- a reset, a cold lambda, an edge hiccup -- used to abort
+      // the entire audit. Retry once before believing it, so a transient blip is
+      // not reported as a broken sitemap entry.
       for (const loc of locs.slice(0, 40)) {
         const u = new URL(loc);
-        const res = await page.request.get(BASE + u.pathname);
-        if (res.status() >= 400) fail('sitemap.xml', `${u.pathname} returns ${res.status()}`);
+        let status = null;
+        let lastErr = null;
+        for (let attempt = 0; attempt < 2 && status === null; attempt++) {
+          try {
+            const res = await page.request.get(BASE + u.pathname, { timeout: 45000 });
+            status = res.status();
+          } catch (e) {
+            lastErr = e;
+            await page.waitForTimeout(1500);
+          }
+        }
+        if (status === null) {
+          fail(
+            'sitemap.xml',
+            u.pathname + ' could not be fetched: ' + String(lastErr).slice(0, 120),
+          );
+        } else if (status >= 400) {
+          fail('sitemap.xml', `${u.pathname} returns ${status}`);
+        }
       }
       notes.push(`${locs.length} sitemap URLs, all resolving`);
     }
