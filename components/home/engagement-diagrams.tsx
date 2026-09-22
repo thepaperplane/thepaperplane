@@ -39,14 +39,18 @@ export function ReadDiagram({ active }: P) {
       cycle={6200}
       label="A one-line summary set aside in favour of reading the full notice, where the operative clause is found"
     >
-      {/* What most people work from. */}
+      {/* What most people work from.
+          Kept to one word each: at the mobile --dg-scale boost, "THE
+          SUMMARY" ran into "THE NOTICE" beside it, and "NOT READ FROM" ran
+          under the notice panel's own left edge -- both measured, not
+          guessed, and neither needs the article to read correctly. */}
       <Tag x={14} y={26}>
-        THE SUMMARY
+        SUMMARY
       </Tag>
       <Panel x={14} y={36} w={78} h={30} tone="dashed" />
       <Bar x={24} y={48} w={44} h={5} />
       <Tag x={14} y={84} tone="quiet">
-        NOT READ FROM
+        NOT READ
       </Tag>
 
       {/* What we work from. */}
