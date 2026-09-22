@@ -114,11 +114,19 @@ export const PROJECTS: Project[] = [
       { label: 'Built for', value: 'Distributors & HORECA' },
     ],
     status: 'live',
-    // No screenshot yet -- run a capture from the admin console (Portfolio ->
-    // this project -> Recapture) to populate the device mockup. Until then
-    // the public page shows the honest "preview pending capture" placeholder
-    // rather than a broken image.
-    shots: { desktop: null, mobile: null, capturedAt: null },
+    // Uploaded directly to the `previews` bucket (no admin-console session
+    // available), so only the desktop capture exists -- the mobile slot
+    // needs a genuine mobile-viewport render, which neither browser
+    // available at the time could produce (one blocked the site's own
+    // asset CDN, the other could not resize below its panel). The phone
+    // mockup shows its own honest "preview pending capture" placeholder
+    // until a real one is captured from the admin console.
+    shots: {
+      desktop:
+        'https://seceoygaesgbjqzurbpr.supabase.co/storage/v1/object/public/previews/the-nilgiri-root/desktop-1790074398503.jpg',
+      mobile: null,
+      capturedAt: '2026-09-22T11:00:18.783Z',
+    },
   },
 ];
 
