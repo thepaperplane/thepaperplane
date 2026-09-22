@@ -6,12 +6,18 @@
  *   'staged' — recorded here and editable in the admin console, but hidden
  *              from the public page until it is reachable.
  *
- * Verified on 13 September 2026:
- *   vihanadental.in   → 200 OK. Sends `X-Frame-Options: SAMEORIGIN`, so it
- *                       cannot be iframed; previews use captured screenshots.
- *   slmboutique.in    → Shopify storefront behind a password gate
- *                       (302 → /password) and `frame-ancestors 'none'`.
- *   thenilgiriroot.in → NXDOMAIN. The domain does not resolve at all.
+ * Verified on 22 September 2026:
+ *   vihanadental.in    → 200 OK. Sends `X-Frame-Options: SAMEORIGIN`, so it
+ *                        cannot be iframed; previews use captured screenshots.
+ *   slmboutique.in     → Shopify storefront behind a password gate
+ *                        (302 → /password) and `frame-ancestors 'none'`.
+ *   thenilgiriroot.com → 200 OK, apex redirects to www. The site was
+ *                        earlier recorded against thenilgiriroot.in, which is
+ *                        still NXDOMAIN at the .in registry itself (no
+ *                        nameservers delegated) -- that was simply the wrong
+ *                        domain, corrected once the right one was given.
+ *                        thenilgiriroot.in is not this client's site and
+ *                        should not be reused for anything.
  *
  * Once a staged site becomes reachable, flip `status` to 'live' (or do it
  * from the admin console) and the capture job will populate its screenshots.
@@ -88,23 +94,30 @@ export const PROJECTS: Project[] = [
   {
     slug: 'the-nilgiri-root',
     name: 'The Nilgiri Root',
-    url: 'https://thenilgiriroot.in',
-    displayUrl: 'thenilgiriroot.in',
-    sector: 'Food & beverage · Direct to consumer',
+    url: 'https://thenilgiriroot.com',
+    displayUrl: 'thenilgiriroot.com',
+    sector: 'Food manufacturing · B2B frozen produce',
     year: 2026,
     summary:
-      'A direct-to-consumer brand site for a Nilgiris-sourced produce label — origin storytelling paired with a straightforward purchase path.',
+      'A trade site for a frozen french-fries manufacturer sourcing from high-altitude Nilgiri potatoes — built to route distributors, restaurants and QSR buyers into a priced WhatsApp enquiry in two taps.',
     brief:
-      'Provenance is the product here, so the site leads with sourcing and process before it asks for a sale. The commerce layer stays deliberately plain so the storytelling carries the page.',
-    stack: ['Brand site', 'Storytelling', 'Commerce', 'Content design'],
-    highlights: [
-      { label: 'Focus', value: 'Provenance' },
-      { label: 'Model', value: 'Direct to consumer' },
-      { label: 'Content', value: 'Long form' },
+      'The buyer here is a procurement team or a restaurant owner, not a consumer, so the site leads with what a trade buyer actually checks — growing altitude, starch content, blast-freeze process, FSSAI certification — then gets out of the way. An audience-segmented WhatsApp quote tool pre-fills the enquiry with the cut size selected, and a set of programmatic landing pages catches the “manufacturer near me” searches a distributor actually runs.',
+    stack: [
+      'B2B trade site',
+      'WhatsApp lead capture',
+      'Programmatic local SEO',
+      'FSSAI compliance content',
     ],
-    status: 'staged',
-    statusNote:
-      'Domain does not currently resolve (NXDOMAIN). Registration or DNS needs to be pointed before the site can be captured.',
+    highlights: [
+      { label: 'Cut sizes', value: '9 / 10 / 11 mm' },
+      { label: 'Enquiry path', value: 'WhatsApp, pre-filled' },
+      { label: 'Built for', value: 'Distributors & HORECA' },
+    ],
+    status: 'live',
+    // No screenshot yet -- run a capture from the admin console (Portfolio ->
+    // this project -> Recapture) to populate the device mockup. Until then
+    // the public page shows the honest "preview pending capture" placeholder
+    // rather than a broken image.
     shots: { desktop: null, mobile: null, capturedAt: null },
   },
 ];
