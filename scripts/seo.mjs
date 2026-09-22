@@ -24,6 +24,21 @@
 
 import { chromium } from 'playwright';
 
+/**
+ * `page.goto`, tolerant of one remote hiccup -- same rationale as the
+ * sitemap-fetch retry below: against a live deployment, a single request
+ * not settling within the timeout is not the same thing as a broken page.
+ */
+async function goto(page, url, options) {
+  try {
+    return await page.goto(url, options);
+  } catch (e) {
+    if (!/Timeout|net::/i.test(String(e))) throw e;
+    await page.waitForTimeout(1500);
+    return await page.goto(url, options);
+  }
+}
+
 const BASE = process.argv[2] ?? process.env.AUDIT_URL ?? 'http://localhost:3000';
 
 /** Everything publicly routable. /lab is deliberately excluded from indexing. */
@@ -142,7 +157,7 @@ async function run() {
   const schemaTypes = new Set();
 
   for (const path of [...PAGES, ...NOINDEX_EXPECTED]) {
-    const res = await page.goto(BASE + path, { waitUntil: 'load', timeout: 60000 });
+    const res = await goto(page, BASE + path, { waitUntil: 'load', timeout: 60000 });
     if (!res || res.status() >= 400) {
       fail(path, `HTTP ${res ? res.status() : 'no response'}`);
       continue;

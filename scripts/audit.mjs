@@ -45,6 +45,24 @@
 
 import { chromium } from 'playwright';
 
+/**
+ * `page.goto`, tolerant of one remote hiccup.
+ *
+ * Against localhost this never mattered. Against a live deployment a single
+ * request not reaching its wait condition within the timeout -- a cold
+ * lambda, an edge blip, a reset -- used to abort the entire audit with a
+ * stack trace instead of a report. Retry once before treating it as real.
+ */
+async function goto(page, url, options) {
+  try {
+    return await page.goto(url, options);
+  } catch (e) {
+    if (!/Timeout|net::/i.test(String(e))) throw e;
+    await page.waitForTimeout(1500);
+    return await page.goto(url, options);
+  }
+}
+
 const BASE = process.argv[2] ?? process.env.AUDIT_URL ?? 'http://localhost:3000';
 
 const PAGES = [
@@ -330,7 +348,7 @@ const structureProbe = () => {
 async function preflight(browser) {
   const context = await browser.newContext();
   const page = await context.newPage();
-  const res = await page.goto(BASE + '/', { waitUntil: 'load', timeout: 60000 });
+  const res = await goto(page, BASE + '/', { waitUntil: 'load', timeout: 60000 });
   if (!res || res.status() >= 400) {
     console.error('');
     console.error('Cannot reach ' + BASE + ' (HTTP ' + (res ? res.status() : 'no response') + ').');
@@ -388,7 +406,7 @@ async function run() {
 
       for (const path of pages) {
         const scope = `${path} ${viewport.name}/${theme}`;
-        const res = await page.goto(BASE + path, { waitUntil: 'networkidle', timeout: 60000 });
+        const res = await goto(page, BASE + path, { waitUntil: 'networkidle', timeout: 60000 });
         if (!res || res.status() >= 400) {
           fail(scope, `HTTP ${res ? res.status() : 'no response'}`);
           continue;
@@ -469,7 +487,7 @@ async function run() {
     const noJs = await browser.newContext({ javaScriptEnabled: false });
     const page = await noJs.newPage();
     for (const path of ['/', '/services', '/contact']) {
-      await page.goto(BASE + path, { waitUntil: 'load', timeout: 60000 });
+      await goto(page, BASE + path, { waitUntil: 'load', timeout: 60000 });
 
       // Wait for the stylesheet to actually be live before asserting anything.
       // Without scripts the loader cannot be shown -- `pp-intro` is added by
@@ -513,7 +531,7 @@ async function run() {
   const seen = new Set();
   const anchors = new Set();
   for (const path of PAGES) {
-    await page.goto(BASE + path, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await goto(page, BASE + path, { waitUntil: 'domcontentloaded', timeout: 60000 });
     const hrefs = await page.evaluate(() =>
       [...document.querySelectorAll('a[href^="/"]')].map((a) => a.getAttribute('href')),
     );
@@ -540,7 +558,7 @@ async function run() {
     byPath.get(path).add(frag);
   }
   for (const [path, frags] of byPath) {
-    await page.goto(BASE + (path || '/'), { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await goto(page, BASE + (path || '/'), { waitUntil: 'domcontentloaded', timeout: 60000 });
     const missing = await page.evaluate(
       (list) => list.filter((f) => !document.getElementById(f)),
       [...frags],
