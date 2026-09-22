@@ -88,8 +88,15 @@ export const PROJECTS: Project[] = [
     ],
     status: 'staged',
     statusNote:
-      'Storefront is currently behind a Shopify password gate, so it is not publicly reachable and cannot be captured.',
-    shots: { desktop: null, mobile: null, capturedAt: null },
+      'The storefront itself is still behind a Shopify password gate, so the finished site cannot be shown yet. What is pictured is the public coming-soon page currently live at slmboutique.in — shown here until the real storefront opens.',
+    // The "Opening soon" splash Shopify shows in front of the password gate
+    // — captured directly, since the storefront behind it still cannot be.
+    shots: {
+      desktop:
+        'https://seceoygaesgbjqzurbpr.supabase.co/storage/v1/object/public/previews/slm-boutique/desktop-1790076184525.jpg',
+      mobile: null,
+      capturedAt: '2026-09-22T11:23:55.435Z',
+    },
   },
   {
     slug: 'the-nilgiri-root',
@@ -108,23 +115,22 @@ export const PROJECTS: Project[] = [
       'Programmatic local SEO',
       'FSSAI compliance content',
     ],
-    highlights: [
-      { label: 'Cut sizes', value: '9 / 10 / 11 mm' },
-      { label: 'Enquiry path', value: 'WhatsApp, pre-filled' },
-      { label: 'Built for', value: 'Distributors & HORECA' },
-    ],
+    // No highlight tiles for this one -- the summary and brief already carry
+    // the cut sizes, the enquiry path and the audience.
+    highlights: [],
     status: 'live',
     // Uploaded directly to the `previews` bucket (no admin-console session
-    // available), so only the desktop capture exists -- the mobile slot
-    // needs a genuine mobile-viewport render, which neither browser
-    // available at the time could produce (one blocked the site's own
-    // asset CDN, the other could not resize below its panel). The phone
-    // mockup shows its own honest "preview pending capture" placeholder
-    // until a real one is captured from the admin console.
+    // available). Desktop via Claude-in-Chrome; mobile needed a genuine
+    // mobile-viewport render, which neither GUI browser tried first could
+    // produce (one blocked the site's own asset CDN entirely, the other
+    // would not resize below its panel) -- local Playwright, run directly
+    // against the live URL with a real 390x844 viewport, is what actually
+    // worked.
     shots: {
       desktop:
         'https://seceoygaesgbjqzurbpr.supabase.co/storage/v1/object/public/previews/the-nilgiri-root/desktop-1790074398503.jpg',
-      mobile: null,
+      mobile:
+        'https://seceoygaesgbjqzurbpr.supabase.co/storage/v1/object/public/previews/the-nilgiri-root/mobile-1790076052996.jpg',
       capturedAt: '2026-09-22T11:00:18.783Z',
     },
   },

@@ -214,10 +214,22 @@ export default async function WorkPage() {
                     <DeviceMockup
                       name={project.name}
                       displayUrl={project.displayUrl}
-                      state="unreachable"
+                      desktopSrc={project.shots.desktop}
+                      mobileSrc={project.shots.mobile}
+                      // A staged project can still be genuinely unreachable
+                      // (nothing to show) or reachable only at a placeholder
+                      // -- e.g. a Shopify "opening soon" splash rather than
+                      // the finished storefront. When a capture exists it is
+                      // shown either way; the caption below says what it is.
+                      state={project.shots.desktop ? 'ready' : 'unreachable'}
                       note={project.statusNote}
                     />
                   </div>
+                  {project.shots.desktop && project.statusNote ? (
+                    <p className="text-ink-3 mt-3 text-[0.8125rem] leading-relaxed">
+                      {project.statusNote}
+                    </p>
+                  ) : null}
 
                   <ul className="mt-6 flex flex-wrap gap-2">
                     {project.stack.map((tech) => (
