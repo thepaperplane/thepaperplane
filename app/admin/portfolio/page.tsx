@@ -1,10 +1,12 @@
 import { ExternalLink, MonitorSmartphone } from 'lucide-react';
 import { AddProjectForm } from '@/components/admin/add-project-form';
 import { ProjectRow } from '@/components/admin/project-row';
-import { EmptyState, PageHeader, Panel } from '@/components/admin/ui';
+import { ADMIN_FIELD, EmptyState, Field, PageHeader, Panel } from '@/components/admin/ui';
+import { SubmitButton } from '@/components/admin/form-bits';
+import { saveProjectMedia } from '@/app/admin/_actions/site';
 import { requireProfile, canEdit } from '@/lib/auth';
 import { serviceClient } from '@/lib/supabase';
-import type { ProjectRow as Project } from '@/lib/database.types';
+import type { ProjectMediaRow, ProjectRow as Project } from '@/lib/database.types';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,12 +19,14 @@ export default async function AdminPortfolioPage() {
   const supabase = serviceClient();
   let projects: Project[] = [];
 
+  const media = new Map<string, ProjectMediaRow>();
   if (supabase) {
-    const { data } = await supabase
-      .from('projects')
-      .select('*')
-      .order('position', { ascending: true });
+    const [{ data }, { data: m }] = await Promise.all([
+      supabase.from('projects').select('*').order('position', { ascending: true }),
+      supabase.from('project_media').select('*'),
+    ]);
     projects = data ?? [];
+    (m ?? []).forEach((row) => media.set(row.project_id, row));
   }
 
   return (
@@ -58,9 +62,78 @@ export default async function AdminPortfolioPage() {
           />
         ) : (
           <ul className="divide-y divide-[var(--color-hairline)]">
-            {projects.map((project) => (
-              <ProjectRow key={project.id} project={project} editable={editable} />
-            ))}
+            {projects.map((project) => {
+              const m = media.get(project.id);
+              return (
+                <li key={project.id} className="list-none">
+                  <ul>
+                    <ProjectRow project={project} editable={editable} />
+                  </ul>
+                  {editable ? (
+                    <details className="border-t border-dashed border-[var(--hairline)] px-6 py-3">
+                      <summary className="text-accent cursor-pointer text-[0.8125rem] font-semibold">
+                        Scrollable preview, homepage feature and result line
+                        {m?.desktop_full_path
+                          ? ' · full page ready'
+                          : ' · no full-page capture yet'}
+                      </summary>
+                      <form action={saveProjectMedia} className="mt-4 grid gap-4 md:grid-cols-2">
+                        <input type="hidden" name="project_id" value={project.id} />
+                        <Field
+                          label="Full-page desktop screenshot"
+                          htmlFor={`fd-${project.id}`}
+                          hint="A tall image of the whole page. Re-capture creates one automatically; upload here to replace it."
+                        >
+                          <input
+                            id={`fd-${project.id}`}
+                            name="desktop_full"
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            className="text-ink-2 text-[0.8125rem]"
+                          />
+                        </Field>
+                        <Field label="Full-page phone screenshot" htmlFor={`fm-${project.id}`}>
+                          <input
+                            id={`fm-${project.id}`}
+                            name="mobile_full"
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            className="text-ink-2 text-[0.8125rem]"
+                          />
+                        </Field>
+                        <div className="md:col-span-2">
+                          <Field
+                            label="Result, in one line"
+                            htmlFor={`fo-${project.id}`}
+                            hint="Shown under the preview instead of the summary — e.g. what changed for the client."
+                          >
+                            <input
+                              id={`fo-${project.id}`}
+                              name="outcome"
+                              defaultValue={m?.outcome ?? ''}
+                              maxLength={400}
+                              className={ADMIN_FIELD}
+                            />
+                          </Field>
+                        </div>
+                        <label className="text-ink flex items-center gap-2.5 text-[0.875rem] font-medium">
+                          <input
+                            type="checkbox"
+                            name="is_featured"
+                            defaultChecked={m?.is_featured ?? project.status === 'live'}
+                            className="h-4 w-4 accent-[var(--accent)]"
+                          />
+                          Feature on the homepage
+                        </label>
+                        <div>
+                          <SubmitButton pendingText="Uploading…">Save</SubmitButton>
+                        </div>
+                      </form>
+                    </details>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         )}
       </Panel>

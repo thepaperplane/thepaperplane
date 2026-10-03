@@ -9,7 +9,7 @@
 export const SITE = {
   name: 'The Paper Plane',
   shortName: 'Paper Plane',
-  tagline: 'We handle the Papers, You Handle the Takeoff',
+  tagline: 'Your Vision, Our Wings',
   description:
     'Tax and GST compliance, scrutiny defence, incorporation and audit-ready books — alongside the websites, portals and automation built around them.',
   url: 'https://www.thepaperplane.co.in',
@@ -70,6 +70,8 @@ export type NavItem = {
    */
   short?: string;
   description?: string;
+  /** Listed in the mobile menu and footer, but not the desktop top bar. */
+  compact?: boolean;
 };
 
 export const PRIMARY_NAV: NavItem[] = [
@@ -89,6 +91,12 @@ export const PRIMARY_NAV: NavItem[] = [
   },
   { href: '/news', label: 'News', description: 'Daily tax, GST and corporate updates' },
   { href: '/about', label: 'About', description: 'How the practice is built' },
+  {
+    href: '/careers',
+    label: 'Careers',
+    description: 'Work with us — open roles',
+    compact: true,
+  },
 ];
 
 export const FOOTER_NAV: { heading: string; items: NavItem[] }[] = [
@@ -122,6 +130,7 @@ export const FOOTER_NAV: { heading: string; items: NavItem[] }[] = [
     heading: 'Company',
     items: [
       { href: '/about', label: 'About' },
+      { href: '/careers', label: 'Careers' },
       { href: '/contact', label: 'Contact' },
       { href: '/privacy', label: 'Privacy' },
       { href: '/terms', label: 'Terms' },

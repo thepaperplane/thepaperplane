@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
-import { ArrowRight, Building2, Code2, Globe, Layers, ShieldCheck, Users } from 'lucide-react';
-import { ButtonLink, Card, Container, Eyebrow, Section, SectionHeading } from '@/components/ui';
+import { CtaLink } from '@/components/fx';
+import { Building2, Code2, Globe, Layers, ShieldCheck, Users } from 'lucide-react';
+import { Card, Container, Eyebrow, Section, SectionHeading } from '@/components/ui';
 import { PILLARS } from '@/content/services';
 import { SITE, pageOg } from '@/lib/site';
 import { loadContent, pick } from '@/lib/content';
@@ -147,10 +148,14 @@ export default async function AboutPage() {
                 turnaround, and a scheduled call whenever a conversation beats an email thread.
               </p>
 
-              <ButtonLink href="/contact" size="lg" className="mt-8">
-                Talk to us
-                <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
-              </ButtonLink>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <CtaLink href="/contact" size="lg">
+                  Talk to us
+                </CtaLink>
+                <CtaLink href="/careers" tone="ghost" size="lg">
+                  Work with us
+                </CtaLink>
+              </div>
             </div>
 
             <Card className="bg-surface p-7 sm:p-9">

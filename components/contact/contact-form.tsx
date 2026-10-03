@@ -24,7 +24,23 @@ export function ContactForm() {
     if (status === 'submitting') return;
 
     const form = event.currentTarget;
-    const data = Object.fromEntries(new FormData(form).entries());
+    const data: Record<string, unknown> = Object.fromEntries(new FormData(form).entries());
+    // Which campaign, if any, brought this visitor — kept in the tab's
+    // sessionStorage by the analytics beacon, sent only with this enquiry.
+    try {
+      const utm = JSON.parse(sessionStorage.getItem('pp.utm') ?? 'null') as Record<
+        string,
+        string | null
+      > | null;
+      data.landing = sessionStorage.getItem('pp.landing') ?? undefined;
+      if (utm) {
+        data.utmSource = utm.source ?? undefined;
+        data.utmMedium = utm.medium ?? undefined;
+        data.utmCampaign = utm.campaign ?? undefined;
+      }
+    } catch {
+      /* storage blocked; send without attribution */
+    }
 
     setStatus('submitting');
     setMessage('');
@@ -164,6 +180,34 @@ export function ContactForm() {
         </select>
       </div>
 
+      <div className="mt-5 grid gap-5 sm:grid-cols-2">
+        <div>
+          <label htmlFor="budget" className="text-ink mb-1.5 block text-[0.875rem] font-medium">
+            Budget <span className="text-ink-3 font-normal">(optional)</span>
+          </label>
+          <select id="budget" name="budget" defaultValue="" className={`${FIELD} h-12`}>
+            <option value="">Not sure yet</option>
+            <option value="under-25k">Under ₹25,000</option>
+            <option value="25k-75k">₹25,000 – ₹75,000</option>
+            <option value="75k-2l">₹75,000 – ₹2,00,000</option>
+            <option value="2l-plus">Above ₹2,00,000</option>
+            <option value="retainer">A monthly retainer</option>
+          </select>
+        </div>
+        <div>
+          <label htmlFor="timeline" className="text-ink mb-1.5 block text-[0.875rem] font-medium">
+            When do you need it? <span className="text-ink-3 font-normal">(optional)</span>
+          </label>
+          <select id="timeline" name="timeline" defaultValue="" className={`${FIELD} h-12`}>
+            <option value="">Flexible</option>
+            <option value="urgent">Urgent — a deadline or notice is close</option>
+            <option value="month">Within a month</option>
+            <option value="quarter">In the next three months</option>
+            <option value="exploring">Just exploring</option>
+          </select>
+        </div>
+      </div>
+
       <div className="mt-5">
         <label htmlFor="message" className="text-ink mb-1.5 block text-[0.875rem] font-medium">
           Tell us what you need <span className="text-critical">*</span>
@@ -183,7 +227,6 @@ export function ContactForm() {
         <label htmlFor="website">Website</label>
         <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
       </div>
-
 
       {/* Section 5 of the DPDP Act requires notice at or before the point
           personal data is collected — what is taken, what for, and how to

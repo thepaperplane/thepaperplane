@@ -161,8 +161,8 @@ export function ScopeDiagram({ active }: P) {
         );
       })}
 
-      <Rule x1={14} y1={160} x2={306} y2={160} />
-      <Tag x={14} y={174}>
+      <Rule x1={14} y1={158} x2={306} y2={158} />
+      <Tag x={14} y={172}>
         AGREED IN WRITING FIRST
       </Tag>
     </Frame>

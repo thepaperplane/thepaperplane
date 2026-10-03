@@ -1,3 +1,4 @@
+import { SITE } from '@/lib/site';
 import { cn } from '@/lib/utils';
 
 /**
@@ -66,9 +67,7 @@ export function Logo({
           The Paper Plane
         </span>
         {showTagline ? (
-          <span className="text-ink-3 mt-1.5 text-[length:var(--text-micro)]">
-            We handle the Papers, You Handle the Takeoff
-          </span>
+          <span className="text-ink-3 mt-1.5 text-[length:var(--text-micro)]">{SITE.tagline}</span>
         ) : null}
       </span>
     </span>

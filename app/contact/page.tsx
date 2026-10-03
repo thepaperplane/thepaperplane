@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { Clock, Globe, Mail, MessageCircle, Phone } from 'lucide-react';
 import { Card, Container, Eyebrow, Section, SectionHeading } from '@/components/ui';
 import { ContactForm } from '@/components/contact/contact-form';
-import { SITE, whatsappLink, pageOg } from '@/lib/site';
+import { pageOg } from '@/lib/site';
+import { getSettings, whatsappHref } from '@/lib/settings';
 import { loadContent, pick } from '@/lib/content';
 
 export const metadata: Metadata = {
@@ -22,7 +23,8 @@ export const metadata: Metadata = {
  * remote-first. Contact channels only.
  */
 export default async function ContactPage() {
-  const copy = await loadContent('contact');
+  const [copy, settings] = await Promise.all([loadContent('contact'), getSettings()]);
+  const contact = settings.contact;
 
   return (
     <>
@@ -51,28 +53,28 @@ export default async function ContactPage() {
 
                 <ul className="mt-5 space-y-4">
                   <li>
-                    <a href={`tel:${SITE.phoneIntl}`} className="group flex items-start gap-3.5">
+                    <a href={`tel:${contact.phoneIntl}`} className="group flex items-start gap-3.5">
                       <span className="bg-accent-wash ring-accent/15 flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] ring-1 ring-inset">
                         <Phone className="text-accent h-4 w-4" strokeWidth={2} />
                       </span>
                       <span>
                         <span className="text-ink-3 block text-[0.75rem] font-medium">Phone</span>
                         <span className="text-ink group-hover:text-accent block text-[0.9375rem] font-semibold transition-colors">
-                          {SITE.phone}
+                          {contact.phone}
                         </span>
                       </span>
                     </a>
                   </li>
 
                   <li>
-                    <a href={`mailto:${SITE.email}`} className="group flex items-start gap-3.5">
+                    <a href={`mailto:${contact.email}`} className="group flex items-start gap-3.5">
                       <span className="bg-accent-wash ring-accent/15 flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] ring-1 ring-inset">
                         <Mail className="text-accent h-4 w-4" strokeWidth={2} />
                       </span>
                       <span className="min-w-0">
                         <span className="text-ink-3 block text-[0.75rem] font-medium">Email</span>
                         <span className="text-ink group-hover:text-accent block truncate text-[0.9375rem] font-semibold transition-colors">
-                          {SITE.email}
+                          {contact.email}
                         </span>
                       </span>
                     </a>
@@ -80,7 +82,7 @@ export default async function ContactPage() {
 
                   <li>
                     <a
-                      href={whatsappLink()}
+                      href={whatsappHref(contact.whatsapp)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="group flex items-start gap-3.5"
@@ -109,7 +111,7 @@ export default async function ContactPage() {
                       <span className="text-ink-3 block text-[0.75rem] font-medium">
                         Working hours
                       </span>
-                      <span className="text-ink block text-[0.9375rem]">{SITE.hours}</span>
+                      <span className="text-ink block text-[0.9375rem]">{contact.hours}</span>
                     </span>
                   </li>
                   <li className="flex items-start gap-3.5">
@@ -118,7 +120,9 @@ export default async function ContactPage() {
                       <span className="text-ink-3 block text-[0.75rem] font-medium">
                         How we work
                       </span>
-                      <span className="text-ink block text-[0.9375rem]">{SITE.serviceModel}</span>
+                      <span className="text-ink block text-[0.9375rem]">
+                        {'Remote-first practice serving clients across India'}
+                      </span>
                     </span>
                   </li>
                 </ul>

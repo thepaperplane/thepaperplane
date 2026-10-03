@@ -30,6 +30,9 @@ export type SubscriberSegment = 'business' | 'professional' | 'individual';
 export type EnquiryState = 'new' | 'contacted' | 'qualified' | 'converted' | 'archived' | 'spam';
 export type ProjectStatus = 'draft' | 'staged' | 'live' | 'archived';
 export type CaptureStatus = 'pending' | 'capturing' | 'ready' | 'failed' | 'unreachable';
+export type ApplicationStatus =
+  'new' | 'reviewing' | 'shortlisted' | 'interview' | 'offer' | 'hired' | 'rejected';
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'void';
 
 export type ProfileRow = {
   id: string;
@@ -222,6 +225,153 @@ export type NewsItemRow = {
   fetched_at: string;
 };
 
+export type SiteSettingRow = {
+  key: string;
+  value: Json;
+  updated_at: string;
+};
+
+export type TestimonialRow = {
+  id: string;
+  quote: string;
+  author_name: string;
+  author_role: string | null;
+  company: string | null;
+  avatar_url: string | null;
+  project_slug: string | null;
+  rating: number | null;
+  is_published: boolean;
+  position: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type JobRow = {
+  id: string;
+  slug: string;
+  title: string;
+  team: string | null;
+  location: string;
+  employment_type: string;
+  experience: string | null;
+  summary: string | null;
+  description: string | null;
+  responsibilities: string[];
+  requirements: string[];
+  is_open: boolean;
+  position: number;
+  closes_on: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type JobApplicationRow = {
+  id: string;
+  job_id: string | null;
+  job_title: string | null;
+  name: string;
+  email: string;
+  phone: string | null;
+  city: string | null;
+  portfolio_url: string | null;
+  linkedin_url: string | null;
+  experience_years: number | null;
+  cover_note: string | null;
+  resume_path: string | null;
+  status: ApplicationStatus;
+  rating: number | null;
+  notes: string | null;
+  user_agent: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ClientDocumentRow = {
+  id: string;
+  client_id: string;
+  title: string;
+  category: string;
+  file_path: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type TaskRow = {
+  id: string;
+  client_id: string | null;
+  title: string;
+  details: string | null;
+  due_on: string | null;
+  state: TaskState;
+  priority: number;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type InvoiceRow = {
+  id: string;
+  client_id: string;
+  number: string;
+  description: string | null;
+  issued_on: string;
+  due_on: string | null;
+  amount: number;
+  tax_amount: number;
+  currency: string;
+  status: InvoiceStatus;
+  paid_on: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type EnquiryMetaRow = {
+  enquiry_id: string;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  landing_path: string | null;
+  budget: string | null;
+  timeline: string | null;
+  value_estimate: number | null;
+  follow_up_on: string | null;
+  updated_at: string;
+};
+
+export type ProjectMediaRow = {
+  project_id: string;
+  desktop_full_path: string | null;
+  mobile_full_path: string | null;
+  is_featured: boolean;
+  outcome: string | null;
+  updated_at: string;
+};
+
+export type PageViewRow = {
+  day: string;
+  path: string;
+  referrer_host: string;
+  utm_source: string;
+  utm_medium: string;
+  utm_campaign: string;
+  device: string;
+  country: string;
+  views: number;
+};
+
+export type AuditLogRow = {
+  id: number;
+  at: string;
+  actor: string | null;
+  action: string;
+  entity: string | null;
+  entity_id: string | null;
+  detail: Json;
+};
+
 /** Shape expected by `createClient<Database>()`. */
 type TableDef<Row> = {
   Row: Row;
@@ -245,12 +395,40 @@ export type Database = {
       projects: TableDef<ProjectRow>;
       news_sources: TableDef<NewsSourceRow>;
       news_items: TableDef<NewsItemRow>;
+      site_settings: TableDef<SiteSettingRow>;
+      testimonials: TableDef<TestimonialRow>;
+      jobs: TableDef<JobRow>;
+      job_applications: TableDef<JobApplicationRow>;
+      client_documents: TableDef<ClientDocumentRow>;
+      tasks: TableDef<TaskRow>;
+      invoices: TableDef<InvoiceRow>;
+      enquiry_meta: TableDef<EnquiryMetaRow>;
+      project_media: TableDef<ProjectMediaRow>;
+      page_views: TableDef<PageViewRow>;
+      audit_log: TableDef<AuditLogRow>;
     };
     Views: Record<never, never>;
     Functions: {
       has_role: { Args: { required: AppRole[] }; Returns: boolean };
       is_staff: { Args: Record<never, never>; Returns: boolean };
       seed_onboarding: { Args: { target_client: string }; Returns: undefined };
+      analytics_daily: { Args: { p_from: string }; Returns: { day: string; views: number }[] };
+      analytics_top: {
+        Args: { p_from: string; p_dim: string; p_limit?: number };
+        Returns: { label: string; views: number }[];
+      };
+      track_view: {
+        Args: {
+          p_path: string;
+          p_referrer: string;
+          p_source: string;
+          p_medium: string;
+          p_campaign: string;
+          p_device: string;
+          p_country: string;
+        };
+        Returns: undefined;
+      };
     };
     Enums: {
       app_role: AppRole;
@@ -263,6 +441,8 @@ export type Database = {
       enquiry_state: EnquiryState;
       project_status: ProjectStatus;
       capture_status: CaptureStatus;
+      application_status: ApplicationStatus;
+      invoice_status: InvoiceStatus;
     };
     CompositeTypes: Record<never, never>;
   };

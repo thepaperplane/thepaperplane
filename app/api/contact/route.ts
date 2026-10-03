@@ -13,6 +13,12 @@ const ContactSchema = z.object({
   company: z.string().trim().max(160).optional().or(z.literal('')),
   serviceId: z.string().trim().max(80).optional().or(z.literal('')),
   message: z.string().trim().min(10, 'Please tell us a little more.').max(5000),
+  budget: z.enum(['', 'under-25k', '25k-75k', '75k-2l', '2l-plus', 'retainer']).optional(),
+  timeline: z.enum(['', 'urgent', 'month', 'quarter', 'exploring']).optional(),
+  landing: z.string().max(200).optional(),
+  utmSource: z.string().max(80).optional(),
+  utmMedium: z.string().max(80).optional(),
+  utmCampaign: z.string().max(120).optional(),
   /** Honeypot. Any value means a bot filled a field humans never see. */
   website: z.string().max(200).optional(),
 });
@@ -38,6 +44,7 @@ export async function POST(request: Request) {
   }
 
   const { name, email, phone, company, serviceId, message, website } = parsed.data;
+  const meta = parsed.data;
 
   // Honeypot: accept silently so bots get no signal.
   if (website) {
@@ -47,17 +54,21 @@ export async function POST(request: Request) {
   const supabase = serviceClient();
 
   if (supabase) {
-    const { error } = await supabase.from('enquiries').insert({
-      name,
-      email,
-      phone: phone || null,
-      company: company || null,
-      service_id: serviceId || null,
-      message,
-      state: 'new',
-      user_agent: request.headers.get('user-agent')?.slice(0, 400) ?? null,
-      referrer: request.headers.get('referer')?.slice(0, 400) ?? null,
-    });
+    const { data: inserted, error } = await supabase
+      .from('enquiries')
+      .insert({
+        name,
+        email,
+        phone: phone || null,
+        company: company || null,
+        service_id: serviceId || null,
+        message,
+        state: 'new',
+        user_agent: request.headers.get('user-agent')?.slice(0, 400) ?? null,
+        referrer: request.headers.get('referer')?.slice(0, 400) ?? null,
+      })
+      .select('id')
+      .single();
 
     if (error) {
       console.error('[contact] insert failed', error);
@@ -65,6 +76,27 @@ export async function POST(request: Request) {
         'We could not record your message. Please email us directly so nothing is lost.',
         500,
       );
+    }
+
+    // Attribution and qualification, beside the enquiry. Best-effort: the
+    // enquiry itself is already safe.
+    const clean = (v?: string) => (v ? v.replace(/[^\w .:/-]/g, '').slice(0, 120) : null);
+    if (inserted?.id) {
+      await supabase
+        .from('enquiry_meta')
+        .insert({
+          enquiry_id: inserted.id,
+          utm_source: clean(meta.utmSource),
+          utm_medium: clean(meta.utmMedium),
+          utm_campaign: clean(meta.utmCampaign),
+          landing_path: meta.landing?.startsWith('/') ? clean(meta.landing) : null,
+          budget: meta.budget || null,
+          timeline: meta.timeline || null,
+        })
+        .then(
+          () => undefined,
+          () => undefined,
+        );
     }
   } else {
     // No database configured. Never return a cheerful "thank you" we cannot

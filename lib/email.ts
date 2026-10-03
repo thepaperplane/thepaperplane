@@ -212,3 +212,66 @@ export async function sendCalendarEmail(opts: {
     return { sent: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Internal notification when someone applies for a role              */
+/* ------------------------------------------------------------------ */
+
+export async function sendApplicationNotification(application: {
+  name: string;
+  email: string;
+  phone?: string;
+  role: string;
+  portfolio?: string;
+  note?: string;
+  hasResume: boolean;
+}): Promise<SendResult> {
+  const resend = client();
+  const to = process.env.ENQUIRY_NOTIFY_TO ?? SITE.email;
+  if (!resend) {
+    console.info('[email] RESEND_API_KEY not set — skipping application notification');
+    return { sent: false };
+  }
+
+  const rows = [
+    ['Role', application.role],
+    ['Name', application.name],
+    ['Email', application.email],
+    ['Phone', application.phone || '—'],
+    ['Portfolio', application.portfolio || '—'],
+    ['CV', application.hasResume ? 'Attached in the console' : 'Not supplied'],
+  ]
+    .map(
+      ([label, value]) =>
+        `<tr><td style="padding:6px 16px 6px 0;color:#6e6e73;font-size:13px;">${esc(label)}</td>` +
+        `<td style="padding:6px 0;color:#1d1d1f;font-size:14px;font-weight:500;">${esc(value)}</td></tr>`,
+    )
+    .join('');
+
+  const html = `
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;color:#1d1d1f;">
+      <p style="margin:0 0 4px;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#1c75c8;">New job application</p>
+      <h1 style="margin:0 0 24px;font-size:22px;font-weight:600;letter-spacing:-.02em;">${esc(application.name)} — ${esc(application.role)}</h1>
+      <table style="border-collapse:collapse;margin-bottom:24px;">${rows}</table>
+      ${
+        application.note
+          ? `<div style="background:#f5f5f7;border-radius:14px;padding:20px;"><p style="margin:0 0 8px;font-size:12px;font-weight:600;color:#6e6e73;">Note</p><p style="margin:0;font-size:15px;line-height:1.6;white-space:pre-wrap;">${esc(application.note)}</p></div>`
+          : ''
+      }
+      <p style="margin:24px 0 0;font-size:13px;color:#86868b;">Review it under Careers in the admin console.</p>
+    </div>`;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM,
+      to,
+      replyTo: application.email,
+      subject: `Application: ${application.role} — ${application.name}`,
+      html,
+    });
+    if (error) return { sent: false, error: error.message };
+    return { sent: true, id: data?.id };
+  } catch (error) {
+    return { sent: false, error: error instanceof Error ? error.message : 'Send failed' };
+  }
+}

@@ -84,7 +84,7 @@ export async function checkReachable(url: string): Promise<Reachability> {
   }
 }
 
-type Viewport = 'desktop' | 'mobile';
+type Viewport = 'desktop' | 'mobile' | 'desktop-full' | 'mobile-full';
 
 function buildShotUrl(target: string, viewport: Viewport, accessKey: string): string {
   const params = new URLSearchParams({
@@ -101,7 +101,22 @@ function buildShotUrl(target: string, viewport: Viewport, accessKey: string): st
     cache: 'false',
   });
 
-  if (viewport === 'desktop') {
+  if (viewport === 'desktop-full' || viewport === 'mobile-full') {
+    // The whole page, top to bottom, for the scrollable browser frame on
+    // /work. Scrolled first so lazy-loaded sections are actually rendered,
+    // capped in height so one endless page cannot produce a 60 MB image, and
+    // taken at a lower pixel ratio than the hero shots because the frame shows
+    // it at well under half its natural width.
+    const mobile = viewport === 'mobile-full';
+    params.set('viewport_width', mobile ? '390' : '1440');
+    params.set('viewport_height', mobile ? '844' : '900');
+    params.set('device_scale_factor', mobile ? '2' : '1');
+    if (mobile) params.set('viewport_mobile', 'true');
+    params.set('full_page', 'true');
+    params.set('full_page_scroll', 'true');
+    params.set('full_page_max_height', mobile ? '14000' : '9000');
+    params.set('image_quality', '76');
+  } else if (viewport === 'desktop') {
     params.set('viewport_width', '1440');
     params.set('viewport_height', '900');
     params.set('device_scale_factor', '2');
@@ -143,6 +158,9 @@ export type CaptureResult = {
   status: CaptureStatus;
   desktopPath?: string;
   mobilePath?: string;
+  /** Full-length captures; best-effort, absent if the provider refused them. */
+  desktopFullPath?: string;
+  mobileFullPath?: string;
   httpStatus: number | null;
   error?: string;
 };
@@ -200,7 +218,32 @@ export async function captureProject(slug: string, rawUrl: string): Promise<Capt
     const failed = uploads.find((u) => u.error);
     if (failed?.error) throw new Error(`Upload failed: ${failed.error.message}`);
 
-    return { status: 'ready', desktopPath, mobilePath, httpStatus: reach.status };
+    // Full-length pages are a bonus, not a requirement: if the provider
+    // times out on a very long page, the project still publishes with its
+    // viewport captures and the frame simply does not scroll.
+    const full = await Promise.allSettled(
+      (['desktop-full', 'mobile-full'] as const).map(async (kind) => {
+        const bytes = await fetchShot(url, kind, accessKey);
+        const path = `${slug}/${kind}-${stamp}.webp`;
+        const { error } = await supabase.storage
+          .from(BUCKET)
+          .upload(path, bytes, { contentType: 'image/webp', upsert: true });
+        if (error) throw error;
+        return path;
+      }),
+    );
+    const [desktopFull, mobileFull] = full.map((r) =>
+      r.status === 'fulfilled' ? r.value : undefined,
+    );
+
+    return {
+      status: 'ready',
+      desktopPath,
+      mobilePath,
+      desktopFullPath: desktopFull,
+      mobileFullPath: mobileFull,
+      httpStatus: reach.status,
+    };
   } catch (error) {
     return {
       status: 'failed',

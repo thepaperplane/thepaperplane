@@ -59,26 +59,26 @@ export async function GET() {
         <div
           style={{
             display: 'flex',
-            fontSize: 74,
+            fontSize: 96,
             fontWeight: 700,
             color: '#1c3252',
             letterSpacing: '-0.035em',
             lineHeight: 1.05,
           }}
         >
-          We handle the Papers,
+          Your Vision,
         </div>
         <div
           style={{
             display: 'flex',
-            fontSize: 74,
+            fontSize: 96,
             fontWeight: 700,
             color: '#35a5d5',
             letterSpacing: '-0.035em',
             lineHeight: 1.05,
           }}
         >
-          You Handle the Takeoff
+          Our Wings
         </div>
       </div>
 
@@ -93,7 +93,7 @@ export async function GET() {
         }}
       >
         <div style={{ display: 'flex', fontSize: 24, color: '#6e6e73' }}>
-          Tax · GST · Scrutiny defence · Incorporation · Audit · Software
+          Websites · Software · Tax · GST · Incorporation · Books
         </div>
         <div style={{ display: 'flex', fontSize: 24, fontWeight: 600, color: '#1c3252' }}>
           thepaperplane.co.in

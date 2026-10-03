@@ -313,21 +313,25 @@
   }
 
   /* An interactive surface: lifts toward the pointer, settles on release. */
+  /* The lift uses the individual `translate` and `scale` properties rather
+     than `transform`, so it composes with the pointer tilt (which owns
+     `transform`) instead of fighting it. */
   .glass-interactive {
     transition:
-      transform var(--dur-control) var(--spring-snappy),
+      translate var(--dur-control) var(--spring-snappy),
+      scale var(--dur-control) var(--spring-snappy),
       box-shadow var(--dur-control) var(--ease-standard),
       background-color var(--dur-micro) linear;
-    will-change: transform;
   }
 
   .glass-interactive:hover {
-    transform: translateY(-2px);
+    translate: 0 -2px;
     box-shadow: var(--glass-shadow-lifted);
   }
 
   .glass-interactive:active {
-    transform: translateY(0) scale(0.994);
+    translate: 0 0;
+    scale: 0.994;
     transition-duration: var(--dur-press);
   }
 
@@ -335,7 +339,8 @@
     .glass-interactive,
     .glass-interactive:hover,
     .glass-interactive:active {
-      transform: none;
+      translate: none;
+      scale: none;
       transition: box-shadow var(--dur-micro) linear;
     }
   }

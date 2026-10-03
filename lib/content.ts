@@ -11,8 +11,6 @@ import { serviceClient } from './supabase';
 
 export type ContentKey =
   | 'home.hero.eyebrow'
-  | 'home.hero.title'
-  | 'home.hero.titleAccent'
   | 'home.hero.lede'
   | 'home.pillars.title'
   | 'home.pillars.lede'
@@ -40,25 +38,16 @@ export const CONTENT_DEFAULTS: Record<ContentKey, { label: string; page: string;
       label: 'Masthead — standfirst (unused in v3 layout)',
       value: 'Advisory and engineering, held to one standard',
     },
-    /* The masthead headline is the brand tagline. It is the registered line
-       that also sets the logo lockup, the OG image and the footer — it is not
-       marketing copy to be reworded. Both halves are stored here only so the
-       masthead can break the line where the comma falls. */
-    'home.hero.title': {
-      page: 'home',
-      label: 'Masthead — BRAND TAGLINE, first line (do not reword)',
-      value: 'We handle the Papers,',
-    },
-    'home.hero.titleAccent': {
-      page: 'home',
-      label: 'Masthead — BRAND TAGLINE, second line (do not reword)',
-      value: 'You Handle the Takeoff',
-    },
+    /* The masthead headline is the brand tagline, and it is deliberately NOT
+       editable here. It is read from SITE.tagline, the same constant that sets
+       the logo lockup, the OG image, the footer and the organisation schema, so
+       a console edit can never leave the homepage saying one thing and every
+       share card saying another. */
     'home.hero.lede': {
       page: 'home',
       label: 'Hero — supporting text',
       value:
-        'Compliance, representation and books kept audit-ready — specified by the same practice that builds your software. The handoffs where things usually break simply do not exist here.',
+        'Bring us the idea. We build the website, the portal and the systems that carry it, and we keep the filings, books and compliance underneath it airtight. One accountable team, from first sketch to takeoff.',
     },
     'home.pillars.title': {
       page: 'home',

@@ -178,7 +178,13 @@ export function Button({
   tone?: ButtonTone;
   size?: ButtonSize;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  return <button className={cn(BASE, TONES[tone], SIZES[size], className)} {...props} />;
+  return (
+    <button
+      data-magnetic="0.22"
+      className={cn(BASE, TONES[tone], SIZES[size], className)}
+      {...props}
+    />
+  );
 }
 
 export function ButtonLink({
@@ -199,13 +205,20 @@ export function ButtonLink({
   const classes = cn(BASE, TONES[tone], SIZES[size], className);
   if (external) {
     return (
-      <a href={href} className={classes} target="_blank" rel="noopener noreferrer" {...props}>
+      <a
+        href={href}
+        className={classes}
+        target="_blank"
+        rel="noopener noreferrer"
+        data-magnetic="0.22"
+        {...props}
+      >
         {children}
       </a>
     );
   }
   return (
-    <Link href={href} className={classes} {...props}>
+    <Link href={href} className={classes} data-magnetic="0.22" {...props}>
       {children}
     </Link>
   );
@@ -227,19 +240,37 @@ export function TextLink({
   external?: boolean;
 }) {
   const classes = cn(
-    'link-underline tap text-accent inline-block text-[length:var(--text-small)] font-medium',
+    'group/tl link-underline tap text-accent inline-flex items-center gap-1.5 text-[length:var(--text-small)] font-medium',
     className,
+  );
+  // The arrow travels a few pixels on hover: the link says where it goes
+  // before it is clicked. Decorative, so hidden from assistive technology.
+  const arrow = (
+    <svg
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+      className="h-[0.9em] w-[0.9em] shrink-0 transition-transform duration-[var(--dur-control)] ease-[var(--spring-snappy)] group-hover/tl:translate-x-1 motion-reduce:transition-none"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 8h10M9 4l4 4-4 4" />
+    </svg>
   );
   if (external) {
     return (
       <a href={href} className={classes} target="_blank" rel="noopener noreferrer">
         {children}
+        {arrow}
       </a>
     );
   }
   return (
     <Link href={href} className={classes}>
       {children}
+      {arrow}
     </Link>
   );
 }
@@ -348,6 +379,7 @@ export function Card({
 }: React.HTMLAttributes<HTMLDivElement> & { interactive?: boolean }) {
   return (
     <div
+      data-tilt={interactive ? '4' : undefined}
       className={cn(
         'glass glass-static rounded-[var(--radius-md)]',
         interactive && 'glass-interactive cursor-pointer',

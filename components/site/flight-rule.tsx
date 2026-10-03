@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
  *
  * The diagrams on this site are accurate but they were anonymous: ledgers,
  * bars and connectors that could belong to any practice. The brand is a paper
- * plane and the line is "You Handle the Takeoff", and none of that appeared
+ * plane and the line is "Your Vision, Our Wings", and none of that appeared
  * anywhere in the artwork.
  *
  * So the divider between major sections is a flight path: a hairline for the

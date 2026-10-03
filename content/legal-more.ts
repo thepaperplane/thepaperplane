@@ -7,17 +7,19 @@
  * statement that is no longer true.
  *
  * The cookie policy in particular says something unusual — that there are none
- * — and that is verified: no `document.cookie` anywhere in the public app, no
- * tag manager, no analytics package, and a single `localStorage` key written
- * by components/site/theme.tsx. If any of that changes, this changes with it.
+ * for visitors — and that is verified: the public app writes no cookie (the
+ * only `document.cookie` writes clear the console owner's editor flag), there
+ * is no tag manager or third-party analytics package, local storage holds the
+ * theme key from components/site/theme.tsx, and session storage holds the
+ * tab-scoped keys listed below. If any of that changes, this changes with it.
  */
 
 import type { LegalSection } from '@/content/legal';
 import { SITE } from '@/lib/site';
 
-export const COOKIES_UPDATED = '15 September 2026';
+export const COOKIES_UPDATED = '3 October 2026';
 export const ACCESSIBILITY_UPDATED = '15 September 2026';
-export const SECURITY_UPDATED = '15 September 2026';
+export const SECURITY_UPDATED = '3 October 2026';
 export const COPYRIGHT_UPDATED = '15 September 2026';
 
 export const COOKIES: LegalSection[] = [
@@ -26,7 +28,8 @@ export const COOKIES: LegalSection[] = [
     heading: 'There are none on this site',
     body: [
       'Most cookie policies exist to explain away a long list. This one is short because the list is empty: the public pages of this website set no cookies at all. Not analytics, not advertising, not “functional”, not even a consent cookie remembering that you were asked about cookies.',
-      'That is checkable rather than asserted. There is no tag manager, no pixel, no analytics package and no embedded third-party script anywhere in this site, so there is nothing that would need one.',
+      'That is checkable rather than asserted. There is no tag manager, no pixel, no third-party analytics package and no embedded third-party script anywhere in this site, so there is nothing that would need one.',
+      'The site does keep an anonymous count of visits — page, referring site, campaign tag, device type and country, as daily totals — and does it without a cookie, without storing an IP address and without any identifier that could recognise you or connect one visit to the next. A browser sending Do Not Track or Global Privacy Control is not counted at all.',
     ],
   },
   {
@@ -41,7 +44,7 @@ export const COOKIES: LegalSection[] = [
     id: 'stored',
     heading: 'What is stored in your browser',
     body: [
-      'One value, and it is not a cookie. Your theme choice is kept in local storage so the site does not flash the wrong colour at you on the next page.',
+      'None of these are cookies. Your theme choice is kept in local storage so the site does not flash the wrong colour at you on the next page; a few short-lived values live in session storage, which your browser clears when the tab closes.',
     ],
     rows: [
       { term: 'Key', detail: 'pp.theme' },
@@ -56,13 +59,18 @@ export const COOKIES: LegalSection[] = [
         detail:
           'Right-click the theme switch to go back to following your system, or clear site data in your browser.',
       },
+      {
+        term: 'Session storage',
+        detail:
+          'pp.seen (the opening animation has played), pp.landing (the first page of this visit), pp.utm (campaign tags of the link you arrived by), and pp.announce.* (you dismissed an announcement). Cleared when the tab closes. pp.landing and pp.utm leave your device only inside an enquiry you choose to send.',
+      },
     ],
   },
   {
     id: 'admin',
     heading: 'The administrative console',
     body: [
-      'The console the practice uses to read enquiries and edit content sits behind a sign-in and does use a session cookie, because keeping somebody signed in is not possible without one. It is strictly necessary in the meaning of the rule, it is set only after a successful sign-in, and it is never set for a visitor to the public site.',
+      'The console the practice uses to read enquiries and edit content sits behind a sign-in and does use a session cookie, because keeping somebody signed in is not possible without one, and a second cookie, pp_editor, that tells the public pages to show the practice its editing tools. Both are strictly necessary in the meaning of the rule, are set only after a successful two-factor sign-in, and are never set for a visitor to the public site.',
     ],
   },
   {
@@ -164,15 +172,15 @@ export const SECURITY: LegalSection[] = [
     id: 'rest',
     heading: 'At rest',
     body: [
-      'Enquiries and subscriptions live in a Postgres database hosted by Supabase in the Mumbai region, encrypted at rest, with row-level security so a request cannot read rows it has no business reading.',
-      'Administrative access is restricted to the practice behind an authenticated sign-in. The service key capable of bypassing row-level security is held server-side only and never reaches a browser.',
+      'Enquiries, subscriptions and job applications live in a Postgres database hosted by Supabase in the Mumbai region, encrypted at rest, with row-level security so a request cannot read rows it has no business reading. CVs and client documents are held in private storage that is never publicly reachable and is opened only through links that expire within minutes.',
+      'Administrative access is restricted to a single practice account, behind a password and a second factor from an authenticator app. The database itself refuses any other account, and refuses that account too until the second factor has been entered. The service key capable of bypassing row-level security is held server-side only and never reaches a browser.',
     ],
   },
   {
     id: 'minimisation',
     heading: 'What is deliberately not collected',
     body: [
-      'The strongest control available is not holding the data at all. This site runs no analytics, sets no tracking cookies, builds no profiles and buys in no enriched data about anyone who visits. There is no advertising identifier to leak and no behavioural record to hand over.',
+      'The strongest control available is not holding the data at all. This site sets no tracking cookies, builds no profiles and buys in no enriched data about anyone who visits; its visit count is anonymous daily totals with no IP address or identifier in them. There is no advertising identifier to leak and no behavioural record to hand over.',
       'The enquiry form asks for the minimum that allows a reply. It does not ask for financial account details, identification numbers or documents, and you should not send those through it — where an engagement needs them, they are collected through a channel meant for the purpose.',
     ],
   },

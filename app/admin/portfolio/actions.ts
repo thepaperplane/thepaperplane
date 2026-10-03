@@ -2,10 +2,36 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { captureProject, deriveProjectDefaults } from '@/lib/capture';
+import { captureProject, deriveProjectDefaults, type CaptureResult } from '@/lib/capture';
 import { requireRole } from '@/lib/auth';
 import { serviceClient } from '@/lib/supabase';
 import type { ProjectStatus } from '@/lib/database.types';
+
+/** Record the full-length captures beside the project, for the scrolling frame. */
+async function saveFullCaptures(slug: string, result: CaptureResult) {
+  if (!result.desktopFullPath && !result.mobileFullPath) return;
+  const supabase = serviceClient();
+  if (!supabase) return;
+  const { data: project } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('slug', slug)
+    .maybeSingle();
+  if (!project) return;
+  const { data: existing } = await supabase
+    .from('project_media')
+    .select('*')
+    .eq('project_id', project.id)
+    .maybeSingle();
+  await supabase.from('project_media').upsert({
+    project_id: project.id,
+    desktop_full_path: result.desktopFullPath ?? existing?.desktop_full_path ?? null,
+    mobile_full_path: result.mobileFullPath ?? existing?.mobile_full_path ?? null,
+    is_featured: existing?.is_featured ?? true,
+    outcome: existing?.outcome ?? null,
+    updated_at: new Date().toISOString(),
+  });
+}
 
 export type ActionResult = {
   ok: boolean;
@@ -113,6 +139,8 @@ export async function addProjectFromUrl(
     })
     .eq('slug', defaults.slug);
 
+  if (result.status === 'ready') await saveFullCaptures(defaults.slug, result);
+
   revalidatePath('/admin/portfolio');
   revalidatePath('/work');
   revalidatePath('/');
@@ -168,23 +196,32 @@ export async function recaptureProject(
 
   const result = await captureProject(project.slug, project.url);
 
+  const ready = result.status === 'ready';
   await supabase
     .from('projects')
     .update({
       capture_status: result.status,
-      desktop_shot_path: result.desktopPath ?? null,
-      mobile_shot_path: result.mobilePath ?? null,
-      captured_at: result.status === 'ready' ? new Date().toISOString() : null,
+      // A failed re-capture must not wipe the captures that already work.
+      ...(ready
+        ? {
+            desktop_shot_path: result.desktopPath ?? null,
+            mobile_shot_path: result.mobilePath ?? null,
+            captured_at: new Date().toISOString(),
+          }
+        : {}),
       capture_error: result.error ?? null,
       last_http_status: result.httpStatus,
       last_checked_at: new Date().toISOString(),
-      status: result.status === 'ready' ? 'live' : project.status,
+      status: ready ? 'live' : project.status,
       status_note: result.status === 'unreachable' ? result.error : null,
     })
     .eq('slug', slug);
 
+  if (ready) await saveFullCaptures(slug, result);
+
   revalidatePath('/admin/portfolio');
   revalidatePath('/work');
+  revalidatePath('/');
 
   return result.status === 'ready'
     ? { ok: true, message: `${project.name} re-captured and published.` }
