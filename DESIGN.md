@@ -35,24 +35,32 @@ layer, 3D scene, CTA, bento and browser frame: `app/fx.css`.
 
 One client engine (`interactions.tsx`), one listener, one sleeping animation loop:
 
-| Attribute                  | Effect                                                         |
-| -------------------------- | -------------------------------------------------------------- |
-| `data-magnetic="0.3"`      | Pulled toward the pointer; the cursor ring wraps the control   |
-| `data-magnetic-inner`      | Moves a little further than its parent, for depth              |
-| `data-tilt="6"`            | 3D tilt toward the pointer with a moving glare (`<Tilt>`)      |
-| `data-cursor-label="View"` | Cursor becomes a filled disc carrying the word                 |
-| `data-parallax`            | Receives `--px` / `--py` (−1…1), smoothed — drives the 3D hero |
+| Attribute             | Effect                                                         |
+| --------------------- | -------------------------------------------------------------- |
+| `data-magnetic="0.1"` | Leans toward the pointer — capped at 6px, an acknowledgement   |
+| `data-magnetic-inner` | Moves a little further than its parent, for depth              |
+| `data-tilt="6"`       | 3D tilt toward the pointer with a moving glare (`<Tilt>`)      |
+| `data-parallax`       | Receives `--px` / `--py` (−1…1), smoothed — drives the 3D hero |
 
-Mouse and pen only; never under `prefers-reduced-motion`; the system cursor is hidden only after the
-custom one has moved. Never put `data-tilt` on an element that also has `.reveal` — both own
-`transform`.
+Mouse and pen only; never under `prefers-reduced-motion`. The system cursor is never replaced —
+people know their own pointer, and a decorative one only gets in the way. Buttons lean, they do not
+chase. Never put `data-tilt` on an element that also has `.reveal` — both own `transform`.
+
+## Motion stages — `components/motion`
+
+Every explanatory animation is a stage: finished-state markup in `cqi` units, filmed by the Web
+Animations API from `data-m` (rise, pop, fly, draw, stamp, type, grow, path…) and `data-at` (ms).
+One cycle per stage; it assembles, holds long enough to read, clears together, replays — only while
+on screen. Each scene shows **what the client hands over → what is done → what comes back**, and
+lands on the deliverable in green. Hues by discipline (`data-hue`): tax blue, scrutiny amber,
+incorporation teal, books indigo, digital violet, design rose.
 
 ## Motion vocabulary
 
 Word-by-word 3D headline (`data-reveal="words"`), masked line reveals, scroll-scrubbed statement
 (`<ScrubWords>`), scroll-driven process rail, marquee, scroll progress flight, magnetic capsules,
-tilt cards, the hero plane (arrive → hover → bank toward pointer → climb away on scroll). All CSS
-except the pointer; all resolve to their finished state with motion reduced or JavaScript off.
+tilt cards, the hero plane (arrive → hover → bank toward pointer → climb away on scroll), and the
+motion stages. All resolve to their finished state with motion reduced or JavaScript off.
 
 ## Editing
 

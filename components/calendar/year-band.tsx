@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { MONTHS, eventsForMonth } from '@/content/calendar';
 import { cn } from '@/lib/utils';
 
@@ -39,14 +40,41 @@ export function YearBand({
 
   const tallest = Math.max(...columns.map((c) => c.total));
 
+  // The band builds itself from the baseline the first time it is seen.
+  const band = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = band.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      el.setAttribute('data-in', '');
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          el.setAttribute('data-in', '');
+          io.disconnect();
+        }
+      },
+      { threshold: 0.3 },
+    );
+    io.observe(el);
+    // Backstop: never leave the band empty.
+    const t = window.setTimeout(() => el.setAttribute('data-in', ''), 2500);
+    return () => {
+      io.disconnect();
+      window.clearTimeout(t);
+    };
+  }, []);
+
   return (
-    <div>
+    <div ref={band} className="yb">
       {/* 2px gutters on a phone. Twelve columns across 311px of content with
           any more than that drops each one under the 24px minimum tap size,
           and scrolling the band sideways would cost the at-a-glance year that
           is the entire point of it. */}
       <div className="flex items-end gap-[2px] sm:gap-1.5" role="group" aria-label="Select a month">
-        {columns.map((col) => {
+        {columns.map((col, c) => {
           const selected = col.value === month;
           const isCurrent = col.value === currentMonth;
           return (
@@ -73,8 +101,9 @@ export function YearBand({
                   return (
                     <span
                       key={i}
+                      style={{ ['--c' as string]: c, ['--i' as string]: i } as React.CSSProperties}
                       className={cn(
-                        'block h-2 rounded-[1px] transition-colors duration-300',
+                        'yb-block block h-2 rounded-[1px] transition-colors duration-300',
                         annual
                           ? selected
                             ? 'bg-accent'

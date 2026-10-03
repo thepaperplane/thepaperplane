@@ -6,6 +6,8 @@ import { PILLARS } from '@/content/services';
 import { SITE, pageOg } from '@/lib/site';
 import { loadContent, pick } from '@/lib/content';
 import { FlightRule } from '@/components/site/flight-rule';
+import { Editable } from '@/components/editable';
+import { VisionScene } from '@/components/about/vision-scene';
 
 export const metadata: Metadata = {
   title: 'About',
@@ -19,6 +21,24 @@ export const metadata: Metadata = {
     path: '/about',
   }),
 };
+
+const MISSION_POINTS = [
+  {
+    key: 'compliant',
+    title: 'Compliant by design',
+    body: 'Every return, filing and set of books produced from records that can be traced — so it holds when someone examines it years later.',
+  },
+  {
+    key: 'digital',
+    title: 'Digital by default',
+    body: 'Websites, portals and automation that take the re-typing out of a business, and the errors out with it.',
+  },
+  {
+    key: 'clear',
+    title: 'Understood, never mystified',
+    body: 'Plain explanations, scope and fee in writing before work begins, and a named person who answers.',
+  },
+] as const;
 
 const PRINCIPLES = [
   {
@@ -87,6 +107,61 @@ export default async function AboutPage() {
               is an unusual combination, and it is the entire point.
             </p>
           </div>
+        </Container>
+      </Section>
+
+      {/* Vision & mission */}
+      <Section className="border-t py-16 sm:py-24" id="vision">
+        <Container>
+          <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-16">
+            <div className="reveal">
+              <Eyebrow>Our vision</Eyebrow>
+              <h2 className="mt-4 text-[length:var(--text-title-1)] leading-[1.12]">
+                <Editable k="about.vision.statement">
+                  Every ambitious business in India, compliant by design and digital by default — so
+                  its founders spend their days on the vision, not the paperwork.
+                </Editable>
+              </h2>
+
+              <div className="mt-10 border-l-2 border-[var(--accent)] pl-6">
+                <Eyebrow>Our mission</Eyebrow>
+                <Editable
+                  k="about.mission.statement"
+                  as="p"
+                  multiline
+                  className="text-ink mt-3 block text-[length:var(--text-lede)] leading-[1.55]"
+                >
+                  To be the one team a growing business calls for both its compliance and its
+                  technology: filing what must be filed, defending what must be defended, and
+                  building the software and brand that carry it forward — explained plainly, priced
+                  in writing, and done properly the first time.
+                </Editable>
+              </div>
+            </div>
+
+            <div className="reveal" data-reveal-delay="120">
+              <VisionScene />
+            </div>
+          </div>
+
+          <ol className="mt-14 grid gap-5 md:grid-cols-3">
+            {MISSION_POINTS.map((point, i) => (
+              <li key={point.key} className="reveal bento p-7" data-reveal-delay={String(i * 90)}>
+                <span className="numeral text-[length:var(--text-title-3)]">0{i + 1}</span>
+                <h3 className="text-ink mt-4 text-[1.0625rem] font-semibold">
+                  <Editable k={`about.mission.${point.key}.title`}>{point.title}</Editable>
+                </h3>
+                <Editable
+                  k={`about.mission.${point.key}.body`}
+                  as="p"
+                  multiline
+                  className="text-ink-2 mt-2.5 block text-[0.9375rem] leading-relaxed"
+                >
+                  {point.body}
+                </Editable>
+              </li>
+            ))}
+          </ol>
         </Container>
       </Section>
 

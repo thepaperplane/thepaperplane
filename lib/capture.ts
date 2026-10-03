@@ -6,11 +6,10 @@ import type { CaptureStatus } from './database.types';
 /**
  * Portfolio preview capture.
  *
- * Why screenshots rather than live iframes: all three current client sites
- * send frame-blocking headers (`X-Frame-Options: SAMEORIGIN` or `DENY` with
- * `frame-ancestors 'none'`), so an embedded live preview renders an empty
- * box. Captures are visually identical, load an order of magnitude faster,
- * and are unaffected by the client's header policy.
+ * Captures are the default because they load an order of magnitude faster
+ * than a live site and are unaffected by the client's header policy. Where a
+ * client site allows framing (lib/embed.ts) the /work frame also offers the
+ * real, interactive site on demand.
  *
  * Provider: ScreenshotOne. Swapping providers means changing `buildShotUrl`
  * only — everything else is provider-agnostic.
@@ -86,18 +85,35 @@ export async function checkReachable(url: string): Promise<Reachability> {
 
 type Viewport = 'desktop' | 'mobile' | 'desktop-full' | 'mobile-full';
 
+/**
+ * Injected into the page before the shutter. Most modern sites hide sections
+ * until they scroll into view and fade them in; a capture taken mid-fade (or
+ * of a section the scroll never "revealed") comes out blank or ghosted. This
+ * lands every common reveal library on its finished state.
+ */
+const SETTLE_CSS = [
+  '*,*::before,*::after{animation-duration:0s!important;animation-delay:0s!important;transition-duration:0s!important;transition-delay:0s!important;scroll-behavior:auto!important;caret-color:transparent!important}',
+  '.reveal,[data-reveal],[data-aos],.aos-init,.wow,.fade-in,.fade-up,[data-animate],[data-scroll],[data-sal],.sal-animate{opacity:1!important;transform:none!important;visibility:visible!important;filter:none!important;clip-path:none!important}',
+].join('');
+
 function buildShotUrl(target: string, viewport: Viewport, accessKey: string): string {
   const params = new URLSearchParams({
     access_key: accessKey,
     url: target,
     format: 'webp',
-    image_quality: '82',
+    image_quality: '86',
     block_ads: 'true',
     block_cookie_banners: 'true',
+    block_banners_by_heuristics: 'true',
+    block_chats: 'true',
     block_trackers: 'true',
-    // Give slow sites a moment to settle before the shutter.
-    delay: '3',
-    timeout: '40',
+    // Sites that respect it skip their entrance animations entirely.
+    reduced_motion: 'true',
+    styles: SETTLE_CSS,
+    // Wait for the network to go quiet (fonts, hero images), then a beat more.
+    wait_until: 'networkidle0',
+    delay: '2',
+    timeout: '60',
     cache: 'false',
   });
 
@@ -114,8 +130,11 @@ function buildShotUrl(target: string, viewport: Viewport, accessKey: string): st
     if (mobile) params.set('viewport_mobile', 'true');
     params.set('full_page', 'true');
     params.set('full_page_scroll', 'true');
+    // Scroll in steps and pause at each, so lazy images actually load.
+    params.set('full_page_scroll_by', mobile ? '700' : '800');
+    params.set('full_page_scroll_delay', '450');
     params.set('full_page_max_height', mobile ? '14000' : '9000');
-    params.set('image_quality', '76');
+    params.set('image_quality', '80');
   } else if (viewport === 'desktop') {
     params.set('viewport_width', '1440');
     params.set('viewport_height', '900');

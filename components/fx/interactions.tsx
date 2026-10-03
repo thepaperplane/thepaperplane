@@ -6,53 +6,42 @@ import { useEffect, useRef } from 'react';
 /**
  * The interaction layer.
  *
- * Four behaviours, one window listener and one animation loop:
+ * Three behaviours, one window listener and one animation loop. The system
+ * pointer is never replaced: people know their own cursor, and a decorative
+ * one only gets between them and the page.
  *
- *   cursor     A dot that tracks the pointer exactly and a ring that follows
- *              it on a spring. Over a link the ring opens; over anything
- *              marked `data-magnetic` it lets go of the pointer and wraps the
- *              control itself, corner radius included, so the pointer reads as
- *              having snapped onto it. `data-cursor-label="View"` turns the
- *              ring into a filled disc carrying that word.
+ *   magnetic   `data-magnetic="0.1"` leans the element toward the pointer by
+ *              that fraction of the distance, capped at a few pixels so a
+ *              button acknowledges the pointer without ever running from it.
+ *              `[data-magnetic-inner]` moves a touch further, for depth.
  *
- *   magnetic   `data-magnetic="0.3"` pulls the element toward the pointer by
- *              that fraction of the distance, and `[data-magnetic-inner]`
- *              inside it a little further, which is what gives the pull depth.
- *
- *   tilt       `data-tilt="8"` rotates the element up to that many degrees
+ *   tilt       `data-tilt="6"` rotates the element up to that many degrees
  *              toward the pointer and moves a glare across it.
  *
  *   parallax   `data-parallax` receives --px and --py, the pointer position
  *              across the viewport from -1 to 1, smoothed. The hero's 3D scene
  *              is driven entirely by these two numbers in CSS.
  *
- * Everything is written as CSS custom properties or a transform, so nothing
- * here causes layout. The loop sleeps when every value has settled and wakes
- * on the next pointer event; an idle page costs nothing.
+ * Everything is written as CSS custom properties, so nothing here causes
+ * layout. The loop sleeps when every value has settled and wakes on the next
+ * pointer event; an idle page costs nothing.
  *
  * Who gets it: a mouse or a pen, with motion allowed. Touch has no hover to
- * be magnetic toward, and a cursor that follows a finger is just a smudge
- * under it. Under `prefers-reduced-motion` none of this runs at all, and the
- * system cursor is never hidden until the custom one has demonstrably moved,
- * so a failure here can never leave someone without a pointer.
+ * lean toward. Under `prefers-reduced-motion` none of this runs at all.
  */
 
 type Spring = { x: number; y: number; tx: number; ty: number };
 
-const MAGNET_DEFAULT = 0.3;
-const TILT_DEFAULT = 7;
-const INTERACTIVE =
-  'a, button, [role="button"], [role="tab"], label, summary, select, [data-cursor]';
-const TEXT_ENTRY = 'input, textarea, select, [contenteditable="true"]';
+const MAGNET_DEFAULT = 0.1;
+/** The furthest a magnetic control ever travels, in pixels. */
+const MAGNET_MAX_X = 6;
+const MAGNET_MAX_Y = 4;
+const TILT_DEFAULT = 6;
 
 const settled = (s: Spring, eps = 0.01) => Math.abs(s.x - s.tx) < eps && Math.abs(s.y - s.ty) < eps;
 
 export function Interactions() {
   const pathname = usePathname();
-  const cursorRef = useRef<HTMLDivElement>(null);
-  const ringRef = useRef<HTMLDivElement>(null);
-  const dotRef = useRef<HTMLDivElement>(null);
-  const labelRef = useRef<HTMLSpanElement>(null);
   // Set by the engine; called on navigation so it can let go of nodes the
   // new page no longer has.
   const onRouteRef = useRef<() => void>(() => {});
@@ -62,31 +51,17 @@ export function Interactions() {
   }, [pathname]);
 
   useEffect(() => {
-    const root = document.documentElement;
     const fine = window.matchMedia('(hover: hover) and (pointer: fine)');
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (!fine.matches || reduced.matches) return;
 
-    const cursor = cursorRef.current;
-    const ring = ringRef.current;
-    const dot = dotRef.current;
-    const label = labelRef.current;
-    if (!cursor || !ring || !dot || !label) return;
-
     /* ---------------------------------------------------------------- state */
 
-    const pointer = { x: -100, y: -100, seen: false, down: false };
+    const pointer = { x: -100, y: -100, seen: false };
     let target: Element | null = null;
-
-    // Ring geometry: centre, size and radius, each sprung separately.
-    const ringPos: Spring = { x: -100, y: -100, tx: -100, ty: -100 };
-    const ringSize: Spring = { x: 34, y: 34, tx: 34, ty: 34 };
-    let ringRadius = 17;
-    let ringRadiusTarget = 17;
 
     let magnet: HTMLElement | null = null;
     let magnetBase: DOMRect | null = null;
-    let magnetRadius = 0;
     const magnets = new Map<HTMLElement, Spring>();
 
     let tilt: HTMLElement | null = null;
@@ -116,15 +91,8 @@ export function Interactions() {
     };
 
     let frame = 0;
-    let state = '';
 
     /* -------------------------------------------------------------- helpers */
-
-    const setState = (next: string) => {
-      if (next === state) return;
-      state = next;
-      cursor.dataset.state = next;
-    };
 
     const releaseMagnet = () => {
       if (!magnet) return;
@@ -156,15 +124,6 @@ export function Interactions() {
       if (!el || !(el instanceof Element)) {
         releaseMagnet();
         releaseTilt();
-        setState('default');
-        return;
-      }
-
-      // Text entry keeps the system caret; the custom cursor steps aside.
-      if (el.closest(TEXT_ENTRY)) {
-        releaseMagnet();
-        releaseTilt();
-        setState('text');
         return;
       }
 
@@ -179,8 +138,6 @@ export function Interactions() {
           // The element may still be springing home from a previous visit;
           // measure where it rests, not where it happens to be this frame.
           magnetBase = new DOMRect(r.left - s.x, r.top - s.y, r.width, r.height);
-          const radius = parseFloat(getComputedStyle(nextMagnet).borderTopLeftRadius) || 0;
-          magnetRadius = Math.min(radius, r.height / 2);
           nextMagnet.setAttribute('data-magnet-active', '');
         }
       }
@@ -195,18 +152,6 @@ export function Interactions() {
           nextTilt.setAttribute('data-tilt-active', '');
         }
       }
-
-      const labelled = el.closest<HTMLElement>('[data-cursor-label]');
-      if (labelled) {
-        label.textContent = labelled.dataset.cursorLabel ?? '';
-        setState('label');
-      } else if (magnet) {
-        setState('snap');
-      } else if (el.closest(INTERACTIVE)) {
-        setState('hover');
-      } else {
-        setState('default');
-      }
     };
 
     /* ---------------------------------------------------------------- loop */
@@ -215,21 +160,21 @@ export function Interactions() {
       frame = 0;
       let busy = false;
 
-      // Magnet targets follow the pointer while it is over the element.
+      // Magnet targets lean toward the pointer while it is over the element.
       if (magnet && magnetBase) {
-        const strength = parseFloat(magnet.dataset.magnetic || '') || MAGNET_DEFAULT;
+        const strength = Math.min(0.2, parseFloat(magnet.dataset.magnetic || '') || MAGNET_DEFAULT);
         const cx = magnetBase.left + magnetBase.width / 2;
         const cy = magnetBase.top + magnetBase.height / 2;
         const s = magnets.get(magnet)!;
-        const limitX = magnetBase.width * 0.35;
-        const limitY = magnetBase.height * 0.45;
+        const limitX = Math.min(MAGNET_MAX_X, magnetBase.width * 0.06);
+        const limitY = Math.min(MAGNET_MAX_Y, magnetBase.height * 0.1);
         s.tx = Math.max(-limitX, Math.min(limitX, (pointer.x - cx) * strength));
         s.ty = Math.max(-limitY, Math.min(limitY, (pointer.y - cy) * strength));
       }
 
       magnets.forEach((s, el) => {
-        s.x += (s.tx - s.x) * 0.2;
-        s.y += (s.ty - s.y) * 0.2;
+        s.x += (s.tx - s.x) * 0.14;
+        s.y += (s.ty - s.y) * 0.14;
         if (settled(s, 0.05)) {
           s.x = s.tx;
           s.y = s.ty;
@@ -288,43 +233,6 @@ export function Interactions() {
         });
       }
 
-      // Cursor. The dot is exact; the ring is sprung.
-      if (state === 'snap' && magnet && magnetBase) {
-        const s = magnets.get(magnet)!;
-        const pad = 6;
-        ringPos.tx = magnetBase.left + magnetBase.width / 2 + s.x;
-        ringPos.ty = magnetBase.top + magnetBase.height / 2 + s.y;
-        ringSize.tx = magnetBase.width + pad * 2;
-        ringSize.ty = magnetBase.height + pad * 2;
-        ringRadiusTarget = magnetRadius + pad;
-      } else {
-        const d = state === 'label' ? 88 : state === 'hover' ? 54 : state === 'text' ? 0 : 34;
-        const pressed = pointer.down ? 0.82 : 1;
-        ringPos.tx = pointer.x;
-        ringPos.ty = pointer.y;
-        ringSize.tx = d * pressed;
-        ringSize.ty = d * pressed;
-        ringRadiusTarget = (d * pressed) / 2;
-      }
-
-      const follow = state === 'snap' ? 0.24 : 0.18;
-      ringPos.x += (ringPos.tx - ringPos.x) * follow;
-      ringPos.y += (ringPos.ty - ringPos.y) * follow;
-      ringSize.x += (ringSize.tx - ringSize.x) * 0.22;
-      ringSize.y += (ringSize.ty - ringSize.y) * 0.22;
-      ringRadius += (ringRadiusTarget - ringRadius) * 0.22;
-      if (!settled(ringPos, 0.1) || !settled(ringSize, 0.1)) busy = true;
-      if (Math.abs(ringRadius - ringRadiusTarget) > 0.1) busy = true;
-
-      ring.style.transform = `translate3d(${(ringPos.x - ringSize.x / 2).toFixed(2)}px, ${(
-        ringPos.y -
-        ringSize.y / 2
-      ).toFixed(2)}px, 0)`;
-      ring.style.width = `${ringSize.x.toFixed(2)}px`;
-      ring.style.height = `${ringSize.y.toFixed(2)}px`;
-      ring.style.borderRadius = `${ringRadius.toFixed(2)}px`;
-      dot.style.transform = `translate3d(${pointer.x - 3}px, ${pointer.y - 3}px, 0)`;
-
       if (busy) frame = requestAnimationFrame(tick);
     };
 
@@ -338,32 +246,12 @@ export function Interactions() {
       if (e.pointerType === 'touch') return;
       pointer.x = e.clientX;
       pointer.y = e.clientY;
-      if (!pointer.seen) {
-        pointer.seen = true;
-        // Start the ring where the pointer is rather than sweeping in from a corner.
-        ringPos.x = ringPos.tx = e.clientX;
-        ringPos.y = ringPos.ty = e.clientY;
-        root.classList.add('fx-cursor-on');
-      }
+      pointer.seen = true;
       watchParallax();
       if (e.target !== target) {
         target = e.target as Element;
         resolve();
       }
-      cursor.dataset.visible = 'true';
-      wake();
-    };
-
-    const onDown = (e: PointerEvent) => {
-      if (e.pointerType === 'touch') return;
-      pointer.down = true;
-      cursor.dataset.down = 'true';
-      wake();
-    };
-
-    const onUp = () => {
-      pointer.down = false;
-      delete cursor.dataset.down;
       wake();
     };
 
@@ -381,7 +269,6 @@ export function Interactions() {
 
     const onLeave = (e: MouseEvent) => {
       if (e.relatedTarget) return;
-      cursor.dataset.visible = 'false';
       target = null;
       resolve();
       wake();
@@ -399,8 +286,6 @@ export function Interactions() {
     };
 
     window.addEventListener('pointermove', onMove, { passive: true });
-    window.addEventListener('pointerdown', onDown, { passive: true });
-    window.addEventListener('pointerup', onUp, { passive: true });
     window.addEventListener('scroll', onScroll, { passive: true });
     document.addEventListener('mouseout', onLeave);
 
@@ -416,13 +301,10 @@ export function Interactions() {
       frame = 0;
       io.disconnect();
       window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerdown', onDown);
-      window.removeEventListener('pointerup', onUp);
       window.removeEventListener('scroll', onScroll);
       document.removeEventListener('mouseout', onLeave);
       fine.removeEventListener('change', onPreferenceChange);
       reduced.removeEventListener('change', onPreferenceChange);
-      root.classList.remove('fx-cursor-on');
       magnets.forEach((_, el) => {
         el.style.removeProperty('--mx');
         el.style.removeProperty('--my');
@@ -437,12 +319,5 @@ export function Interactions() {
     return teardown;
   }, []);
 
-  return (
-    <div ref={cursorRef} className="fx-cursor" aria-hidden="true" data-state="default">
-      <div ref={ringRef} className="fx-cursor-ring">
-        <span ref={labelRef} className="fx-cursor-label" />
-      </div>
-      <div ref={dotRef} className="fx-cursor-dot" />
-    </div>
-  );
+  return null;
 }

@@ -65,6 +65,7 @@ export default async function WorkPage() {
                     desktop={{ src: project.shots.desktop, full: project.full.desktop }}
                     mobile={{ src: project.shots.mobile, full: project.full.mobile }}
                     priority={i === 0}
+                    live={project.frameable}
                   />
                 </div>
 

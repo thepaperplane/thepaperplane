@@ -1,7 +1,9 @@
+import { after } from 'next/server';
 import { z } from 'zod';
 import { apiError, apiOk, clientIp, rateLimit, readJson } from '@/lib/api';
 import { serviceClient } from '@/lib/supabase';
 import { sendEnquiryNotification } from '@/lib/email';
+import { autoPushLead } from '@/lib/integrations/zoho';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -82,6 +84,10 @@ export async function POST(request: Request) {
     // enquiry itself is already safe.
     const clean = (v?: string) => (v ? v.replace(/[^\w .:/-]/g, '').slice(0, 120) : null);
     if (inserted?.id) {
+      const enquiryId = inserted.id;
+      // Into Zoho CRM too, if the owner has switched that on — after the
+      // visitor has their answer.
+      after(() => autoPushLead(enquiryId));
       await supabase
         .from('enquiry_meta')
         .insert({

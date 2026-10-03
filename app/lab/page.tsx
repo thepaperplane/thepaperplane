@@ -2,8 +2,16 @@ import type { Metadata } from 'next';
 import { Container, Heading, Label, Numeral, Section } from '@/components/ui';
 import { Glass } from '@/components/glass';
 import { MotionLab, SpringTrack } from '@/components/lab/motion-lab';
-import { DIAGRAMS } from '@/components/knowledge/diagrams';
-import { PRACTICE_MARKS } from '@/components/practice/marks';
+import { KNOWLEDGE_SCENES } from '@/components/knowledge/scenes';
+import { PRACTICE_SCENES } from '@/components/practice/scenes';
+import {
+  AftercareScene,
+  GroundworkScene,
+  ReadScene,
+  ReviewScene,
+  ScopeScene,
+} from '@/components/home/process-scenes';
+import { DeadlineScene } from '@/components/calendar/deadline-scene';
 import { ServiceDiagram } from '@/components/services/service-diagram';
 import { SERVICE_DIAGRAM_IDS } from '@/components/services/service-diagram';
 
@@ -35,7 +43,15 @@ const GLASS_MATERIALS = [
 ] as const;
 
 export default function LabPage() {
-  const diagramKeys = Object.keys(DIAGRAMS) as (keyof typeof DIAGRAMS)[];
+  const sceneKeys = Object.keys(KNOWLEDGE_SCENES) as (keyof typeof KNOWLEDGE_SCENES)[];
+  const process = [
+    ReadScene,
+    ScopeScene,
+    GroundworkScene,
+    ReviewScene,
+    AftercareScene,
+    DeadlineScene,
+  ];
 
   return (
     <>
@@ -113,20 +129,27 @@ export default function LabPage() {
       {/* ---------------------------------------------------------------- */}
       <Section tone="sunken" className="border-y">
         <Container>
-          <Label className="block">Practice marks</Label>
+          <Label className="block">Practice scenes</Label>
           <p className="text-ink-2 mt-4 max-w-[54ch] text-[length:var(--text-small)] leading-relaxed">
-            One per half of the practice. These play once on reveal and hold — a loop beside a
-            paragraph someone is reading is a distraction.
+            One per half of the practice, then the five engagement steps and the calendar dial. Each
+            plays while on screen and pauses when scrolled away.
           </p>
           <div className="mt-10 grid gap-8 lg:grid-cols-2">
             {(['advisory', 'engineering'] as const).map((side) => {
-              const Mark = PRACTICE_MARKS[side];
+              const Scene = PRACTICE_SCENES[side];
               return (
-                <Glass key={side} className="reveal p-6" data-shown="true">
-                  <Mark />
+                <Glass key={side} className="reveal p-2" data-shown="true">
+                  <Scene />
                 </Glass>
               );
             })}
+          </div>
+          <div className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {process.map((Scene, i) => (
+              <div key={i} className="reveal" data-shown="true">
+                <Scene />
+              </div>
+            ))}
           </div>
         </Container>
       </Section>
@@ -134,26 +157,23 @@ export default function LabPage() {
       {/* ---------------------------------------------------------------- */}
       <Section>
         <Container>
-          <Label className="block">Process diagrams</Label>
+          <Label className="block">Knowledge scenes</Label>
           <p className="text-ink-2 mt-4 max-w-[54ch] text-[length:var(--text-small)] leading-relaxed">
-            Nine, covering the twenty stages of the service walkthrough. These loop, because one is
-            on screen at a time and the loop is the explanation. Structure stays put; only the
-            action repeats.
+            Nine, covering the twenty stages of the service walkthrough. Each makes its point in
+            about four seconds, inside the walkthrough’s six-and-a-half-second stage.
           </p>
           <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {diagramKeys.map((key, i) => {
-              const Diagram = DIAGRAMS[key];
+            {sceneKeys.map((key, i) => {
+              const Scene = KNOWLEDGE_SCENES[key];
               return (
                 <div key={key}>
                   <div className="flex items-baseline gap-3">
                     <Numeral value={i + 1} className="text-[length:var(--text-micro)]" />
                     <span className="text-ink-2 text-[length:var(--text-caption)]">{key}</span>
                   </div>
-                  <Glass className="mt-3 p-5">
-                    <div className="aspect-[320/176] w-full">
-                      <Diagram active />
-                    </div>
-                  </Glass>
+                  <div className="mt-3">
+                    <Scene />
+                  </div>
                 </div>
               );
             })}
@@ -164,7 +184,7 @@ export default function LabPage() {
       {/* ---------------------------------------------------------------- */}
       <Section tone="sunken" className="border-t">
         <Container>
-          <Label className="block">Service drawings</Label>
+          <Label className="block">Service scenes</Label>
           <p className="text-ink-2 mt-4 max-w-[54ch] text-[length:var(--text-small)] leading-relaxed">
             One per service. All {SERVICE_DIAGRAM_IDS.length} of them, at the size they render on
             the services page.

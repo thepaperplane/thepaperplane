@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { Container, Heading, Label, Numeral, Ref, Section, TextLink } from '@/components/ui';
-import { PRACTICE_MARKS } from '@/components/practice/marks';
+import { PRACTICE_SCENES } from '@/components/practice/scenes';
 import { ServiceDiagram } from '@/components/services/service-diagram';
 import { ServiceIndex } from '@/components/services/service-index';
 import { PRACTICE, pillarsFor } from '@/content/practice';
+import { SERVICE_FLOWS } from '@/content/service-flows';
 import { pageOg } from '@/lib/site';
 import { breadcrumbJsonLd, jsonLdScript, serviceCatalogJsonLd } from '@/lib/schema';
 import { FlightRule } from '@/components/site/flight-rule';
@@ -68,7 +69,7 @@ export default function ServicesPage() {
       </Container>
 
       {PRACTICE.map((side, sideIndex) => {
-        const Mark = PRACTICE_MARKS[side.id];
+        const Scene = PRACTICE_SCENES[side.id];
         return (
           <Section
             key={side.id}
@@ -92,14 +93,8 @@ export default function ServicesPage() {
                   </p>
                   {/* The half's own argument, drawn. Identical treatment on
                     both sides so neither reads as the junior partner. */}
-                  <div
-                    className={
-                      sideIndex % 2 === 1
-                        ? 'reveal bg-ground mt-10 px-5 py-6'
-                        : 'reveal bg-sunken mt-10 px-5 py-6'
-                    }
-                  >
-                    <Mark />
+                  <div className="reveal mt-10">
+                    <Scene />
                   </div>
 
                   <div className="mt-8">
@@ -124,38 +119,69 @@ export default function ServicesPage() {
                         </div>
                       </div>
 
-                      <dl className="mt-8 grid gap-x-12 gap-y-9 lg:grid-cols-2">
-                        {pillar.services.map((service) => (
-                          <div key={service.id} id={service.id} className="reveal scroll-mt-24">
-                            <ServiceDiagram id={service.id} />
-                            <dt className="text-ink font-[family-name:var(--font-sans)] text-[length:var(--text-body)] font-medium tracking-[-0.01em]">
-                              {service.title}
-                            </dt>
-                            <dd className="text-ink-3 mt-1 text-[length:var(--text-caption)]">
-                              {service.subtitle}
-                            </dd>
-                            <dd className="text-ink-2 mt-3 max-w-[44ch] text-[length:var(--text-small)] leading-relaxed">
-                              {service.description}
-                            </dd>
-                            <dd className="mt-4">
-                              <ul className="space-y-1.5">
-                                {service.features.map((feature) => (
-                                  <li
-                                    key={feature}
-                                    className="text-ink-3 flex gap-3 text-[length:var(--text-caption)]"
-                                  >
-                                    <span
-                                      aria-hidden="true"
-                                      className="bg-faint mt-[0.55em] h-px w-3 shrink-0"
-                                    />
-                                    <span>{feature}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </dd>
-                          </div>
-                        ))}
-                      </dl>
+                      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+                        {pillar.services.map((service) => {
+                          const flow = SERVICE_FLOWS[service.id];
+                          return (
+                            <article
+                              key={service.id}
+                              id={service.id}
+                              className="reveal svc-card scroll-mt-24"
+                            >
+                              <ServiceDiagram id={service.id} />
+                              <div className="px-1 pt-5 pb-1 sm:px-2">
+                                <div className="flex items-start justify-between gap-3">
+                                  <h4 className="text-ink font-[family-name:var(--font-sans)] text-[length:var(--text-body-lg)] leading-snug font-semibold tracking-[-0.01em]">
+                                    {service.title}
+                                  </h4>
+                                  {service.badge ? (
+                                    <span className="svc-badge shrink-0">{service.badge}</span>
+                                  ) : null}
+                                </div>
+                                <p className="text-ink-3 mt-1 text-[length:var(--text-caption)]">
+                                  {service.subtitle}
+                                </p>
+                                <p className="text-ink-2 mt-3 text-[length:var(--text-small)] leading-relaxed">
+                                  {service.description}
+                                </p>
+                                {flow ? (
+                                  <ol className="svc-flow mt-5" aria-label="How it works">
+                                    <li>
+                                      <span className="svc-flow-k">You share</span>
+                                      <span>{flow.give}</span>
+                                    </li>
+                                    <li>
+                                      <span className="svc-flow-k">We handle</span>
+                                      <span>{flow.work}</span>
+                                    </li>
+                                    <li className="svc-flow-get">
+                                      <span className="svc-flow-k">You receive</span>
+                                      <span>{flow.get}</span>
+                                    </li>
+                                  </ol>
+                                ) : null}
+                                <details className="svc-more mt-4">
+                                  <summary>What is included</summary>
+                                  <ul className="mt-2 space-y-1.5 pb-1">
+                                    {service.features.map((feature) => (
+                                      <li
+                                        key={feature}
+                                        className="text-ink-2 flex gap-3 text-[length:var(--text-caption)]"
+                                      >
+                                        <span
+                                          aria-hidden="true"
+                                          className="bg-accent mt-[0.55em] h-px w-3 shrink-0"
+                                        />
+                                        <span>{feature}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </details>
+                              </div>
+                            </article>
+                          );
+                        })}
+                      </div>
                     </div>
                   ))}
                 </div>

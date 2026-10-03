@@ -4,6 +4,7 @@ import { Card, Container, Eyebrow, Section, SectionHeading } from '@/components/
 import { CalendarView } from '@/components/calendar/calendar-view';
 import { SubscribeForm } from '@/components/calendar/subscribe-form';
 import { TURNAROUNDS } from '@/content/calendar';
+import { DeadlineScene } from '@/components/calendar/deadline-scene';
 import { pageOg } from '@/lib/site';
 import { loadContent, pick } from '@/lib/content';
 
@@ -39,12 +40,17 @@ export default async function CalendarPage() {
       <Section className="pt-[calc(4.5rem+var(--space-section-sm))] pb-12">
         <div className="pointer-events-none absolute inset-0 -z-10" />
         <Container>
-          <SectionHeading
-            as="h1"
-            eyebrow="Compliance Calendar"
-            title={pick(copy, 'calendar.hero.title')}
-            lede={pick(copy, 'calendar.hero.lede')}
-          />
+          <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-14">
+            <SectionHeading
+              as="h1"
+              eyebrow="Compliance Calendar"
+              title={pick(copy, 'calendar.hero.title')}
+              lede={pick(copy, 'calendar.hero.lede')}
+            />
+            <div className="reveal">
+              <DeadlineScene />
+            </div>
+          </div>
         </Container>
       </Section>
 

@@ -2,7 +2,7 @@
   "name": "the-paper-plane-website",
   "version": "2.0.0",
   "private": true,
-  "description": "The Paper Plane \u2014 tech-enabled business solutions, tax architecture, and digital infrastructure.",
+  "description": "The Paper Plane — tech-enabled business solutions, tax architecture, and digital infrastructure.",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
@@ -16,6 +16,7 @@
     "verify": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.10",
     "clsx": "^2.1.1",

@@ -1,6 +1,7 @@
 import 'server-only';
 import { PROJECTS as STATIC_PROJECTS, type Project } from '@/content/portfolio';
 import { serviceClient, isSupabaseConfigured } from './supabase';
+import { isFrameable } from './embed';
 
 /**
  * The portfolio as the public site sees it.
@@ -19,6 +20,8 @@ export type PortfolioProject = Project & {
   full: { desktop: string | null; mobile: string | null };
   featured: boolean;
   outcome: string | null;
+  /** The site allows itself to be framed, so /work can show it live. */
+  frameable: boolean;
 };
 
 const storage = (path: string | null | undefined) =>
@@ -34,10 +37,23 @@ function fromStatic(): PortfolioProject[] {
     full: { desktop: null, mobile: null },
     featured: p.status === 'live' && i < 3,
     outcome: null,
+    frameable: false,
   }));
 }
 
+/** Asks each live site whether it may be framed; cached for six hours. */
+async function withFraming(list: PortfolioProject[]): Promise<PortfolioProject[]> {
+  const flags = await Promise.all(
+    list.map((p) => (p.status === 'live' ? isFrameable(p.url) : Promise.resolve(false))),
+  );
+  return list.map((p, i) => ({ ...p, frameable: flags[i] ?? false }));
+}
+
 export async function loadPortfolio(): Promise<PortfolioProject[]> {
+  return withFraming(await loadRows());
+}
+
+async function loadRows(): Promise<PortfolioProject[]> {
   if (!isSupabaseConfigured) return fromStatic();
   const supabase = serviceClient();
   if (!supabase) return fromStatic();
@@ -87,6 +103,7 @@ export async function loadPortfolio(): Promise<PortfolioProject[]> {
       // Until the owner marks favourites, every live project is featured.
       featured: m ? m.is_featured : row.status === 'live',
       outcome: m?.outcome ?? null,
+      frameable: false,
     } satisfies PortfolioProject;
   });
 }

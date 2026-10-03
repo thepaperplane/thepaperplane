@@ -9,6 +9,9 @@ import { serviceClient } from '@/lib/supabase';
 import type { ProjectMediaRow, ProjectRow as Project } from '@/lib/database.types';
 
 export const dynamic = 'force-dynamic';
+// Re-capturing takes four full-page screenshots, each of which waits for the
+// client's site to settle; give the action room to finish.
+export const maxDuration = 300;
 
 export const metadata = { title: 'Portfolio' };
 

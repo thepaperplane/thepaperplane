@@ -1,0 +1,202 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { requireRole } from '@/lib/auth';
+import { audit } from '@/lib/audit';
+import { serviceClient } from '@/lib/supabase';
+import {
+  getZoho,
+  listBooksInvoices,
+  logZoho,
+  pushContact,
+  pushLead,
+  revokeZoho,
+} from '@/lib/integrations/zoho';
+
+/**
+ * Zoho operations the owner runs from the console. Each one is idempotent —
+ * integration_links remembers what has already been sent — so pressing a
+ * button twice never creates a duplicate in Zoho.
+ */
+
+function db() {
+  const supabase = serviceClient();
+  if (!supabase) throw new Error('Supabase service key is not configured.');
+  return supabase;
+}
+
+async function settings(): Promise<Record<string, unknown>> {
+  const row = await getZoho();
+  return (row?.settings as Record<string, unknown>) ?? {};
+}
+
+async function done(action: string, ok: boolean, detail: string) {
+  await logZoho(action, ok, detail);
+  await db()
+    .from('integrations')
+    .update({
+      last_sync_at: new Date().toISOString(),
+      ...(ok ? { last_error: null } : { last_error: detail }),
+    })
+    .eq('provider', 'zoho');
+  revalidatePath('/admin/integrations');
+}
+
+export async function syncLeadsToCrm(): Promise<void> {
+  const profile = await requireRole('admin');
+  const { data } = await db()
+    .from('enquiries')
+    .select('id, name, email, phone, company, message, service_id')
+    .order('created_at', { ascending: false })
+    .limit(200);
+  let sent = 0;
+  let failed = 0;
+  let lastError = '';
+  for (const e of data ?? []) {
+    try {
+      if (await pushLead(e)) sent++;
+    } catch (err) {
+      failed++;
+      lastError = err instanceof Error ? err.message : String(err);
+      if (/not connected|Reconnect/i.test(lastError)) break;
+    }
+  }
+  await audit(profile.email, 'integrations.zoho.leads', 'integrations', 'zoho', { sent, failed });
+  await done(
+    'crm.leads',
+    failed === 0,
+    failed
+      ? `${sent} sent, ${failed} failed — ${lastError}`
+      : `${sent} new lead${sent === 1 ? '' : 's'} sent to CRM`,
+  );
+}
+
+export async function syncClientsToBooks(): Promise<void> {
+  const profile = await requireRole('admin');
+  const orgId = String((await settings()).books_org_id ?? '');
+  if (!orgId) {
+    await done('books.contacts', false, 'No Zoho Books organisation found on this account.');
+    return;
+  }
+  const { data } = await db()
+    .from('clients')
+    .select('id, name, legal_name, email, phone, gstin')
+    .order('created_at', { ascending: true })
+    .limit(500);
+  let sent = 0;
+  let failed = 0;
+  let lastError = '';
+  for (const c of data ?? []) {
+    try {
+      if (await pushContact({ ...c, name: c.legal_name || c.name }, orgId)) sent++;
+    } catch (err) {
+      failed++;
+      lastError = err instanceof Error ? err.message : String(err);
+      if (/not connected|Reconnect/i.test(lastError)) break;
+    }
+  }
+  await audit(profile.email, 'integrations.zoho.contacts', 'integrations', 'zoho', {
+    sent,
+    failed,
+  });
+  await done(
+    'books.contacts',
+    failed === 0,
+    failed
+      ? `${sent} sent, ${failed} failed — ${lastError}`
+      : `${sent} client${sent === 1 ? '' : 's'} added to Books`,
+  );
+}
+
+/**
+ * Pulls invoices from Books into the console's invoice list, for clients that
+ * are linked to a Books customer. Existing rows (same number) are updated in
+ * place, so the console mirrors what Books says about status and balance.
+ */
+export async function importBooksInvoices(): Promise<void> {
+  const profile = await requireRole('admin');
+  const orgId = String((await settings()).books_org_id ?? '');
+  if (!orgId) {
+    await done('books.invoices', false, 'No Zoho Books organisation found on this account.');
+    return;
+  }
+  try {
+    const invoices = await listBooksInvoices(orgId);
+    const { data: links } = await db()
+      .from('integration_links')
+      .select('local_id, remote_id')
+      .eq('provider', 'zoho')
+      .eq('local_table', 'clients')
+      .eq('remote_module', 'books_contacts');
+    const clientFor = new Map((links ?? []).map((l) => [l.remote_id, l.local_id]));
+    const statusMap: Record<string, 'draft' | 'sent' | 'paid' | 'overdue' | 'void'> = {
+      draft: 'draft',
+      sent: 'sent',
+      viewed: 'sent',
+      partially_paid: 'sent',
+      unpaid: 'sent',
+      overdue: 'overdue',
+      paid: 'paid',
+      void: 'void',
+    };
+    let imported = 0;
+    let skipped = 0;
+    for (const inv of invoices) {
+      const clientId = clientFor.get(inv.customer_id);
+      if (!clientId) {
+        skipped++;
+        continue;
+      }
+      await db()
+        .from('invoices')
+        .upsert(
+          {
+            client_id: clientId,
+            number: inv.invoice_number,
+            description: `Imported from Zoho Books`,
+            issued_on: inv.date,
+            due_on: inv.due_date || null,
+            amount: inv.total,
+            status: statusMap[inv.status] ?? 'sent',
+            paid_on: inv.status === 'paid' ? inv.due_date || inv.date : null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'number' },
+        );
+      imported++;
+    }
+    await audit(profile.email, 'integrations.zoho.invoices', 'integrations', 'zoho', {
+      imported,
+      skipped,
+    });
+    await done(
+      'books.invoices',
+      true,
+      `${imported} invoice${imported === 1 ? '' : 's'} imported${skipped ? `, ${skipped} skipped (customer not linked to a client here)` : ''}`,
+    );
+    revalidatePath('/admin/invoices');
+  } catch (err) {
+    await done('books.invoices', false, err instanceof Error ? err.message : String(err));
+  }
+}
+
+export async function setAutoLeads(formData: FormData): Promise<void> {
+  const profile = await requireRole('admin');
+  const current = await settings();
+  const next = { ...current, auto_leads: formData.get('auto_leads') === 'on' };
+  await db()
+    .from('integrations')
+    .update({ settings: next as never })
+    .eq('provider', 'zoho');
+  await audit(profile.email, 'integrations.zoho.auto', 'integrations', 'zoho', {
+    auto_leads: next.auto_leads,
+  });
+  revalidatePath('/admin/integrations');
+}
+
+export async function disconnectZoho(): Promise<void> {
+  const profile = await requireRole('admin');
+  await revokeZoho();
+  await audit(profile.email, 'integrations.zoho.disconnect', 'integrations', 'zoho');
+  revalidatePath('/admin/integrations');
+}

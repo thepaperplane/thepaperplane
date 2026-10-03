@@ -372,6 +372,100 @@ export type AuditLogRow = {
   detail: Json;
 };
 
+export type AssistantConversationRow = {
+  id: string;
+  ip_hash: string;
+  user_agent: string | null;
+  first_page: string | null;
+  started_at: string;
+  last_at: string;
+  message_count: number;
+  enquiry_id: string | null;
+  flagged: boolean;
+};
+
+export type AssistantMessageRow = {
+  id: number;
+  conversation_id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  model: string | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  cached_tokens: number | null;
+  created_at: string;
+};
+
+export type AssistantKnowledgeRow = {
+  id: string;
+  title: string;
+  body: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type IntegrationRow = {
+  provider: string;
+  status: 'disconnected' | 'connected' | 'error';
+  data_center: string | null;
+  account_label: string | null;
+  org_id: string | null;
+  scopes: string | null;
+  refresh_token_enc: string | null;
+  access_token_enc: string | null;
+  access_expires_at: string | null;
+  connected_at: string | null;
+  last_sync_at: string | null;
+  last_error: string | null;
+  settings: Json;
+  updated_at: string;
+};
+
+export type IntegrationLinkRow = {
+  id: number;
+  provider: string;
+  local_table: string;
+  local_id: string;
+  remote_module: string;
+  remote_id: string;
+  synced_at: string;
+};
+
+export type IntegrationLogRow = {
+  id: number;
+  at: string;
+  provider: string;
+  action: string;
+  ok: boolean;
+  detail: string | null;
+};
+
+export type WaContactRow = {
+  wa_id: string;
+  name: string | null;
+  client_id: string | null;
+  enquiry_id: string | null;
+  last_message_at: string | null;
+  last_inbound_at: string | null;
+  unread: number;
+  created_at: string;
+};
+
+export type WaMessageRow = {
+  id: string;
+  wa_message_id: string | null;
+  wa_id: string;
+  direction: 'in' | 'out';
+  kind: string;
+  body: string | null;
+  media_id: string | null;
+  status: string | null;
+  error: string | null;
+  sent_by: string | null;
+  created_at: string;
+};
+
 /** Shape expected by `createClient<Database>()`. */
 type TableDef<Row> = {
   Row: Row;
@@ -406,6 +500,14 @@ export type Database = {
       project_media: TableDef<ProjectMediaRow>;
       page_views: TableDef<PageViewRow>;
       audit_log: TableDef<AuditLogRow>;
+      assistant_conversations: TableDef<AssistantConversationRow>;
+      assistant_messages: TableDef<AssistantMessageRow>;
+      assistant_knowledge: TableDef<AssistantKnowledgeRow>;
+      integrations: TableDef<IntegrationRow>;
+      integration_links: TableDef<IntegrationLinkRow>;
+      integration_log: TableDef<IntegrationLogRow>;
+      wa_contacts: TableDef<WaContactRow>;
+      wa_messages: TableDef<WaMessageRow>;
     };
     Views: Record<never, never>;
     Functions: {

@@ -31,7 +31,8 @@ const csp = [
   "font-src 'self' data:",
   `connect-src 'self' https://*.supabase.co wss://*.supabase.co${isProd ? '' : ' ws:'}`,
   "media-src 'self'",
-  "frame-src 'none'",
+  // Client sites shown live on /work, when they allow it (lib/embed.ts).
+  "frame-src 'self' https:",
   "frame-ancestors 'self'",
   "form-action 'self'",
   "base-uri 'self'",
@@ -69,7 +70,10 @@ const nextConfig = {
         source: '/:path*',
         headers: [
           { key: 'Content-Security-Policy', value: csp },
-          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },

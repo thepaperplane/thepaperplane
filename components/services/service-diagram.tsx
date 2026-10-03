@@ -1,60 +1,77 @@
-import { SCRUTINY_SET, STRUCTURE_SET, TAX_SET } from '@/components/services/service-diagrams';
-import { BOOKS_SET, DESIGN_SET, DIGITAL_SET } from '@/components/services/service-diagrams-2';
+import {
+  AppealScene,
+  CompanyScene,
+  DemandScene,
+  ExportScene,
+  GstScene,
+  IncomeTaxScene,
+  NoticeReplyScene,
+  PartnershipScene,
+  ProjectReportScene,
+  ProprietorshipScene,
+  ReassessmentScene,
+} from '@/components/services/scenes-advisory';
+import {
+  AccountingSystemsScene,
+  AutomationScene,
+  BookkeepingScene,
+  BrandScene,
+  DeckScene,
+  FinancialSaasScene,
+  InternalAuditScene,
+  MarketingScene,
+  PayrollScene,
+  WebAppScene,
+  WebDesignScene,
+} from '@/components/services/scenes-engineering';
 
 /**
- * Service id to drawing.
+ * Service id to scene.
  *
  * Keyed by the `id` in content/services.ts. A service with no entry renders
- * nothing rather than a placeholder — a missing drawing should be invisible,
+ * nothing rather than a placeholder — a missing scene should be invisible,
  * not a grey box announcing that something is missing.
  */
-const REGISTRY: Record<string, (p: { className?: string }) => React.ReactElement> = {
+const REGISTRY: Record<string, () => React.ReactElement> = {
   /* Tax Architecture & GST */
-  'income-tax-filing': TAX_SET.IncomeTaxFiling,
-  'master-gst': TAX_SET.MasterGst,
-  'export-import': TAX_SET.ExportImport,
+  'income-tax-filing': IncomeTaxScene,
+  'master-gst': GstScene,
+  'export-import': ExportScene,
 
   /* Scrutiny Defence & Appeals */
-  'sec-143-142': SCRUTINY_SET.Sec143142,
-  'sec-148': SCRUTINY_SET.Sec148,
-  'demand-penalty': SCRUTINY_SET.DemandPenalty,
-  appeals: SCRUTINY_SET.Appeals,
+  'sec-143-142': NoticeReplyScene,
+  'sec-148': ReassessmentScene,
+  'demand-penalty': DemandScene,
+  appeals: AppealScene,
 
   /* Structuring & Incorporation */
-  'company-incorporation': STRUCTURE_SET.CompanyIncorporation,
-  proprietorship: STRUCTURE_SET.Proprietorship,
-  partnership: STRUCTURE_SET.Partnership,
-  'project-reports': STRUCTURE_SET.ProjectReports,
+  'company-incorporation': CompanyScene,
+  proprietorship: ProprietorshipScene,
+  partnership: PartnershipScene,
+  'project-reports': ProjectReportScene,
 
   /* Books & Audit Readiness */
-  bookkeeping: BOOKS_SET.Bookkeeping,
-  'internal-audit': BOOKS_SET.InternalAudit,
-  'accounting-systems': BOOKS_SET.AccountingSystems,
-  'payroll-hrms': BOOKS_SET.PayrollHrms,
+  bookkeeping: BookkeepingScene,
+  'internal-audit': InternalAuditScene,
+  'accounting-systems': AccountingSystemsScene,
+  'payroll-hrms': PayrollScene,
 
   /* Digital Infrastructure */
-  'web-design': DIGITAL_SET.WebDesign,
-  'web-apps': DIGITAL_SET.WebApps,
-  'financial-saas': DIGITAL_SET.FinancialSaas,
-  automation: DIGITAL_SET.Automation,
+  'web-design': WebDesignScene,
+  'web-apps': WebAppScene,
+  'financial-saas': FinancialSaasScene,
+  automation: AutomationScene,
 
   /* Brand & Visual Design */
-  'brand-identity': DESIGN_SET.BrandIdentity,
-  'pitch-collateral': DESIGN_SET.PitchCollateral,
-  'marketing-systems': DESIGN_SET.MarketingSystems,
+  'brand-identity': BrandScene,
+  'pitch-collateral': DeckScene,
+  'marketing-systems': MarketingScene,
 };
 
 export function ServiceDiagram({ id }: { id: string }) {
-  const Drawing = REGISTRY[id];
-  if (!Drawing) return null;
-  return (
-    <div
-      className="dg-mini-wrap depth-layer glass glass-static mb-5 px-4 py-3 sm:px-5 sm:py-4"
-      style={{ ['--depth' as string]: 1.4 } as React.CSSProperties}
-    >
-      <Drawing />
-    </div>
-  );
+  const Scene = REGISTRY[id];
+  if (!Scene) return null;
+  return <Scene />;
 }
 
 export const SERVICE_DIAGRAM_IDS = Object.keys(REGISTRY);

@@ -180,7 +180,7 @@ export function Button({
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
-      data-magnetic="0.22"
+      data-magnetic="0.08"
       className={cn(BASE, TONES[tone], SIZES[size], className)}
       {...props}
     />
@@ -210,7 +210,7 @@ export function ButtonLink({
         className={classes}
         target="_blank"
         rel="noopener noreferrer"
-        data-magnetic="0.22"
+        data-magnetic="0.08"
         {...props}
       >
         {children}
@@ -218,7 +218,7 @@ export function ButtonLink({
     );
   }
   return (
-    <Link href={href} className={classes} data-magnetic="0.22" {...props}>
+    <Link href={href} className={classes} data-magnetic="0.08" {...props}>
       {children}
     </Link>
   );

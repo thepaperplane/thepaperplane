@@ -34,6 +34,16 @@ export type SiteSettings = {
     /** Advertise "We're hiring" in the header and homepage. */
     banner: boolean;
   };
+  assistant: {
+    /** Show the site assistant to visitors (also needs ANTHROPIC_API_KEY). */
+    enabled: boolean;
+    /** First line the assistant shows when opened. */
+    greeting: string;
+    /** Standing notes from the owner the assistant may use — holidays, offers. */
+    notes: string;
+    /** Most visitor messages answered per day across the whole site. */
+    dailyCap: number;
+  };
 };
 
 export const SETTINGS_TAG = 'site-settings';
@@ -49,6 +59,13 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   announcement: { enabled: false, text: '', href: '/contact', cta: 'Find out more' },
   social: { linkedin: '', instagram: '', x: '', youtube: '' },
   hiring: { banner: false },
+  assistant: {
+    enabled: true,
+    greeting:
+      'Hello — I can answer questions about our services, deadlines and how we work, straight from this website. What can I help with?',
+    notes: '',
+    dailyCap: 400,
+  },
 };
 
 type Section = keyof SiteSettings;
@@ -79,7 +96,7 @@ async function load(): Promise<SiteSettings> {
   }
 }
 
-export const getSettings = unstable_cache(load, ['site-settings-v1'], {
+export const getSettings = unstable_cache(load, ['site-settings-v2'], {
   tags: [SETTINGS_TAG],
   revalidate: 3600,
 });
