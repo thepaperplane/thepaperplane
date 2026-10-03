@@ -20,6 +20,12 @@ export async function GET(request: Request) {
   const supabase = serviceClient();
   if (!supabase) return apiError('Supabase service key is not configured.', 503);
 
+  // Daily housekeeping, riding on this job: assistant conversations are kept
+  // for twelve months (privacy notice, "When you use the site assistant").
+  await purgeOldConversations(supabase).catch((e) =>
+    console.error('[cron/news] assistant purge failed', e),
+  );
+
   const { data: sources, error: sourcesError } = await supabase
     .from('news_sources')
     .select('id, name, category, feed_url, fetch_count, error_count')
@@ -97,4 +103,17 @@ export async function GET(request: Request) {
     inserted,
     results,
   });
+}
+
+async function purgeOldConversations(supabase: NonNullable<ReturnType<typeof serviceClient>>) {
+  const cutoff = new Date(Date.now() - 365 * 86400_000).toISOString();
+  const { data: old } = await supabase
+    .from('assistant_conversations')
+    .select('id')
+    .lt('last_at', cutoff)
+    .limit(500);
+  const ids = (old ?? []).map((r) => r.id);
+  if (!ids.length) return;
+  await supabase.from('assistant_messages').delete().in('conversation_id', ids);
+  await supabase.from('assistant_conversations').delete().in('id', ids);
 }

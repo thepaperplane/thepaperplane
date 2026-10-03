@@ -28,7 +28,7 @@ export const COOKIES: LegalSection[] = [
     heading: 'There are none on this site',
     body: [
       'Most cookie policies exist to explain away a long list. This one is short because the list is empty: the public pages of this website set no cookies at all. Not analytics, not advertising, not “functional”, not even a consent cookie remembering that you were asked about cookies.',
-      'That is checkable rather than asserted. There is no tag manager, no pixel, no third-party analytics package and no embedded third-party script anywhere in this site, so there is nothing that would need one.',
+      'That is checkable rather than asserted. There is no tag manager, no pixel, no third-party analytics package and no embedded third-party script anywhere in this site, so there is nothing that would need one. The one exception is one you choose: pressing “Try it live” on a project on the Work page loads that client’s own website inside the frame, where it runs under its own policies, exactly as if you had visited it.',
       'The site does keep an anonymous count of visits — page, referring site, campaign tag, device type and country, as daily totals — and does it without a cookie, without storing an IP address and without any identifier that could recognise you or connect one visit to the next. A browser sending Do Not Track or Global Privacy Control is not counted at all.',
     ],
   },
@@ -62,7 +62,7 @@ export const COOKIES: LegalSection[] = [
       {
         term: 'Session storage',
         detail:
-          'pp.seen (the opening animation has played), pp.landing (the first page of this visit), pp.utm (campaign tags of the link you arrived by), and pp.announce.* (you dismissed an announcement). Cleared when the tab closes. pp.landing and pp.utm leave your device only inside an enquiry you choose to send.',
+          'pp.seen (the opening animation has played), pp.landing (the first page of this visit), pp.utm (campaign tags of the link you arrived by), pp.announce.* (you dismissed an announcement) and pp.assistant.v1 (your conversation with the site assistant, if you started one). Cleared when the tab closes. pp.landing and pp.utm leave your device only inside an enquiry you choose to send.',
       },
     ],
   },
@@ -188,7 +188,8 @@ export const SECURITY: LegalSection[] = [
     id: 'processors',
     heading: 'Who else is involved',
     body: [
-      'Three providers, each for one narrow purpose and none permitted to use your data for their own: Supabase for the database, Vercel for hosting, Resend for sending email. Their security posture forms part of ours, and any of them can be replaced if that stops being true.',
+      'Each provider has one narrow purpose and none is permitted to use your data for its own: Supabase for the database, Vercel for hosting, Resend for sending email, Anthropic for the site assistant’s replies, Meta for WhatsApp messages, and Zoho for the practice’s CRM and accounts. Their security posture forms part of ours, and any of them can be replaced if that stops being true.',
+      'Connections to Zoho are made with OAuth: the practice approves access on Zoho’s own screen, and the resulting tokens are encrypted (AES-256-GCM) before they are stored and never reach a browser. Messages from WhatsApp are accepted only with a valid signature from Meta, checked against the exact bytes received.',
     ],
   },
   {

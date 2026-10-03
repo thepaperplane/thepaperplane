@@ -1,20 +1,33 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Lock, Monitor, RotateCw, Smartphone } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Loader2,
+  Lock,
+  Monitor,
+  MousePointerClick,
+  RotateCw,
+  Smartphone,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
  * A working browser window with a client's site inside it.
  *
- * The client sites refuse to be framed (X-Frame-Options / frame-ancestors),
- * so a live <iframe> would be an empty box. What sits in the window instead is
- * a full-length capture of the real page in a scrolling viewport: wheel,
- * trackpad, touch and keyboard all scroll it, exactly as they would scroll the
- * site. The first time the frame comes into view it glides down a little and
- * back, which is the clearest way to say "this scrolls" without a word.
+ * By default the window holds a full-length capture of the real page in a
+ * scrolling viewport: wheel, trackpad, touch and keyboard all scroll it,
+ * exactly as they would scroll the site, and it costs one image. The first
+ * time the frame comes into view it glides down a little and back, which is
+ * the clearest way to say "this scrolls" without a word.
  *
- * Desktop and phone captures, when both exist, are a toggle away.
+ * Where the client's site allows itself to be framed (`live`, decided on the
+ * server by lib/embed.ts), "Try it live" swaps the capture for the real site,
+ * rendered at true desktop or phone width and scaled to fit — every link,
+ * menu and animation working. It loads only when asked for, so a page of
+ * projects never pulls in a dozen live sites at once.
+ *
+ * Desktop and phone, when both exist, are a toggle away.
  */
 
 type Shot = { src: string | null; full: string | null };
@@ -28,6 +41,7 @@ export function BrowserFrame({
   className,
   height = 'clamp(18rem, 48vw, 34rem)',
   priority = false,
+  live = false,
 }: {
   name: string;
   displayUrl: string;
@@ -37,11 +51,17 @@ export function BrowserFrame({
   className?: string;
   height?: string;
   priority?: boolean;
+  /** The site permits framing, so the real thing can be shown on request. */
+  live?: boolean;
 }) {
   const hasMobile = Boolean(mobile?.full || mobile?.src);
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [scrolled, setScrolled] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [mode, setMode] = useState<'shot' | 'live'>('shot');
+  const [loaded, setLoaded] = useState(false);
+  const [stalled, setStalled] = useState(false);
+  const [box, setBox] = useState({ w: 0, h: 0 });
   const viewport = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLDivElement>(null);
   const peeked = useRef(false);
@@ -82,6 +102,33 @@ export function BrowserFrame({
     };
   }, [scrollable, device]);
 
+  // The live site renders at its real width and is scaled to the window.
+  useEffect(() => {
+    const vp = viewport.current;
+    if (!vp || mode !== 'live') return;
+    const ro = new ResizeObserver(([entry]) => {
+      if (entry) setBox({ w: entry.contentRect.width, h: entry.contentRect.height });
+    });
+    ro.observe(vp);
+    return () => ro.disconnect();
+  }, [mode, device]);
+
+  useEffect(() => {
+    if (mode !== 'live' || loaded) return;
+    const t = window.setTimeout(() => setStalled(true), 12000);
+    return () => window.clearTimeout(t);
+  }, [mode, loaded, device]);
+
+  const goLive = () => {
+    viewport.current?.scrollTo({ top: 0, behavior: 'instant' });
+    setLoaded(false);
+    setStalled(false);
+    setMode('live');
+  };
+
+  const siteWidth = device === 'desktop' ? 1440 : 390;
+  const scale = box.w ? box.w / siteWidth : 0;
+
   const onScroll = () => {
     const vp = viewport.current;
     if (!vp) return;
@@ -92,6 +139,13 @@ export function BrowserFrame({
   };
 
   const reload = () => {
+    if (mode === 'live') {
+      setLoaded(false);
+      setStalled(false);
+      setMode('shot');
+      window.requestAnimationFrame(() => setMode('live'));
+      return;
+    }
     viewport.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -125,7 +179,22 @@ export function BrowserFrame({
             <span className="truncate" translate="no">
               {displayUrl}
             </span>
+            {mode === 'live' ? (
+              <span className="bframe-live" aria-label="Showing the live site">
+                <i />
+                Live
+              </span>
+            ) : null}
           </span>
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Open ${displayUrl} in a new tab`}
+            className="hidden h-7 w-7 items-center justify-center rounded-md text-[#6b6e76] transition-colors hover:bg-black/5 hover:text-[#1d1f24] sm:inline-flex"
+          >
+            <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={2} />
+          </a>
           {hasMobile ? (
             <span className="flex items-center gap-0.5 rounded-lg bg-[rgb(0_0_0/0.05)] p-0.5">
               {(['desktop', 'mobile'] as const).map((d) => (
@@ -138,6 +207,8 @@ export function BrowserFrame({
                     setDevice(d);
                     setScrolled(false);
                     setProgress(0);
+                    setLoaded(false);
+                    setStalled(false);
                     viewport.current?.scrollTo({ top: 0 });
                   }}
                   className={cn(
@@ -159,7 +230,11 @@ export function BrowserFrame({
         </div>
 
         {/* Reading progress for the page inside the window. */}
-        <div className="relative h-[2px] bg-[rgb(0_0_0/0.05)]" aria-hidden="true">
+        <div
+          className="relative h-[2px] bg-[rgb(0_0_0/0.05)]"
+          aria-hidden="true"
+          style={{ opacity: mode === 'live' ? 0 : 1 }}
+        >
           <span
             className="bg-accent absolute inset-y-0 left-0 origin-left"
             style={{ width: '100%', transform: `scaleX(${progress})` }}
@@ -168,15 +243,64 @@ export function BrowserFrame({
 
         <div
           ref={viewport}
-          onScroll={onScroll}
-          className="bframe-viewport"
+          onScroll={mode === 'shot' ? onScroll : undefined}
+          className={cn('bframe-viewport', mode === 'live' && 'bframe-viewport-live')}
           style={{ height: device === 'mobile' ? 'min(36rem, 70vh)' : height }}
-          tabIndex={0}
+          tabIndex={mode === 'shot' ? 0 : -1}
           role="region"
-          aria-label={`${name}, ${device === 'desktop' ? 'desktop' : 'phone'} view. Scroll to explore the page.`}
-          data-cursor-label={scrollable ? 'Scroll' : undefined}
+          aria-label={
+            mode === 'live'
+              ? `${name}, live site, ${device === 'desktop' ? 'desktop' : 'phone'} width.`
+              : `${name}, ${device === 'desktop' ? 'desktop' : 'phone'} view. Scroll to explore the page.`
+          }
         >
-          {src ? (
+          {mode === 'live' ? (
+            <>
+              {scale ? (
+                <iframe
+                  key={device}
+                  src={url}
+                  title={`${name} — the live site`}
+                  loading="lazy"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                  onLoad={() => setLoaded(true)}
+                  className="bframe-iframe"
+                  style={{
+                    width: siteWidth,
+                    height: box.h / scale,
+                    transform: `scale(${scale})`,
+                  }}
+                />
+              ) : null}
+              {!loaded ? (
+                <div className="bframe-loading" role="status">
+                  {stalled ? (
+                    <>
+                      <p className="text-[0.875rem] font-semibold text-[#3d4048]">
+                        The live site is taking a while.
+                      </p>
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[0.8125rem] font-semibold text-[#1b6e92] underline underline-offset-4"
+                      >
+                        Open {displayUrl}
+                      </a>
+                    </>
+                  ) : (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin text-[#1b6e92]" />
+                      <p className="text-[0.8125rem] font-medium text-[#3d4048]">
+                        Loading the live site…
+                      </p>
+                    </>
+                  )}
+                </div>
+              ) : null}
+            </>
+          ) : src ? (
             // eslint-disable-next-line @next/next/no-img-element -- remote capture, sized by the frame
             <img
               key={src}
@@ -202,7 +326,20 @@ export function BrowserFrame({
           )}
         </div>
 
-        {scrollable ? (
+        {live ? (
+          mode === 'shot' ? (
+            <button type="button" onClick={goLive} className="bframe-golive">
+              <MousePointerClick className="h-4 w-4" strokeWidth={2.2} />
+              Try it live
+            </button>
+          ) : (
+            <button type="button" onClick={() => setMode('shot')} className="bframe-golive">
+              Back to preview
+            </button>
+          )
+        ) : null}
+
+        {scrollable && mode === 'shot' ? (
           <span className="bframe-hint" aria-hidden="true">
             <span className="bframe-hint-mouse" />
             Scroll inside

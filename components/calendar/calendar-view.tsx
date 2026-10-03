@@ -120,11 +120,15 @@ export function CalendarView({ initialMonth }: { initialMonth: number }) {
             </p>
           </Card>
         ) : (
-          <ol className="mt-4 space-y-3">
-            {events.map((event) => {
+          <ol key={`${month}-${filter}`} className="mt-4 space-y-3">
+            {events.map((event, i) => {
               const style = CATEGORY_STYLES[event.category];
               return (
-                <li key={`${event.id}-${month}`}>
+                <li
+                  key={`${event.id}-${month}`}
+                  className="cal-item"
+                  style={{ ['--i' as string]: i } as React.CSSProperties}
+                >
                   <Card interactive className="bg-surface p-5 sm:p-6">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                       {/* Date chip */}

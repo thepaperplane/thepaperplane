@@ -46,7 +46,7 @@ export function CtaLink({
   size = 'md',
   external,
   className,
-  magnetic = 0.32,
+  magnetic = 0.1,
   ...rest
 }: {
   href: string;
@@ -98,7 +98,6 @@ export function Tilt<T extends React.ElementType = 'div'>({
   max = 6,
   className,
   children,
-  label,
   ...rest
 }: {
   as?: T;
@@ -106,17 +105,10 @@ export function Tilt<T extends React.ElementType = 'div'>({
   max?: number;
   className?: string;
   children?: React.ReactNode;
-  /** Word shown inside the cursor while over this surface, e.g. "View". */
-  label?: string;
 } & Omit<React.ComponentPropsWithoutRef<T>, 'className' | 'children'>) {
   const Tag = (as ?? 'div') as React.ElementType;
   return (
-    <Tag
-      data-tilt={String(max)}
-      data-cursor-label={label}
-      className={cn('relative', className)}
-      {...rest}
-    >
+    <Tag data-tilt={String(max)} className={cn('relative', className)} {...rest}>
       {children}
       <span className="tilt-glare" aria-hidden="true" />
     </Tag>

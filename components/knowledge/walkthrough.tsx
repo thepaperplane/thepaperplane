@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
-import { DIAGRAMS } from '@/components/knowledge/diagrams';
+import { KNOWLEDGE_SCENES } from '@/components/knowledge/scenes';
 import { SequenceControls } from '@/components/site/slideshow';
 import { useSequence } from '@/components/site/use-sequence';
 import { SERVICE_ANATOMY } from '@/content/knowledge';
@@ -31,7 +31,7 @@ export function Walkthrough() {
   const { index: step, containerProps, onKeyDown, reset } = seq;
 
   const current = steps[Math.min(step, steps.length - 1)];
-  const Diagram = DIAGRAMS[current.diagram];
+  const Scene = KNOWLEDGE_SCENES[current.diagram];
 
   return (
     <div {...containerProps}>
@@ -109,9 +109,9 @@ export function Walkthrough() {
         </div>
 
         {/* Diagram */}
-        <div className="glass flex items-center justify-center p-6 sm:p-8 lg:p-10">
-          <div className="aspect-[320/176] w-full max-w-[26rem]">
-            <Diagram key={`${serviceIndex}-${step}`} active />
+        <div className="glass flex items-center justify-center p-3 sm:p-5 lg:p-6">
+          <div className="w-full max-w-[30rem]">
+            <Scene key={`${serviceIndex}-${step}`} />
           </div>
         </div>
       </div>

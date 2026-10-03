@@ -5,7 +5,10 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
   BarChart3,
+  Bot,
   Briefcase,
+  Cable,
+  MessageCircle,
   Building2,
   CheckSquare,
   FileText,
@@ -50,6 +53,8 @@ const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/admin/clients', label: 'Clients', icon: Building2 },
       { href: '/admin/tasks', label: 'Tasks & deadlines', icon: CheckSquare },
       { href: '/admin/invoices', label: 'Invoices', icon: ReceiptIndianRupee },
+      { href: '/admin/whatsapp', label: 'WhatsApp inbox', icon: MessageCircle },
+      { href: '/admin/assistant', label: 'Site assistant', icon: Bot },
     ],
   },
   {
@@ -74,6 +79,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
     group: 'Settings',
     items: [
       { href: '/admin/settings', label: 'Site settings', icon: Settings },
+      { href: '/admin/integrations', label: 'Zoho & integrations', icon: Cable },
       { href: '/admin/security', label: 'Security', icon: ShieldCheck },
       { href: '/admin/team', label: 'Account', icon: Users },
     ],

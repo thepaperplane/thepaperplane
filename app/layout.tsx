@@ -15,6 +15,7 @@ import { Analytics } from '@/components/site/analytics';
 import { Announcement } from '@/components/site/announcement';
 import { getSettings, whatsappHref } from '@/lib/settings';
 import { PublicOnly } from '@/components/site/public-only';
+import { Assistant } from '@/components/assistant/assistant';
 import './globals.css';
 
 /* --------------------------------------------------------------------------
@@ -192,7 +193,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         {/* Single observer that drives every .reveal on the page. */}
         <Reveal />
-        {/* Cursor, magnetic controls, tilt and pointer parallax. */}
+        {/* The site assistant, when switched on in the console and keyed. */}
+        {settings.assistant.enabled && process.env.ANTHROPIC_API_KEY ? (
+          <PublicOnly>
+            <Assistant greeting={settings.assistant.greeting} whatsapp={contact.whatsapp} />
+          </PublicOnly>
+        ) : null}
+        {/* Magnetic controls, tilt and pointer parallax. */}
         <PublicOnly>
           <Interactions />
         </PublicOnly>

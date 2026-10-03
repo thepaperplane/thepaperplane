@@ -260,7 +260,7 @@ export function ApplyForm({ roles }: { roles: Role[] }) {
       <button
         type="submit"
         disabled={status === 'submitting'}
-        data-magnetic="0.2"
+        data-magnetic="0.08"
         className="bg-accent hover:bg-accent-hover text-accent-ink mt-7 inline-flex h-[3.25rem] w-full items-center justify-center gap-2 rounded-full px-7 text-base font-semibold shadow-[var(--shadow-soft)] transition-colors disabled:opacity-60 sm:w-auto"
       >
         {status === 'submitting' ? (

@@ -1,7 +1,7 @@
 /* ==========================================================================
    INTERACTION LAYER
    --------------------------------------------------------------------------
-   The cursor, magnetic controls, 3D tilt, the scroll progress flight, and the
+   Magnetic controls, 3D tilt, the scroll progress flight, and the
    hero's 3D scene. Driven by components/fx/interactions.tsx, which only ever
    writes custom properties and transforms; everything visual is here.
 
@@ -38,129 +38,6 @@
   }
 
   /* --------------------------------------------------------------------------
-   CURSOR
-   -------------------------------------------------------------------------- */
-
-  .fx-cursor {
-    display: none;
-  }
-
-  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-    .fx-cursor-on .fx-cursor {
-      display: block;
-    }
-
-    /* The system pointer is hidden only once the custom one is demonstrably
-     tracking — the class is added on the first pointermove the engine
-     handles. Text entry keeps its caret. */
-    .fx-cursor-on,
-    .fx-cursor-on * {
-      cursor: none !important;
-    }
-
-    .fx-cursor-on
-      :is(input, textarea, select, [contenteditable='true'], [contenteditable='plaintext-only']) {
-      cursor: auto !important;
-    }
-
-    .fx-cursor-on
-      :is(
-        input:not([type='checkbox'], [type='radio'], [type='submit'], [type='button']),
-        textarea,
-        [contenteditable='true'],
-        [contenteditable='plaintext-only']
-      ) {
-      cursor: text !important;
-    }
-  }
-
-  .fx-cursor-ring,
-  .fx-cursor-dot {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 9999;
-    pointer-events: none;
-    will-change: transform;
-  }
-
-  .fx-cursor-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--ink);
-    transition:
-      opacity var(--dur-micro) linear,
-      scale var(--dur-micro) var(--ease-standard);
-  }
-
-  .fx-cursor-ring {
-    width: 34px;
-    height: 34px;
-    border-radius: 17px;
-    border: 1.5px solid color-mix(in oklab, var(--ink) 55%, transparent);
-    background: transparent;
-    display: grid;
-    place-items: center;
-    contain: layout style;
-    transition:
-      opacity var(--dur-control) var(--ease-standard),
-      background-color var(--dur-control) var(--ease-standard),
-      border-color var(--dur-control) var(--ease-standard);
-  }
-
-  .fx-cursor-label {
-    font-family: var(--font-sans);
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    color: var(--accent-ink);
-    opacity: 0;
-    transition: opacity var(--dur-micro) linear;
-    white-space: nowrap;
-  }
-
-  .fx-cursor[data-visible='false'] :is(.fx-cursor-ring, .fx-cursor-dot) {
-    opacity: 0;
-  }
-
-  .fx-cursor[data-state='hover'] .fx-cursor-ring {
-    border-color: var(--accent);
-    background: color-mix(in oklab, var(--accent) 10%, transparent);
-  }
-
-  .fx-cursor[data-state='snap'] .fx-cursor-ring {
-    border-color: color-mix(in oklab, var(--accent) 70%, transparent);
-    background: color-mix(in oklab, var(--accent) 7%, transparent);
-  }
-
-  .fx-cursor[data-state='snap'] .fx-cursor-dot {
-    scale: 0.6;
-  }
-
-  .fx-cursor[data-state='label'] .fx-cursor-ring {
-    border-color: transparent;
-    background: var(--accent);
-  }
-
-  .fx-cursor[data-state='label'] .fx-cursor-label {
-    opacity: 1;
-  }
-
-  .fx-cursor[data-state='label'] .fx-cursor-dot,
-  .fx-cursor[data-state='text'] .fx-cursor-dot {
-    opacity: 0;
-  }
-
-  .fx-cursor[data-state='text'] .fx-cursor-ring {
-    opacity: 0;
-  }
-
-  .fx-cursor[data-down='true'] .fx-cursor-dot {
-    scale: 1.6;
-  }
-
-  /* --------------------------------------------------------------------------
    MAGNETIC
    -------------------------------------------------------------------------- */
 
@@ -170,7 +47,7 @@
 
   [data-magnetic] [data-magnetic-inner] {
     display: inline-flex;
-    transform: translate3d(calc(var(--mx, 0px) * 0.35), calc(var(--my, 0px) * 0.35), 0);
+    transform: translate3d(calc(var(--mx, 0px) * 0.25), calc(var(--my, 0px) * 0.25), 0);
   }
 
   /* --------------------------------------------------------------------------
@@ -1377,6 +1254,80 @@
     height: auto;
   }
 
+  .bframe-viewport-live {
+    overflow: hidden;
+    background: #f5f6f8;
+  }
+
+  .bframe-iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 0;
+    transform-origin: 0 0;
+    background: #ffffff;
+  }
+
+  .bframe-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    background: linear-gradient(135deg, #f5f5f7, #ffffff 50%, #eff8ff);
+  }
+
+  .bframe-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-left: 0.35rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    background: rgb(12 106 52 / 0.1);
+    color: #0c6a34;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .bframe-live i {
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: #0c6a34;
+    animation: bframe-live 1.6s ease-in-out infinite;
+  }
+
+  .bframe-golive {
+    position: absolute;
+    left: 1rem;
+    bottom: 1rem;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    height: 2.25rem;
+    padding: 0 1rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    box-shadow: 0 10px 24px -10px rgb(18 19 26 / 0.5);
+    transition:
+      background-color var(--dur-control) var(--ease-standard),
+      translate var(--dur-control) var(--ease-standard);
+  }
+
+  .bframe-golive:hover {
+    background: var(--accent-hover);
+    translate: 0 -1px;
+  }
+
   .bframe-hint {
     position: absolute;
     right: 1rem;
@@ -1580,5 +1531,17 @@
 
   .pp-editing [data-edit-saving] {
     outline-color: var(--caution) !important;
+  }
+}
+
+@keyframes bframe-live {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bframe-live i {
+    animation: none;
   }
 }

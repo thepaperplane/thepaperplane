@@ -11,14 +11,14 @@ import {
 import { Container, Label, Section } from '@/components/ui';
 import { ArrowIcon, CtaLink, Marquee, PlaneGlyph, ScrubWords, Tilt } from '@/components/fx';
 import { Editable, copyText } from '@/components/editable';
-import { PRACTICE_MARKS } from '@/components/practice/marks';
+import { PRACTICE_SCENES } from '@/components/practice/scenes';
 import {
-  AftercareDiagram,
-  GroundworkDiagram,
-  ReadDiagram,
-  ReviewDiagram,
-  ScopeDiagram,
-} from '@/components/home/engagement-diagrams';
+  AftercareScene,
+  GroundworkScene,
+  ReadScene,
+  ReviewScene,
+  ScopeScene,
+} from '@/components/home/process-scenes';
 import { BrowserFrame } from '@/components/work/browser-frame';
 import { PRACTICE } from '@/content/practice';
 import { COMPLIANCE_EVENTS } from '@/content/calendar';
@@ -238,7 +238,7 @@ export async function Offer() {
 
         <div className="mt-14 grid gap-5 lg:grid-cols-2">
           {sides.map((side, i) => {
-            const Mark = PRACTICE_MARKS[side.id];
+            const Scene = PRACTICE_SCENES[side.id];
             return (
               <div key={side.id} className="reveal" data-reveal-delay={String(i * 140)}>
                 <Tilt className="bento flex h-full flex-col p-7 sm:p-10" max={4}>
@@ -257,8 +257,8 @@ export async function Offer() {
                     {side.statement}
                   </Editable>
 
-                  <div className="mt-8 rounded-[1.1rem] bg-[var(--bento-bg)] px-5 py-6 ring-1 ring-[var(--hairline)]">
-                    <Mark />
+                  <div className="mt-8">
+                    <Scene />
                   </div>
 
                   <ul className="mt-8 grid gap-x-8 gap-y-5 sm:grid-cols-2">
@@ -429,6 +429,7 @@ export async function FeaturedWork({ projects }: { projects: PortfolioProject[] 
                 desktop={{ src: project.shots.desktop, full: project.full.desktop }}
                 mobile={{ src: project.shots.mobile, full: project.full.mobile }}
                 height="clamp(16rem, 34vw, 26rem)"
+                live={project.frameable}
               />
               <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">
@@ -495,35 +496,35 @@ const STAGES = [
     title: 'Someone reads the actual document',
     body: 'The notice, the contract, the brief: read in full before anyone quotes a fee. Most of the outcome is decided by which clause you are actually answering.',
     note: 'No charge, and no obligation after it.',
-    Diagram: ReadDiagram,
+    Diagram: ReadScene,
   },
   {
     id: 'scope',
     label: 'Scope',
     title: 'Scope and fee agreed in writing',
     body: 'What is included, what is explicitly not, the cost, and what we need from you by when. If it turns out larger, you hear it then, not in an invoice.',
-    Diagram: ScopeDiagram,
+    Diagram: ScopeScene,
   },
   {
     id: 'groundwork',
     label: 'Groundwork',
     title: 'The invisible majority of the work',
     body: 'Reconciliation, ledger repair, evidence, the discovery pass on a build. The part nobody sees, and the part that decides whether the result holds up.',
-    Diagram: GroundworkDiagram,
+    Diagram: GroundworkScene,
   },
   {
     id: 'review',
     label: 'Review',
     title: 'Nothing leaves on one pair of eyes',
     body: 'Preparation and review are separate passes by separate people, working from the underlying records rather than the draft.',
-    Diagram: ReviewDiagram,
+    Diagram: ReviewScene,
   },
   {
     id: 'aftercare',
     label: 'Takeoff & aftercare',
     title: 'Launched, filed, and still looked after',
     body: 'The site goes live, the return goes in, and the file stays open. Questions on work already delivered are answered as part of the engagement.',
-    Diagram: AftercareDiagram,
+    Diagram: AftercareScene,
   },
 ];
 
@@ -574,10 +575,8 @@ export async function Process() {
                     {note}
                   </p>
                 ) : null}
-                <div className="bento mt-6 max-w-[34rem] p-4 sm:p-5">
-                  <div className="aspect-[320/176]">
-                    <Diagram active />
-                  </div>
+                <div className="bento mt-6 max-w-[36rem] p-2">
+                  <Diagram />
                 </div>
               </li>
             ))}

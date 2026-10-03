@@ -18,3 +18,4 @@ _archive/
 # Audit screenshot output
 .audit/
 .next-audit/
+/.next-dev/

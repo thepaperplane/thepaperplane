@@ -167,25 +167,32 @@ that decides whether content is visible should depend on the compositor running.
 Everything resolves to its finished state under `prefers-reduced-motion`.
 Nothing is merely sped up.
 
-### Drawings
+### Motion stages
 
-Roughly forty inline SVGs across `components/diagrams`, `components/knowledge`,
-`components/services` and `components/practice`. All server-rendered — the
-services page ships 181 B of client JavaScript with 22 animated drawings on it.
+Every explanatory animation — the 22 service scenes, the two practice scenes,
+the five engagement steps, the nine Knowledge Corner walkthrough scenes, the
+calendar dial and the About page's vision scene — is a **motion stage**
+(`components/motion`). A stage is ordinary server-rendered markup authored in
+its finished state; `stage.tsx` layers the film on top with the Web Animations
+API from `data-m` / `data-at` attributes. So:
 
-Two rules: **structure is permanent, only the action loops**, and every element
-is authored in its finished state with motion layered on top, so reduced motion
-and any renderer that ignores CSS animation get the completed diagram rather
-than an empty frame.
+- with motion reduced, scripts off, or for a crawler, every stage is simply its
+  finished picture;
+- everything is placed and sized in `cqi`, so a scene is one drawing at any
+  width, type included;
+- a stage plays only while a third of it is on screen and pauses — keeping its
+  place — when scrolled away, so a page of twenty runs one or two at a time;
+- animated elements use the individual `translate` / `rotate` / `scale`
+  properties for static placement, never `transform`, which the film owns.
 
-Diagrams inside a slideshow loop, because one is on screen at a time and the
-loop is the explanation. Drawings beside prose play once and hold — a loop next
-to a paragraph someone is reading is a distraction.
-
-SVG text is measured in user units, so it shrinks with the frame. Large frames
-carry a small-screen scale boost; the small service frames size themselves from
-their **container**, not the viewport, because the same breakpoint renders them
-at 304px on a desktop and 144px in a two-column tablet grid.
+Each scene acts out the same three beats as the words beside it — what the
+client hands over, what is done, what comes back — and lands on the deliverable
+in green. Colours never change meaning: the discipline's hue for the subject,
+green for the outcome, amber for the exception. Scene markup lives beside its
+page (`components/services/scenes-*.tsx`, `components/practice/scenes.tsx`,
+`components/home/process-scenes.tsx`, `components/knowledge/scenes.tsx`); styles
+in `app/motion.css`. The service's three beats as text are in
+`content/service-flows.ts`, which the site assistant also reads.
 
 ---
 
@@ -215,21 +222,24 @@ authenticator app; every later one to `/admin/verify`. Once a factor exists the 
 password-only session outright. Lost phone: set `CONSOLE_REQUIRE_MFA=false` in Vercel only long
 enough to remove the factor in Supabase and enrol a new one.
 
-| Section           | What it is for                                                                  |
-| ----------------- | ------------------------------------------------------------------------------- |
-| Overview          | New enquiries, money owed, deadlines this week, traffic and conversion          |
-| Leads & enquiries | Pipeline states, campaign source, budget, timeline; convert to client; CSV      |
-| Clients           | Records, onboarding, engagements, **document vault**, tasks, invoices           |
-| Tasks & deadlines | Every dated obligation, overdue in red                                          |
-| Invoices          | Ledger of billed / paid / overdue; totals for the financial year                |
-| Analytics         | Cookieless page views, referrers, campaigns, devices, enquiry sources           |
-| Campaigns         | Tracked-link builder (WhatsApp, Instagram, LinkedIn, QR…), share links, exports |
-| Testimonials      | Add, publish, order; the homepage section appears only once one is published    |
-| Pages & copy      | Visual editor entry point and the list of every edit, with reset                |
-| Work              | Capture, re-capture (now including full-length pages), feature, upload captures |
-| Careers           | Post roles (also as Google `JobPosting`), review applications, private CVs      |
-| Site settings     | Contact channels, announcement bar, social profiles                             |
-| Security          | Protection checklist, sign out everywhere, activity log                         |
+| Section             | What it is for                                                                  |
+| ------------------- | ------------------------------------------------------------------------------- |
+| Overview            | New enquiries, money owed, deadlines this week, traffic and conversion          |
+| Leads & enquiries   | Pipeline states, campaign source, budget, timeline; convert to client; CSV      |
+| Clients             | Records, onboarding, engagements, **document vault**, tasks, invoices           |
+| Tasks & deadlines   | Every dated obligation, overdue in red                                          |
+| Invoices            | Ledger of billed / paid / overdue; totals for the financial year                |
+| Analytics           | Cookieless page views, referrers, campaigns, devices, enquiry sources           |
+| Campaigns           | Tracked-link builder (WhatsApp, Instagram, LinkedIn, QR…), share links, exports |
+| Testimonials        | Add, publish, order; the homepage section appears only once one is published    |
+| Pages & copy        | Visual editor entry point and the list of every edit, with reset                |
+| Work                | Capture, re-capture (now including full-length pages), feature, upload captures |
+| Careers             | Post roles (also as Google `JobPosting`), review applications, private CVs      |
+| Site settings       | Contact channels, announcement bar, social profiles                             |
+| Security            | Protection checklist, sign out everywhere, activity log                         |
+| WhatsApp inbox      | Your WhatsApp Business number, answered from the console (Meta Cloud API)       |
+| Site assistant      | On/off, opening line, daily limit, extra answers, every transcript              |
+| Zoho & integrations | Connect Zoho CRM + Books; enquiries → leads, clients → contacts, invoices in    |
 
 ### Visual editing
 
@@ -238,11 +248,42 @@ only. Switch editing on from the floating bar, click any outlined text, type, pr
 to `/api/admin/copy`, which re-authorises the owner on every request. Wrap new copy in
 `<Editable k="page.slot">` to make it editable.
 
+### Site assistant
+
+`components/assistant` (widget) and `app/api/assistant` (streaming route). It answers from
+`lib/assistant/knowledge.ts`, which renders the site's own content modules as text, plus the
+owner's extra answers and notes from the console — nothing else. The rules
+(`lib/assistant/prompt.ts`) forbid general or personal tax advice, fees, turnaround promises and
+outcomes; anything that turns on a visitor's own facts is routed to the free first read. When a
+visitor is ready, it records an enquiry (`record_enquiry` tool) after they have typed their contact
+details. Model `claude-opus-5-5` at low effort, streamed, with `fallbacks: "default"` (beta
+`server-side-fallback-2026-07-01`) so a declined request is retried server-side; the stable system
+block (rules + reference) is prompt-cached for an hour. History is read from the database, never
+trusted from the browser. Limits: 10 messages per 2 minutes per IP, 60 a day per visitor, and a
+site-wide daily cap set in the console. Needs `ANTHROPIC_API_KEY`.
+
+### Integrations
+
+- **Zoho CRM + Books** — one OAuth connection (`lib/integrations/zoho.ts`, India data centre by
+  default). Tokens are AES-256-GCM encrypted before storage (`INTEGRATIONS_KEY`). Every push is
+  recorded in `integration_links`, so syncing twice never duplicates. Optional: every new enquiry
+  (form or assistant) goes to CRM automatically, after the visitor already has their answer.
+- **WhatsApp Business** — `app/api/whatsapp/webhook` verifies Meta's `X-Hub-Signature-256` over the
+  raw body before parsing; the inbox at `/admin/whatsapp` replies inside Meta's 24-hour window and
+  sends approved templates outside it.
+- **Live previews on /work** — `lib/embed.ts` checks each client site's `X-Frame-Options` /
+  `frame-ancestors`. Where framing is allowed, "Try it live" swaps the capture for the real site,
+  scaled from its true width. To allow it on a site built here, send
+  `Content-Security-Policy: frame-ancestors 'self' https://www.thepaperplane.co.in https://thepaperplane.co.in`
+  and no `X-Frame-Options`.
+
 ### Database
 
 Migrations live in `supabase/migrations/`. Everything added in October 2026 is additive: new tables
 (testimonials, jobs, job_applications, client_documents, tasks, invoices, enquiry_meta,
-project_media, page_views, audit_log, site_settings) and three storage buckets — `site-media`
+project_media, page_views, audit_log, site_settings; then assistant_conversations,
+assistant_messages, assistant_knowledge, integrations, integration_links, integration_log,
+wa_contacts, wa_messages — RLS on, no policies, server-only) and three storage buckets — `site-media`
 (public images), `vault` and `resumes` (private, signed URLs only).
 
 ---

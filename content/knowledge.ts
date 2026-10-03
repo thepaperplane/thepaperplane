@@ -37,7 +37,7 @@ export type AnatomyStep = {
   diagram: DiagramKey;
 };
 
-/** Keys of the diagram set in components/knowledge/diagrams.tsx. */
+/** Keys of the scene set in components/knowledge/scenes.tsx. */
 export type DiagramKey =
   | 'normalise'
   | 'match'

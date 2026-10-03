@@ -44,7 +44,7 @@ export const PRIVACY: LegalSection[] = [
     body: [
       'This website sets no advertising or tracking cookies and embeds nothing from a social network. There is no tag manager, no pixel, no third-party analytics and no session recorder anywhere in it. Nobody is profiled for visiting.',
       'It does count visits — how many times each page was read, which site or campaign link sent the visitor, and the device type and country — as anonymous daily totals. No cookie is set for this, no IP address is stored, and nothing in the count can identify you or link one visit to another. If your browser sends Do Not Track or Global Privacy Control, the visit is not counted at all.',
-      'Three forms collect personal data, and only because they cannot work otherwise: the enquiry form, the compliance calendar subscription and the job application form. Everything below is the detail of those three.',
+      'Personal data is collected only where something cannot work otherwise: the enquiry form, the compliance calendar subscription, the job application form, the site assistant if you choose to use it, and messages you send to our WhatsApp Business number. Everything below is the detail of each.',
     ],
   },
   {
@@ -85,6 +85,22 @@ export const PRIVACY: LegalSection[] = [
     ],
   },
   {
+    id: 'assistant',
+    heading: 'When you use the site assistant',
+    body: [
+      'The assistant in the corner of the site answers questions from the website’s own content. To do that, what you type is sent to Anthropic, whose Claude model writes the reply; under Anthropic’s commercial terms that content is not used to train its models. The assistant does not ask for, and should not be given, identification numbers, bank details or documents.',
+      'The conversation is stored so the practice can see what visitors ask and improve the answers the site gives: your messages and the replies, the page you started on, your browser type, and a one-way hash of your IP address that is used only to apply a daily limit and cannot be turned back into the address. Conversations are kept for up to twelve months and then deleted, or sooner if you ask.',
+      'If you ask the assistant to pass your request to the team and give your name and an email or phone number, those details become an enquiry, handled exactly like one sent through the contact form.',
+    ],
+  },
+  {
+    id: 'whatsapp',
+    heading: 'When you message us on WhatsApp',
+    body: [
+      'Messages to our WhatsApp Business number reach us through Meta’s WhatsApp Business Platform. We store your number, the name on your WhatsApp profile and the messages exchanged, so that the practice can reply and keep a record of what was agreed. WhatsApp’s own handling of the message is governed by Meta’s terms and privacy policy.',
+    ],
+  },
+  {
     id: 'storage',
     heading: 'Where it is kept, and for how long',
     body: [
@@ -96,7 +112,7 @@ export const PRIVACY: LegalSection[] = [
     id: 'processors',
     heading: 'Who else touches it',
     body: [
-      'Three service providers process data on our behalf, each for one narrow purpose, and none of them are permitted to use it for their own:',
+      'These service providers process data on our behalf, each for one narrow purpose, and none of them are permitted to use it for their own:',
     ],
     rows: [
       {
@@ -113,6 +129,20 @@ export const PRIVACY: LegalSection[] = [
         detail:
           'Email delivery. Sends the enquiry and application notifications and the monthly calendar email.',
       },
+      {
+        term: 'Anthropic',
+        detail:
+          'Writes the site assistant’s replies. Receives the conversation, not your IP address.',
+      },
+      {
+        term: 'Meta (WhatsApp)',
+        detail: 'Delivers WhatsApp messages between you and our business number.',
+      },
+      {
+        term: 'Zoho',
+        detail:
+          'Our CRM and accounting software (Zoho CRM and Zoho Books, India data centre). An enquiry may be recorded there as a lead, and a client’s billing details as a customer.',
+      },
     ],
   },
   {
@@ -120,7 +150,7 @@ export const PRIVACY: LegalSection[] = [
     heading: 'What is stored in your browser',
     body: [
       'Your theme choice, under the key `pp.theme`, so the site does not flash the wrong colour at you on the next page. It stays on your device and is never transmitted.',
-      'For the length of the browser tab only (session storage, cleared when the tab closes): whether the opening animation has already played, the first page you landed on, and the campaign tags of the link you arrived by. The last two leave your device only inside an enquiry you choose to send.',
+      'For the length of the browser tab only (session storage, cleared when the tab closes): whether the opening animation has already played, the first page you landed on, the campaign tags of the link you arrived by, and — if you use the assistant — your conversation, so it survives moving between pages. The landing page and campaign tags leave your device only inside an enquiry you choose to send.',
       'There are no cookies on the public site for visitors. The administrative console, which only the practice can reach, uses a session cookie to keep a signed-in user signed in, and a flag that tells the site to show the practice its editing tools.',
     ],
   },
