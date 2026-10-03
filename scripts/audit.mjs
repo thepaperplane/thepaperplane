@@ -74,6 +74,7 @@ const PAGES = [
   '/news',
   '/about',
   '/contact',
+  '/careers',
   '/privacy',
   '/terms',
   '/cookies',

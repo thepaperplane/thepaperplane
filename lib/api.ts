@@ -97,3 +97,17 @@ export async function readJson<T = unknown>(request: Request): Promise<T | null>
     return null;
   }
 }
+
+/**
+ * Refuse state-changing requests that a browser sent from another origin.
+ * Session cookies are SameSite=Lax already; this is the second lock.
+ */
+export function sameOrigin(request: Request): boolean {
+  const origin = request.headers.get('origin');
+  if (!origin) return true;
+  try {
+    return new URL(origin).host === new URL(request.url).host;
+  } catch {
+    return false;
+  }
+}

@@ -2,15 +2,25 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
 import { browserClient } from '@/lib/supabase-browser';
+import { isConsoleEmail } from '@/lib/console';
 
+/**
+ * Sign-in, step one: email and password.
+ *
+ * Only the console owner's address can get past this. Any other account that
+ * authenticates is signed straight back out, and the message is the same one
+ * a wrong password gets — the form never confirms which addresses exist.
+ */
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(
+    params.get('denied') ? 'That account does not have access to this console.' : '',
+  );
   const [busy, setBusy] = useState(false);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -20,17 +30,32 @@ export function LoginForm() {
 
     try {
       const supabase = browserClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
-      if (signInError) {
-        // Deliberately generic: never reveal whether an address has an account.
+      // Refuse before a request is even made for any other address.
+      if (!isConsoleEmail(email)) {
+        await new Promise((r) => setTimeout(r, 600));
         setError('Those credentials were not recognised.');
         setBusy(false);
         return;
       }
 
-      const next = params.get('next') ?? '/admin';
-      router.push(next);
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (signInError || !isConsoleEmail(data.user?.email)) {
+        if (data?.user) await supabase.auth.signOut();
+        setError('Those credentials were not recognised.');
+        setBusy(false);
+        return;
+      }
+
+      // Middleware sends this on to the second-factor step it needs.
+      const next = params.get('next');
+      const safeNext =
+        next && next.startsWith('/admin') && !next.startsWith('//') ? next : '/admin';
+      router.push(safeNext);
       router.refresh();
     } catch {
       setError('Could not sign in. Please try again.');
@@ -54,6 +79,7 @@ export function LoginForm() {
           type="email"
           required
           autoComplete="username"
+          spellCheck={false}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className={field}
@@ -93,11 +119,16 @@ export function LoginForm() {
           </>
         ) : (
           <>
-            Sign in
+            Continue
             <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
           </>
         )}
       </button>
+
+      <p className="text-ink-3 flex items-center justify-center gap-1.5 pt-1 text-[0.75rem]">
+        <ShieldCheck className="h-3.5 w-3.5" strokeWidth={2} />
+        Protected by two-factor sign-in
+      </p>
     </form>
   );
 }

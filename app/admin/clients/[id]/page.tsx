@@ -4,6 +4,7 @@ import { ArrowLeft, Mail, Phone } from 'lucide-react';
 import { ClientForm } from '@/components/admin/client-form';
 import { OnboardingChecklist } from '@/components/admin/onboarding-checklist';
 import { EngagementManager } from '@/components/admin/engagement-manager';
+import { ClientOps } from '@/components/admin/client-ops';
 import { PageHeader, Panel, Pill } from '@/components/admin/ui';
 import { requireProfile, canEdit } from '@/lib/auth';
 import { serviceClient } from '@/lib/supabase';
@@ -107,6 +108,8 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           </Panel>
         </div>
       </div>
+
+      <ClientOps clientId={id} editable={editable} />
     </>
   );
 }

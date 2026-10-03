@@ -4,18 +4,28 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
+  BarChart3,
+  Briefcase,
   Building2,
+  CheckSquare,
   FileText,
   Inbox,
   LayoutDashboard,
   LogOut,
   Mail,
+  Megaphone,
   Menu,
   MonitorSmartphone,
   Newspaper,
+  PenLine,
+  Quote,
+  ReceiptIndianRupee,
+  Settings,
+  ShieldCheck,
   Users,
   X,
 } from 'lucide-react';
+import { EDITOR_COOKIE } from '@/lib/console';
 import { LogoMark } from '@/components/brand/logo';
 import { browserClient } from '@/lib/supabase-browser';
 import type { ProfileRow } from '@/lib/database.types';
@@ -28,15 +38,46 @@ type NavItem = {
   exact?: boolean;
 };
 
-const NAV: NavItem[] = [
-  { href: '/admin', label: 'Overview', icon: LayoutDashboard, exact: true },
-  { href: '/admin/clients', label: 'Clients', icon: Building2 },
-  { href: '/admin/enquiries', label: 'Enquiries', icon: Inbox },
-  { href: '/admin/subscribers', label: 'Subscribers', icon: Mail },
-  { href: '/admin/portfolio', label: 'Portfolio', icon: MonitorSmartphone },
-  { href: '/admin/content', label: 'Content', icon: FileText },
-  { href: '/admin/news', label: 'News feeds', icon: Newspaper },
-  { href: '/admin/team', label: 'Team', icon: Users },
+const NAV: { group: string; items: NavItem[] }[] = [
+  {
+    group: '',
+    items: [{ href: '/admin', label: 'Overview', icon: LayoutDashboard, exact: true }],
+  },
+  {
+    group: 'Sales & clients',
+    items: [
+      { href: '/admin/enquiries', label: 'Leads & enquiries', icon: Inbox },
+      { href: '/admin/clients', label: 'Clients', icon: Building2 },
+      { href: '/admin/tasks', label: 'Tasks & deadlines', icon: CheckSquare },
+      { href: '/admin/invoices', label: 'Invoices', icon: ReceiptIndianRupee },
+    ],
+  },
+  {
+    group: 'Marketing',
+    items: [
+      { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+      { href: '/admin/marketing', label: 'Campaigns', icon: Megaphone },
+      { href: '/admin/testimonials', label: 'Testimonials', icon: Quote },
+      { href: '/admin/subscribers', label: 'Subscribers', icon: Mail },
+    ],
+  },
+  {
+    group: 'Website',
+    items: [
+      { href: '/admin/content', label: 'Pages & copy', icon: FileText },
+      { href: '/admin/portfolio', label: 'Work', icon: MonitorSmartphone },
+      { href: '/admin/careers', label: 'Careers', icon: Briefcase },
+      { href: '/admin/news', label: 'News feeds', icon: Newspaper },
+    ],
+  },
+  {
+    group: 'Settings',
+    items: [
+      { href: '/admin/settings', label: 'Site settings', icon: Settings },
+      { href: '/admin/security', label: 'Security', icon: ShieldCheck },
+      { href: '/admin/team', label: 'Account', icon: Users },
+    ],
+  },
 ];
 
 const ROLE_LABEL: Record<string, string> = {
@@ -64,6 +105,7 @@ export function AdminShell({
     try {
       await browserClient().auth.signOut();
     } finally {
+      document.cookie = `${EDITOR_COOKIE}=; Max-Age=0; path=/`;
       router.push('/admin/login');
       router.refresh();
     }
@@ -116,27 +158,46 @@ export function AdminShell({
               </div>
             </div>
 
-            <nav className="flex-1 space-y-0.5 px-3 py-3 lg:py-0" aria-label="Admin">
-              {NAV.map(({ href, label, icon: Icon, exact }) => {
-                const active = isActive(href, exact);
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    onClick={() => setOpen(false)}
-                    aria-current={active ? 'page' : undefined}
-                    className={cn(
-                      'flex items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2.5 text-[0.9375rem] font-medium transition-colors',
-                      active
-                        ? 'bg-accent-wash text-accent'
-                        : 'text-ink-2 hover:bg-sunken hover:text-ink',
-                    )}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-                    {label}
-                  </Link>
-                );
-              })}
+            <div className="px-3 pb-2">
+              <Link
+                href="/"
+                className="bg-ink text-ground flex h-10 items-center justify-center gap-2 rounded-[var(--radius-md)] text-[0.875rem] font-semibold"
+              >
+                <PenLine className="h-4 w-4" strokeWidth={2} />
+                Edit website visually
+              </Link>
+            </div>
+
+            <nav className="flex-1 overflow-y-auto px-3 py-3 lg:py-1" aria-label="Admin">
+              {NAV.map(({ group, items }) => (
+                <div key={group || 'top'} className="mb-3">
+                  {group ? (
+                    <p className="text-ink-3 px-3 pt-2 pb-1.5 text-[0.6875rem] font-semibold tracking-[0.08em] uppercase">
+                      {group}
+                    </p>
+                  ) : null}
+                  {items.map(({ href, label, icon: Icon, exact }) => {
+                    const active = isActive(href, exact);
+                    return (
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={() => setOpen(false)}
+                        aria-current={active ? 'page' : undefined}
+                        className={cn(
+                          'flex items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2 text-[0.875rem] font-medium transition-colors',
+                          active
+                            ? 'bg-accent-wash text-accent'
+                            : 'text-ink-2 hover:bg-sunken hover:text-ink',
+                        )}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
+                        {label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
             </nav>
 
             <div className="border-t border-[var(--hairline)] p-3">

@@ -8,6 +8,13 @@ import { THEME_SCRIPT } from '@/components/site/theme';
 import { LOADER_SCRIPT, Loader } from '@/components/site/loader';
 import { Reveal } from '@/components/site/reveal';
 import { AmbientField } from '@/components/glass';
+import { Interactions } from '@/components/fx/interactions';
+import { ScrollProgress } from '@/components/fx';
+import { EditBridge } from '@/components/editable/edit-bridge';
+import { Analytics } from '@/components/site/analytics';
+import { Announcement } from '@/components/site/announcement';
+import { getSettings, whatsappHref } from '@/lib/settings';
+import { PublicOnly } from '@/components/site/public-only';
 import './globals.css';
 
 /* --------------------------------------------------------------------------
@@ -53,7 +60,7 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
   title: {
-    default: `${SITE.name} — Advisory and engineering, under one roof`,
+    default: `${SITE.name} — Websites, Software & Tax Compliance`,
     template: `%s · ${SITE.name}`,
   },
   description: SITE.description,
@@ -62,6 +69,8 @@ export const metadata: Metadata = {
   creator: SITE.name,
   publisher: SITE.name,
   keywords: [
+    'website development India',
+    'web design agency',
     'GST compliance India',
     'GST compliance',
     'income tax scrutiny defence',
@@ -120,7 +129,10 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const settings = await getSettings();
+  const { contact, announcement } = settings;
+
   return (
     <html
       lang="en-IN"
@@ -153,12 +165,39 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to content
         </a>
 
-        <SiteHeader />
+        <PublicOnly>
+          <ScrollProgress />
+          <SiteHeader
+            contact={{
+              phone: contact.phone,
+              phoneIntl: contact.phoneIntl,
+              whatsappHref: whatsappHref(contact.whatsapp),
+            }}
+          />
+        </PublicOnly>
         <main id="main">{children}</main>
-        <SiteFooter />
+        <PublicOnly>
+          <SiteFooter />
+        </PublicOnly>
+
+        {announcement.enabled && announcement.text ? (
+          <PublicOnly>
+            <Announcement
+              text={announcement.text}
+              href={announcement.href}
+              cta={announcement.cta}
+            />
+          </PublicOnly>
+        ) : null}
 
         {/* Single observer that drives every .reveal on the page. */}
         <Reveal />
+        {/* Cursor, magnetic controls, tilt and pointer parallax. */}
+        <PublicOnly>
+          <Interactions />
+        </PublicOnly>
+        <Analytics />
+        <EditBridge />
       </body>
     </html>
   );

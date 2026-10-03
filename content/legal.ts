@@ -6,9 +6,12 @@
  *
  *   - the enquiry fields are the Zod schema in app/api/contact/route.ts
  *   - the subscription fields are the schema in app/api/calendar/subscribe/route.ts
- *   - "no analytics" is verifiable by the absence of any tag manager, pixel or
- *     analytics package anywhere in the project
- *   - the only browser storage is the theme key written by components/site/theme.tsx
+ *   - the application fields are the schema in app/api/careers/apply/route.ts
+ *   - the visit counter is app/api/track/route.ts: an aggregate counter with no
+ *     cookie, no IP address and no identifier, and no third-party analytics
+ *     package, tag manager or pixel anywhere in the project
+ *   - browser storage is the theme key (components/site/theme.tsx) and the
+ *     tab-scoped keys in components/site/analytics.tsx and the loader
  *
  * If any of those change, this file changes with them. A privacy policy that
  * has drifted from the software is worse than none, because it is a written
@@ -31,7 +34,7 @@ export type LegalSection = {
   list?: string[];
 };
 
-export const PRIVACY_UPDATED = '14 September 2026';
+export const PRIVACY_UPDATED = '3 October 2026';
 export const TERMS_UPDATED = '14 September 2026';
 
 export const PRIVACY: LegalSection[] = [
@@ -39,8 +42,9 @@ export const PRIVACY: LegalSection[] = [
     id: 'summary',
     heading: 'The short version',
     body: [
-      'This website runs no analytics, sets no advertising or tracking cookies, and embeds nothing from a social network. There is no tag manager, no pixel and no session recorder anywhere in it. Nobody is profiled for visiting.',
-      'Two forms collect personal data, and only because they cannot work otherwise: the enquiry form and the compliance calendar subscription. Everything below is the detail of those two.',
+      'This website sets no advertising or tracking cookies and embeds nothing from a social network. There is no tag manager, no pixel, no third-party analytics and no session recorder anywhere in it. Nobody is profiled for visiting.',
+      'It does count visits — how many times each page was read, which site or campaign link sent the visitor, and the device type and country — as anonymous daily totals. No cookie is set for this, no IP address is stored, and nothing in the count can identify you or link one visit to another. If your browser sends Do Not Track or Global Privacy Control, the visit is not counted at all.',
+      'Three forms collect personal data, and only because they cannot work otherwise: the enquiry form, the compliance calendar subscription and the job application form. Everything below is the detail of those three.',
     ],
   },
   {
@@ -55,7 +59,21 @@ export const PRIVACY: LegalSection[] = [
       { term: 'Phone number', detail: 'Optional. Given only if you would rather be called.' },
       { term: 'Company', detail: 'Optional. Helps scope the answer.' },
       { term: 'Service of interest', detail: 'Optional. Whichever service you arrived from.' },
+      { term: 'Budget and timeline', detail: 'Optional. Helps us answer with a realistic scope.' },
       { term: 'Your message', detail: 'Required, and kept as written.' },
+      {
+        term: 'How you found us',
+        detail:
+          'If you arrived through a tagged link (for example one shared on WhatsApp or LinkedIn), the campaign name on that link and the first page you landed on are sent with your enquiry. Nothing else about your visit is.',
+      },
+    ],
+  },
+  {
+    id: 'careers',
+    heading: 'When you apply for a role',
+    body: [
+      'The application form stores what you send so that we can consider you for the role: your name, email, and whatever optional details you add — phone, city, portfolio and LinkedIn links, years of experience, a note and a CV.',
+      'Your CV is kept in private storage that is never publicly reachable; it is opened only by the practice, through links that expire within minutes. Applications are kept while a role is open and for up to twelve months afterwards in case a suitable role opens, unless you ask us to delete them sooner.',
     ],
   },
   {
@@ -70,7 +88,7 @@ export const PRIVACY: LegalSection[] = [
     id: 'storage',
     heading: 'Where it is kept, and for how long',
     body: [
-      'Enquiries and subscriptions are stored in a Postgres database hosted by Supabase in the Mumbai (ap-south-1) region, so this data does not leave India in normal operation.',
+      'Enquiries, subscriptions and applications are stored in a Postgres database hosted by Supabase in the Mumbai (ap-south-1) region, so this data does not leave India in normal operation.',
       'Enquiries are retained while the matter is live and for as long afterwards as a professional engagement requires records to be kept. Subscriptions are retained until you unsubscribe. Ask and we will delete either sooner, unless a statutory retention obligation applies to an engagement that has already begun.',
     ],
   },
@@ -84,7 +102,7 @@ export const PRIVACY: LegalSection[] = [
       {
         term: 'Supabase',
         detail:
-          'Database and authentication. Hosts the enquiry and subscription records, in India.',
+          'Database, file storage and authentication. Hosts the enquiry, subscription and application records and CVs, in India.',
       },
       {
         term: 'Vercel',
@@ -92,7 +110,8 @@ export const PRIVACY: LegalSection[] = [
       },
       {
         term: 'Resend',
-        detail: 'Email delivery. Sends the enquiry notification and the monthly calendar email.',
+        detail:
+          'Email delivery. Sends the enquiry and application notifications and the monthly calendar email.',
       },
     ],
   },
@@ -100,8 +119,9 @@ export const PRIVACY: LegalSection[] = [
     id: 'browser',
     heading: 'What is stored in your browser',
     body: [
-      'One value: whether you chose the light or dark theme, under the key `pp.theme`. It stays on your device, is never transmitted, and exists so the site does not flash the wrong colour at you on the next page.',
-      'There are no cookies on the public site. The administrative console, which only the practice can reach, uses a session cookie to keep a signed-in user signed in.',
+      'Your theme choice, under the key `pp.theme`, so the site does not flash the wrong colour at you on the next page. It stays on your device and is never transmitted.',
+      'For the length of the browser tab only (session storage, cleared when the tab closes): whether the opening animation has already played, the first page you landed on, and the campaign tags of the link you arrived by. The last two leave your device only inside an enquiry you choose to send.',
+      'There are no cookies on the public site for visitors. The administrative console, which only the practice can reach, uses a session cookie to keep a signed-in user signed in, and a flag that tells the site to show the practice its editing tools.',
     ],
   },
   {

@@ -117,3 +117,19 @@ export function stripHtml(input: string, maxLength = 260): string {
   if (text.length <= maxLength) return text;
   return `${text.slice(0, text.lastIndexOf(' ', maxLength)).trim()}…`;
 }
+
+/** `₹1,25,000` — Indian digit grouping, no paise unless there are any. */
+export function formatINR(value: number | string | null | undefined): string {
+  const n = typeof value === 'string' ? Number(value) : (value ?? 0);
+  if (!Number.isFinite(n)) return '₹0';
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: Number.isInteger(n) ? 0 : 2,
+  }).format(n);
+}
+
+/** Today's date in India as YYYY-MM-DD, for comparisons against date columns. */
+export function todayIST(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+}

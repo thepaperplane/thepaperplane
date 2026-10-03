@@ -203,6 +203,50 @@ than `npm run audit`, which understands this site's translucency.
 
 ---
 
+## The console — `/admin`
+
+Exactly one account can use it: **contact@thepaperplane.co.in**. Enforced three times — middleware
+(`middleware.ts`), every server action and route handler (`lib/auth.ts`), and Postgres, where
+`is_console_owner()` sits under every row-level-security policy. Any other account that signs in is
+signed out immediately.
+
+**Two-factor sign-in is mandatory.** The first sign-in goes to `/admin/setup-2fa` to enrol an
+authenticator app; every later one to `/admin/verify`. Once a factor exists the database refuses a
+password-only session outright. Lost phone: set `CONSOLE_REQUIRE_MFA=false` in Vercel only long
+enough to remove the factor in Supabase and enrol a new one.
+
+| Section           | What it is for                                                                  |
+| ----------------- | ------------------------------------------------------------------------------- |
+| Overview          | New enquiries, money owed, deadlines this week, traffic and conversion          |
+| Leads & enquiries | Pipeline states, campaign source, budget, timeline; convert to client; CSV      |
+| Clients           | Records, onboarding, engagements, **document vault**, tasks, invoices           |
+| Tasks & deadlines | Every dated obligation, overdue in red                                          |
+| Invoices          | Ledger of billed / paid / overdue; totals for the financial year                |
+| Analytics         | Cookieless page views, referrers, campaigns, devices, enquiry sources           |
+| Campaigns         | Tracked-link builder (WhatsApp, Instagram, LinkedIn, QR…), share links, exports |
+| Testimonials      | Add, publish, order; the homepage section appears only once one is published    |
+| Pages & copy      | Visual editor entry point and the list of every edit, with reset                |
+| Work              | Capture, re-capture (now including full-length pages), feature, upload captures |
+| Careers           | Post roles (also as Google `JobPosting`), review applications, private CVs      |
+| Site settings     | Contact channels, announcement bar, social profiles                             |
+| Security          | Protection checklist, sign out everywhere, activity log                         |
+
+### Visual editing
+
+Signing in sets a hint cookie (`pp_editor`) that makes the public site load the editor for the owner
+only. Switch editing on from the floating bar, click any outlined text, type, press Enter. Saves go
+to `/api/admin/copy`, which re-authorises the owner on every request. Wrap new copy in
+`<Editable k="page.slot">` to make it editable.
+
+### Database
+
+Migrations live in `supabase/migrations/`. Everything added in October 2026 is additive: new tables
+(testimonials, jobs, job_applications, client_documents, tasks, invoices, enquiry_meta,
+project_media, page_views, audit_log, site_settings) and three storage buckets — `site-media`
+(public images), `vault` and `resumes` (private, signed URLs only).
+
+---
+
 ## Content
 
 Copy, services, calendar dates and knowledge entries live in `content/` as typed
@@ -211,7 +255,9 @@ hard-coded defaults are what renders when the database is unavailable, so the
 site is correct with no database at all.
 
 **Legal pages are written against the code.** The cookie policy states there are
-no cookies, which is verified by their absence in the source. If you add
+no cookies for visitors, which is verified by their absence in the source; the
+visit counter (`app/api/track`) is aggregate and cookieless, and the policy says
+exactly what it stores. If you add
 analytics, an embed, or anything that writes to a browser, `/cookies` and
 `/privacy` change in the same commit — a policy that has drifted from the
 software is a written statement that is no longer true.

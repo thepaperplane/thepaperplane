@@ -9,7 +9,7 @@ import {
   setEnquiryState,
 } from '@/app/admin/enquiries/actions';
 import { Pill } from '@/components/admin/ui';
-import type { EnquiryRow, EnquiryState } from '@/lib/database.types';
+import type { EnquiryMetaRow, EnquiryRow, EnquiryState } from '@/lib/database.types';
 import { formatRelative } from '@/lib/utils';
 
 const TONE = {
@@ -23,7 +23,29 @@ const TONE = {
 
 const STATES: EnquiryState[] = ['new', 'contacted', 'qualified', 'converted', 'archived', 'spam'];
 
-export function EnquiryCard({ enquiry, editable }: { enquiry: EnquiryRow; editable: boolean }) {
+const BUDGET: Record<string, string> = {
+  'under-25k': 'Under ₹25k',
+  '25k-75k': '₹25k–75k',
+  '75k-2l': '₹75k–2L',
+  '2l-plus': '₹2L+',
+  retainer: 'Monthly retainer',
+};
+const TIMELINE: Record<string, string> = {
+  urgent: 'Urgent',
+  month: 'Within a month',
+  quarter: 'Next 3 months',
+  exploring: 'Exploring',
+};
+
+export function EnquiryCard({
+  enquiry,
+  editable,
+  meta,
+}: {
+  enquiry: EnquiryRow;
+  editable: boolean;
+  meta?: EnquiryMetaRow;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [note, setNote] = useState(enquiry.internal_note ?? '');
@@ -78,6 +100,24 @@ export function EnquiryCard({ enquiry, editable }: { enquiry: EnquiryRow; editab
             ) : null}
             <span className="text-ink-3">{formatRelative(enquiry.created_at)}</span>
           </div>
+          {meta && (meta.utm_source || meta.budget || meta.timeline || meta.landing_path) ? (
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              <Pill tone="accent">
+                {meta.utm_source
+                  ? `From ${meta.utm_source}${meta.utm_campaign ? ` · ${meta.utm_campaign}` : ''}`
+                  : 'Direct or search'}
+              </Pill>
+              {meta.budget ? (
+                <Pill tone="positive">{BUDGET[meta.budget] ?? meta.budget}</Pill>
+              ) : null}
+              {meta.timeline ? (
+                <Pill tone={meta.timeline === 'urgent' ? 'critical' : 'neutral'}>
+                  {TIMELINE[meta.timeline] ?? meta.timeline}
+                </Pill>
+              ) : null}
+              {meta.landing_path ? <Pill>Landed on {meta.landing_path}</Pill> : null}
+            </div>
+          ) : null}
         </div>
 
         {editable ? (

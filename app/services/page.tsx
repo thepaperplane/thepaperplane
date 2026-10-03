@@ -7,6 +7,7 @@ import { PRACTICE, pillarsFor } from '@/content/practice';
 import { pageOg } from '@/lib/site';
 import { breadcrumbJsonLd, jsonLdScript, serviceCatalogJsonLd } from '@/lib/schema';
 import { FlightRule } from '@/components/site/flight-rule';
+import { CtaLink } from '@/components/fx';
 
 export const metadata: Metadata = {
   title: 'Services',
@@ -177,16 +178,16 @@ export default function ServicesPage() {
                 Send the notice, the deadline or the brief. You will get a straight account of what
                 it actually involves before you commit to anything.
               </p>
-              <div className="mt-12 flex flex-wrap items-center gap-x-10 gap-y-4">
-                <TextLink href="/contact" className="text-[length:var(--text-body)]">
+              <div className="mt-12 flex flex-wrap items-center gap-3">
+                <CtaLink href="/contact" size="lg">
                   Start a conversation
-                </TextLink>
-                <TextLink href="/knowledge" className="text-ink-3 text-[length:var(--text-body)]">
+                </CtaLink>
+                <CtaLink href="/knowledge" tone="ghost" size="lg">
                   Understand the work first
-                </TextLink>
+                </CtaLink>
               </div>
               <p className="text-ink-3 mt-10 text-[length:var(--text-caption)]">
-                Statutory references throughout this site are set in <Ref>JetBrains Mono</Ref> —{' '}
+                Statutory references throughout this site are set in <Ref>IBM Plex Mono</Ref> —{' '}
                 <Ref>s.148</Ref>, <Ref>GSTR-3B</Ref>, <Ref>GSTR-2B</Ref> — so they read as
                 citations, not marketing.
               </p>

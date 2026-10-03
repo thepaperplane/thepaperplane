@@ -3,7 +3,8 @@ import { EnquiryCard } from '@/components/admin/enquiry-card';
 import { EmptyState, PageHeader, Panel } from '@/components/admin/ui';
 import { requireProfile, canEdit } from '@/lib/auth';
 import { serviceClient } from '@/lib/supabase';
-import type { EnquiryRow, EnquiryState } from '@/lib/database.types';
+import type { EnquiryMetaRow, EnquiryRow, EnquiryState } from '@/lib/database.types';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Enquiries' };
@@ -42,6 +43,7 @@ export default async function EnquiriesPage({
   const supabase = serviceClient();
 
   let enquiries: EnquiryRow[] = [];
+  const meta = new Map<string, EnquiryMetaRow>();
 
   if (supabase) {
     let query = supabase.from('enquiries').select('*').order('created_at', { ascending: false });
@@ -49,13 +51,32 @@ export default async function EnquiriesPage({
     if (validState) query = query.eq('state', validState);
     const { data } = await query.limit(150);
     enquiries = data ?? [];
+    if (enquiries.length) {
+      const { data: m } = await supabase
+        .from('enquiry_meta')
+        .select('*')
+        .in(
+          'enquiry_id',
+          enquiries.map((e) => e.id),
+        );
+      (m ?? []).forEach((row) => meta.set(row.enquiry_id, row));
+    }
   }
 
   return (
     <>
       <PageHeader
-        title="Enquiries"
-        description="Messages submitted through the website contact form."
+        title="Leads & enquiries"
+        description="Everyone who has written in, with the campaign that brought them, their budget and timeline. Move each one along the pipeline, or convert it into a client in one click."
+        action={
+          <Link
+            href="/api/admin/export/enquiries"
+            prefetch={false}
+            className="text-ink-2 hover:text-ink inline-flex h-10 items-center rounded-[var(--radius-md)] px-4 text-[0.875rem] font-semibold ring-1 ring-[var(--hairline)] ring-inset"
+          >
+            Export CSV
+          </Link>
+        }
       />
 
       <nav aria-label="Filter enquiries" className="mb-5 flex flex-wrap gap-2">
@@ -92,7 +113,12 @@ export default async function EnquiriesPage({
       ) : (
         <div className="space-y-3">
           {enquiries.map((enquiry) => (
-            <EnquiryCard key={enquiry.id} enquiry={enquiry} editable={canEdit(profile.role)} />
+            <EnquiryCard
+              key={enquiry.id}
+              enquiry={enquiry}
+              meta={meta.get(enquiry.id)}
+              editable={canEdit(profile.role)}
+            />
           ))}
         </div>
       )}
