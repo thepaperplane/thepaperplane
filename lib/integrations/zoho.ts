@@ -27,6 +27,8 @@ export const ZOHO_SCOPES = [
   'ZohoCRM.org.READ',
   'ZohoBooks.contacts.CREATE',
   'ZohoBooks.contacts.READ',
+  // Enabling Zoho's own customer portal for a contact ("Invite to Zoho portal").
+  'ZohoBooks.contacts.UPDATE',
   'ZohoBooks.invoices.READ',
   'ZohoBooks.settings.READ',
 ].join(',');
