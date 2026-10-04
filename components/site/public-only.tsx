@@ -10,6 +10,6 @@ import { usePathname } from 'next/navigation';
  */
 export function PublicOnly({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  if (pathname.startsWith('/admin')) return null;
+  if (pathname.startsWith('/admin') || pathname.startsWith('/portal')) return null;
   return <>{children}</>;
 }

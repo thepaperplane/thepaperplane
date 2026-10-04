@@ -196,7 +196,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* The site assistant, when switched on in the console and keyed. */}
         {settings.assistant.enabled && process.env.ANTHROPIC_API_KEY ? (
           <PublicOnly>
-            <Assistant greeting={settings.assistant.greeting} whatsapp={contact.whatsapp} />
+            <Assistant
+              greeting={settings.assistant.greeting}
+              whatsapp={contact.whatsapp}
+              botNumber={settings.whatsappBot.enabled ? settings.whatsappBot.number : ''}
+            />
           </PublicOnly>
         ) : null}
         {/* Magnetic controls, tilt and pointer parallax. */}

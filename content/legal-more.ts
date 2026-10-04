@@ -17,9 +17,9 @@
 import type { LegalSection } from '@/content/legal';
 import { SITE } from '@/lib/site';
 
-export const COOKIES_UPDATED = '3 October 2026';
+export const COOKIES_UPDATED = '4 October 2026';
 export const ACCESSIBILITY_UPDATED = '15 September 2026';
-export const SECURITY_UPDATED = '3 October 2026';
+export const SECURITY_UPDATED = '4 October 2026';
 export const COPYRIGHT_UPDATED = '15 September 2026';
 
 export const COOKIES: LegalSection[] = [
@@ -64,6 +64,13 @@ export const COOKIES: LegalSection[] = [
         detail:
           'pp.seen (the opening animation has played), pp.landing (the first page of this visit), pp.utm (campaign tags of the link you arrived by), pp.announce.* (you dismissed an announcement) and pp.assistant.v1 (your conversation with the site assistant, if you started one). Cleared when the tab closes. pp.landing and pp.utm leave your device only inside an enquiry you choose to send.',
       },
+    ],
+  },
+  {
+    id: 'portal',
+    heading: 'The client portal',
+    body: [
+      'Clients who sign in at /portal to see their invoices and documents get one cookie, pp_portal. It holds a random session token — nothing about you — which the server checks against its own record on every page. It is set only after you enter a one-time code, is unreadable to scripts on the page (httpOnly), is sent only over HTTPS, lasts at most fourteen days and is deleted when you sign out. Like the console cookies below, it is strictly necessary: there is no way to stay signed in without it, and it is never set for anyone who has not signed in.',
     ],
   },
   {
@@ -177,6 +184,14 @@ export const SECURITY: LegalSection[] = [
     ],
   },
   {
+    id: 'portal',
+    heading: 'The client portal',
+    body: [
+      'Clients sign in with a one-time code sent to the email address or phone number already registered with us — there is no password to reuse or steal. Codes expire in ten minutes, are stored only as a salted one-way hash, and lock after a few wrong attempts; requests are rate-limited, and the sign-in form answers the same way whether or not an address belongs to a client, so it cannot be used to discover who our clients are.',
+      'Every page and every invoice or document a signed-in client opens is checked against that client’s own record on the server, on every request. A session lasts at most fourteen days, can be ended by signing out, and is ended at once if the practice switches portal access off for that client.',
+    ],
+  },
+  {
     id: 'minimisation',
     heading: 'What is deliberately not collected',
     body: [
@@ -188,8 +203,8 @@ export const SECURITY: LegalSection[] = [
     id: 'processors',
     heading: 'Who else is involved',
     body: [
-      'Each provider has one narrow purpose and none is permitted to use your data for its own: Supabase for the database, Vercel for hosting, Resend for sending email, Anthropic for the site assistant’s replies, Meta for WhatsApp messages, and Zoho for the practice’s CRM and accounts. Their security posture forms part of ours, and any of them can be replaced if that stops being true.',
-      'Connections to Zoho are made with OAuth: the practice approves access on Zoho’s own screen, and the resulting tokens are encrypted (AES-256-GCM) before they are stored and never reach a browser. Messages from WhatsApp are accepted only with a valid signature from Meta, checked against the exact bytes received.',
+      'Each provider has one narrow purpose and none is permitted to use your data for its own: Supabase for the database, Vercel for hosting, Resend for sending email, Anthropic for the replies of the site and WhatsApp assistants, Meta for WhatsApp messages, Google for booked calls (Calendar and Meet), and Zoho for the practice’s CRM and accounts. Their security posture forms part of ours, and any of them can be replaced if that stops being true.',
+      'Connections to Zoho and Google are made with OAuth: the practice approves access on the provider’s own screen, and the resulting tokens are encrypted (AES-256-GCM) before they are stored and never reach a browser. Messages from WhatsApp are accepted only with a valid signature from Meta, checked against the exact bytes received.',
     ],
   },
   {

@@ -126,6 +126,12 @@ export function SiteHeader({
           </nav>
 
           <div className="ml-auto flex items-center gap-1 lg:ml-0 lg:gap-2">
+            <Link
+              href="/portal"
+              className="text-ink-2 hover:text-ink hidden h-10 items-center px-2 text-[length:var(--text-small)] font-medium transition-colors xl:inline-flex"
+            >
+              Client login
+            </Link>
             <ThemeToggle />
 
             <CtaLink href="/contact" size="sm" className="hidden sm:inline-flex">
@@ -235,6 +241,13 @@ export function SiteHeader({
             >
               Start a project
             </CtaLink>
+            <Link
+              href="/portal"
+              tabIndex={open ? 0 : -1}
+              className="text-ink flex h-12 items-center justify-center rounded-full text-[length:var(--text-small)] font-semibold ring-1 ring-[var(--hairline-strong)] ring-inset"
+            >
+              Client login
+            </Link>
             <div className="text-ink-3 flex items-center justify-between text-[length:var(--text-caption)]">
               <a href={`tel:${phoneIntl}`} className="tap" tabIndex={open ? 0 : -1}>
                 {phone}

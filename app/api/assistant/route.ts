@@ -7,6 +7,8 @@ import { getSettings } from '@/lib/settings';
 import { serviceClient } from '@/lib/supabase';
 import { sendEnquiryNotification } from '@/lib/email';
 import { liveSystem, stableSystem, TOOLS } from '@/lib/assistant/prompt';
+import { anthropic as claude, modelFor, shapeFor } from '@/lib/ai/claude';
+import type { Tier } from '@/lib/ai/claude';
 import { autoPushLead } from '@/lib/integrations/zoho';
 
 export const runtime = 'nodejs';
@@ -27,7 +29,6 @@ export const maxDuration = 60;
  * transcript. Only the newest message is taken from the request.
  */
 
-const MODEL = process.env.ASSISTANT_MODEL || 'claude-opus-5-5';
 const HISTORY = 12;
 const PER_IP_PER_DAY = 60;
 
@@ -209,7 +210,8 @@ export async function POST(request: Request) {
     { role: 'user', content: message },
   ];
 
-  const anthropic = new Anthropic();
+  const anthropic = claude();
+  const MODEL = modelFor(settings.assistant.tier as Tier);
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream<Uint8Array>({
@@ -228,10 +230,7 @@ export async function POST(request: Request) {
           const turn = anthropic.beta.messages.stream({
             model: MODEL,
             max_tokens: 2048,
-            betas: ['server-side-fallback-2026-07-01'],
-            fallbacks: 'default',
-            thinking: { type: 'adaptive' },
-            output_config: { effort: 'low' },
+            ...shapeFor(MODEL, 'low'),
             system,
             tools: TOOLS,
             messages,

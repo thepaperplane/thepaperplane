@@ -1,11 +1,12 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
 import { audit } from '@/lib/audit';
 import { serviceClient } from '@/lib/supabase';
+import { SETTINGS_TAG } from '@/lib/settings';
 import {
   normaliseWaId,
   sendTemplate,
@@ -142,5 +143,64 @@ export async function renameWhatsAppContact(formData: FormData): Promise<void> {
     .from('wa_contacts')
     .update({ name: name || null })
     .eq('wa_id', waId);
+  revalidatePath('/admin/whatsapp');
+}
+
+/** Stop or restart the assistant for one conversation (a person takes over). */
+export async function setBotPaused(formData: FormData): Promise<void> {
+  const profile = await requireRole('editor');
+  const waId = String(formData.get('wa_id') ?? '');
+  if (!/^\d{8,15}$/.test(waId)) return;
+  const paused = formData.get('paused') === 'true';
+  await db()
+    .from('wa_contacts')
+    .update({ bot_paused: paused, ...(paused ? {} : { needs_human: false }) })
+    .eq('wa_id', waId);
+  await audit(
+    profile.email,
+    paused ? 'whatsapp.bot.pause' : 'whatsapp.bot.resume',
+    'wa_contacts',
+    waId,
+  );
+  revalidatePath('/admin/whatsapp');
+}
+
+export async function clearNeedsHuman(formData: FormData): Promise<void> {
+  await requireRole('editor');
+  const waId = String(formData.get('wa_id') ?? '');
+  if (!/^\d{8,15}$/.test(waId)) return;
+  await db().from('wa_contacts').update({ needs_human: false }).eq('wa_id', waId);
+  revalidatePath('/admin/whatsapp');
+}
+
+const BotSchema = z.object({
+  number: z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/\D/g, ''))
+    .refine(
+      (v) => v === '' || (v.length >= 10 && v.length <= 15),
+      'Enter the full number with country code.',
+    ),
+  dailyCap: z.coerce.number().int().min(10).max(5000),
+});
+
+export async function saveBotSettings(formData: FormData): Promise<void> {
+  const profile = await requireRole('admin');
+  const parsed = BotSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return;
+  // The practice's own line must never become the bot.
+  if (parsed.data.number.endsWith('9025565526')) return;
+  const value = {
+    enabled: formData.get('enabled') === 'on',
+    number: parsed.data.number,
+    dailyCap: parsed.data.dailyCap,
+  };
+  await db()
+    .from('site_settings')
+    .upsert({ key: 'whatsappBot', value, updated_at: new Date().toISOString() } as never);
+  await audit(profile.email, 'whatsapp.bot.settings', 'site_settings', 'whatsappBot', value);
+  revalidateTag(SETTINGS_TAG);
+  revalidatePath('/', 'layout');
   revalidatePath('/admin/whatsapp');
 }

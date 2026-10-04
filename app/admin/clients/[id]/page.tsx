@@ -5,6 +5,7 @@ import { ClientForm } from '@/components/admin/client-form';
 import { OnboardingChecklist } from '@/components/admin/onboarding-checklist';
 import { EngagementManager } from '@/components/admin/engagement-manager';
 import { ClientOps } from '@/components/admin/client-ops';
+import { PortalAccess } from '@/components/admin/portal-access';
 import { PageHeader, Panel, Pill } from '@/components/admin/ui';
 import { requireProfile, canEdit } from '@/lib/auth';
 import { serviceClient } from '@/lib/supabase';
@@ -107,6 +108,10 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             />
           </Panel>
         </div>
+      </div>
+
+      <div className="mt-6">
+        <PortalAccess clientId={id} editable={editable} />
       </div>
 
       <ClientOps clientId={id} editable={editable} />

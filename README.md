@@ -222,24 +222,28 @@ authenticator app; every later one to `/admin/verify`. Once a factor exists the 
 password-only session outright. Lost phone: set `CONSOLE_REQUIRE_MFA=false` in Vercel only long
 enough to remove the factor in Supabase and enrol a new one.
 
-| Section             | What it is for                                                                  |
-| ------------------- | ------------------------------------------------------------------------------- |
-| Overview            | New enquiries, money owed, deadlines this week, traffic and conversion          |
-| Leads & enquiries   | Pipeline states, campaign source, budget, timeline; convert to client; CSV      |
-| Clients             | Records, onboarding, engagements, **document vault**, tasks, invoices           |
-| Tasks & deadlines   | Every dated obligation, overdue in red                                          |
-| Invoices            | Ledger of billed / paid / overdue; totals for the financial year                |
-| Analytics           | Cookieless page views, referrers, campaigns, devices, enquiry sources           |
-| Campaigns           | Tracked-link builder (WhatsApp, Instagram, LinkedIn, QR…), share links, exports |
-| Testimonials        | Add, publish, order; the homepage section appears only once one is published    |
-| Pages & copy        | Visual editor entry point and the list of every edit, with reset                |
-| Work                | Capture, re-capture (now including full-length pages), feature, upload captures |
-| Careers             | Post roles (also as Google `JobPosting`), review applications, private CVs      |
-| Site settings       | Contact channels, announcement bar, social profiles                             |
-| Security            | Protection checklist, sign out everywhere, activity log                         |
-| WhatsApp inbox      | Your WhatsApp Business number, answered from the console (Meta Cloud API)       |
-| Site assistant      | On/off, opening line, daily limit, extra answers, every transcript              |
-| Zoho & integrations | Connect Zoho CRM + Books; enquiries → leads, clients → contacts, invoices in    |
+| Section             | What it is for                                                                   |
+| ------------------- | -------------------------------------------------------------------------------- |
+| Overview            | New enquiries, money owed, deadlines this week, traffic and conversion           |
+| Leads & enquiries   | Pipeline states, campaign source, budget, timeline; convert to client; CSV       |
+| Clients             | Records, onboarding, engagements, **document vault**, tasks, invoices            |
+| Tasks & deadlines   | Every dated obligation, overdue in red                                           |
+| Invoices            | Ledger of billed / paid / overdue; totals for the financial year                 |
+| Analytics           | Cookieless page views, referrers, campaigns, devices, enquiry sources            |
+| Campaigns           | Tracked-link builder (WhatsApp, Instagram, LinkedIn, QR…), share links, exports  |
+| Testimonials        | Add, publish, order; the homepage section appears only once one is published     |
+| Pages & copy        | Visual editor entry point and the list of every edit, with reset                 |
+| Work                | Capture, re-capture (now including full-length pages), feature, upload captures  |
+| Careers             | Post roles (also as Google `JobPosting`), review applications, private CVs       |
+| Site settings       | Contact channels, announcement bar, social profiles                              |
+| Security            | Protection checklist, sign out everywhere, activity log                          |
+| Meetings            | Google Calendar connection, bookable hours, every call booked, cancel            |
+| WhatsApp assistant  | The AI bot number: on/off, pause per chat, hand-overs, replies from the console  |
+| Site assistant      | On/off, quality/cost tier, opening line, daily limit, extra answers, transcripts |
+| Autopilot           | What runs on its own, readiness checklist, WhatsApp templates, activity log      |
+| Zoho & integrations | Zoho CRM + Books; Books customers → clients, invoices in, leads out              |
+
+Each client record also has **Portal access**: on/off, invite by email, and "Invite to Zoho portal".
 
 ### Visual editing
 
@@ -256,11 +260,52 @@ owner's extra answers and notes from the console — nothing else. The rules
 (`lib/assistant/prompt.ts`) forbid general or personal tax advice, fees, turnaround promises and
 outcomes; anything that turns on a visitor's own facts is routed to the free first read. When a
 visitor is ready, it records an enquiry (`record_enquiry` tool) after they have typed their contact
-details. Model `claude-opus-5-5` at low effort, streamed, with `fallbacks: "default"` (beta
-`server-side-fallback-2026-07-01`) so a declined request is retried server-side; the stable system
-block (rules + reference) is prompt-cached for an hour. History is read from the database, never
+details. The model is a console setting (`lib/ai/claude.ts`): **Economy** (Claude Haiku 4.5, the
+default — the cheapest, and enough for answering from a fixed reference), Balanced (Sonnet 5.5) or
+Best (Opus 5.5). The newer tiers run with adaptive thinking at low effort and `fallbacks: "default"`
+(beta `server-side-fallback-2026-07-01`); Haiku takes neither, so those fields are only sent where
+accepted. The stable system block (rules + reference) is prompt-cached for an hour. History is read from the database, never
 trusted from the browser. Limits: 10 messages per 2 minutes per IP, 60 a day per visitor, and a
 site-wide daily cap set in the console. Needs `ANTHROPIC_API_KEY`.
+
+### WhatsApp assistant
+
+A separate WhatsApp number answered by Claude (`lib/whatsapp-bot.ts`), the way the Vihana Dental
+Care bot works. **It must be a new number — never 9025565526**, which stays on the WhatsApp app;
+`saveBotSettings` refuses it and the webhook ignores events for any other phone-number ID. The
+assistant speaks as the practice's front desk: answers from the same reference as the site
+assistant, qualifies the enquiry service by service, saves it (`save_client_details`), offers and
+books real calendar slots (`offer_meeting_slots`, `book_meeting`), sends tap-to-reply buttons, and
+hands over to a person (`request_human`) — which pauses it for that chat. Clients already on the
+books are recognised by phone and pointed to the portal. It replies after the webhook has answered
+Meta (`after()`), shows a typing indicator, and has a daily reply cap.
+
+### Meetings — `/book`
+
+`lib/scheduling.ts` offers slots inside the hours set in the console, minus whatever is busy in the
+owner's Google Calendar (`freeBusy`), and books them as Calendar events with a Meet link and the
+client as a guest (`lib/integrations/google.ts`, OAuth with offline access, tokens encrypted). The
+same slots are offered on `/book` and by the WhatsApp assistant.
+
+### Client portal — `/portal`
+
+Clients sign in with the email or phone already on their record: a 6-digit code by email, or by
+WhatsApp from the assistant number when an Authentication template is set (Autopilot). Codes are
+peppered hashes, expire in 10 minutes and lock after 5 tries; the start endpoint answers the same
+way for strangers. Sessions are random tokens (`pp_portal`, httpOnly, 14 days) stored hashed in
+`portal_sessions`; access is re-derived from the client record on every request. Clients see
+their Zoho Books invoices (PDF, pay online via Zoho), documents the practice has marked "In
+portal", and can upload documents back. Set `ZOHO_PORTAL_URL` to also link to Zoho's own portal.
+
+### Autopilot — `/admin/automations`
+
+`lib/automations.ts`, every morning at 07:00 IST (riding on the news cron) or from "Run now":
+Zoho Books sync (new customers → clients, invoices mirrored), overdue invoices marked and chased
+weekly, today's calls reminded with the Meet link, client deadlines in the next three days nudged
+once, and one digest email to the owner. Enquiries get an instant acknowledgement with a link to
+`/book`. Every message is logged in `automation_log`, and each job checks it has not already been
+done, so running twice sends nothing twice. WhatsApp messages outside the 24-hour window use the
+approved templates named in the console.
 
 ### Integrations
 
@@ -283,7 +328,8 @@ Migrations live in `supabase/migrations/`. Everything added in October 2026 is a
 (testimonials, jobs, job_applications, client_documents, tasks, invoices, enquiry_meta,
 project_media, page_views, audit_log, site_settings; then assistant_conversations,
 assistant_messages, assistant_knowledge, integrations, integration_links, integration_log,
-wa_contacts, wa_messages — RLS on, no policies, server-only) and three storage buckets — `site-media`
+wa_contacts, wa_messages; then meetings, portal_codes, portal_sessions, client_portal,
+automation_log — RLS on, no policies, server-only) and three storage buckets — `site-media`
 (public images), `vault` and `resumes` (private, signed URLs only).
 
 ---
@@ -312,8 +358,8 @@ explicitly. Do not reintroduce them as services.
 ## Deployment
 
 Vercel, `bom1`. `vercel.json` pins the framework and build command because the
-dashboard setting was stale. Two cron jobs: news aggregation daily, the calendar
-email monthly.
+dashboard setting was stale. Two cron jobs: news aggregation daily (which also
+runs Autopilot), the calendar email monthly.
 
 Required environment variables are read at build time — see `lib/supabase.ts`,
 `lib/email.ts` and `lib/capture.ts`. Every data path degrades gracefully when

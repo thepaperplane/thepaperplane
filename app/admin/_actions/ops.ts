@@ -185,6 +185,7 @@ export async function uploadDocument(formData: FormData) {
     file_path: path,
     mime_type: checked.file.type,
     size_bytes: checked.file.size,
+    visible_to_client: formData.get('visible_to_client') === 'on',
   });
   await audit(profile.email, 'document.upload', 'client_documents', clientId.data, { path });
   refresh(clientId.data);
@@ -207,4 +208,26 @@ export async function deleteDocument(formData: FormData) {
     path: doc.file_path,
   });
   refresh(doc.client_id);
+}
+
+/** Shows or hides one vault document in the client's portal. */
+export async function setDocumentVisibility(formData: FormData) {
+  const profile = await requireRole('editor');
+  const id = uuid.safeParse(formData.get('id'));
+  if (!id.success) return;
+  const visible = formData.get('visible') === 'true';
+  const supabase = db();
+  const { data: doc } = await supabase
+    .from('client_documents')
+    .update({ visible_to_client: visible })
+    .eq('id', id.data)
+    .select('client_id')
+    .maybeSingle();
+  await audit(
+    profile.email,
+    visible ? 'document.share' : 'document.unshare',
+    'client_documents',
+    id.data,
+  );
+  if (doc) refresh(doc.client_id);
 }

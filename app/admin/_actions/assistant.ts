@@ -22,6 +22,7 @@ const SettingsSchema = z.object({
   greeting: z.string().trim().min(10).max(400),
   notes: z.string().trim().max(2000).optional(),
   dailyCap: z.coerce.number().int().min(10).max(5000),
+  tier: z.enum(['economy', 'balanced', 'best']).default('economy'),
 });
 
 export async function saveAssistantSettings(formData: FormData): Promise<void> {
@@ -33,12 +34,14 @@ export async function saveAssistantSettings(formData: FormData): Promise<void> {
     greeting: parsed.data.greeting,
     notes: parsed.data.notes ?? '',
     dailyCap: parsed.data.dailyCap,
+    tier: parsed.data.tier,
   };
   await db()
     .from('site_settings')
     .upsert({ key: 'assistant', value, updated_at: new Date().toISOString() } as never);
   await audit(profile.email, 'assistant.settings', 'site_settings', 'assistant', {
     enabled: value.enabled,
+    tier: value.tier,
   });
   revalidateTag(SETTINGS_TAG);
   revalidatePath('/', 'layout');

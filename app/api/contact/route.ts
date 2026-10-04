@@ -4,6 +4,7 @@ import { apiError, apiOk, clientIp, rateLimit, readJson } from '@/lib/api';
 import { serviceClient } from '@/lib/supabase';
 import { sendEnquiryNotification } from '@/lib/email';
 import { autoPushLead } from '@/lib/integrations/zoho';
+import { acknowledgeEnquiry } from '@/lib/automations';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -88,6 +89,8 @@ export async function POST(request: Request) {
       // Into Zoho CRM too, if the owner has switched that on — after the
       // visitor has their answer.
       after(() => autoPushLead(enquiryId));
+      // And a real acknowledgement to the sender, with a link to book a call.
+      after(() => acknowledgeEnquiry({ name, email }).catch(() => undefined));
       await supabase
         .from('enquiry_meta')
         .insert({

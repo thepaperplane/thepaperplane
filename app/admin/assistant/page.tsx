@@ -18,6 +18,7 @@ import {
 } from '@/app/admin/_actions/assistant';
 import { requireRole } from '@/lib/auth';
 import { getSettings } from '@/lib/settings';
+import { TIER_LABEL, type Tier } from '@/lib/ai/claude';
 import { serviceClient } from '@/lib/supabase';
 import type { AssistantConversationRow, AssistantKnowledgeRow } from '@/lib/database.types';
 
@@ -200,6 +201,24 @@ export default async function AssistantPage() {
                 defaultValue={settings.assistant.notes}
                 className={`${ADMIN_FIELD} h-auto py-3`}
               />
+            </Field>
+            <Field
+              label="Quality and cost"
+              htmlFor="as-tier"
+              hint="Used by the website assistant and the WhatsApp assistant. Economy answers well from your reference material at the lowest price; move up only if answers fall short."
+            >
+              <select
+                id="as-tier"
+                name="tier"
+                defaultValue={settings.assistant.tier}
+                className={ADMIN_FIELD}
+              >
+                {(Object.keys(TIER_LABEL) as Tier[]).map((t) => (
+                  <option key={t} value={t}>
+                    {TIER_LABEL[t]}
+                  </option>
+                ))}
+              </select>
             </Field>
             <Field
               label="Most questions per day"

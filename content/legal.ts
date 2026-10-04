@@ -34,7 +34,7 @@ export type LegalSection = {
   list?: string[];
 };
 
-export const PRIVACY_UPDATED = '3 October 2026';
+export const PRIVACY_UPDATED = '4 October 2026';
 export const TERMS_UPDATED = '14 September 2026';
 
 export const PRIVACY: LegalSection[] = [
@@ -44,7 +44,7 @@ export const PRIVACY: LegalSection[] = [
     body: [
       'This website sets no advertising or tracking cookies and embeds nothing from a social network. There is no tag manager, no pixel, no third-party analytics and no session recorder anywhere in it. Nobody is profiled for visiting.',
       'It does count visits — how many times each page was read, which site or campaign link sent the visitor, and the device type and country — as anonymous daily totals. No cookie is set for this, no IP address is stored, and nothing in the count can identify you or link one visit to another. If your browser sends Do Not Track or Global Privacy Control, the visit is not counted at all.',
-      'Personal data is collected only where something cannot work otherwise: the enquiry form, the compliance calendar subscription, the job application form, the site assistant if you choose to use it, and messages you send to our WhatsApp Business number. Everything below is the detail of each.',
+      'Personal data is collected only where something cannot work otherwise: the enquiry form, booking a call, the compliance calendar subscription, the job application form, the site assistant if you choose to use it, messages you send to our WhatsApp numbers, and — for clients — the client portal. Everything below is the detail of each.',
     ],
   },
   {
@@ -66,6 +66,14 @@ export const PRIVACY: LegalSection[] = [
         detail:
           'If you arrived through a tagged link (for example one shared on WhatsApp or LinkedIn), the campaign name on that link and the first page you landed on are sent with your enquiry. Nothing else about your visit is.',
       },
+    ],
+  },
+  {
+    id: 'booking',
+    heading: 'When you book a call',
+    body: [
+      'Booking a call on the website, or through our WhatsApp assistant, stores your name, email address, optional phone number, what you would like to discuss and the time you chose. The call is placed in the practice’s own Google Calendar with you as a guest and a Google Meet link, so Google sends you the invitation and handles the video call under its own terms.',
+      'On the morning of the call we send one reminder, by email and — if you booked on WhatsApp or have messaged us there — on WhatsApp. Booking records are kept with the enquiry they belong to.',
     ],
   },
   {
@@ -97,7 +105,23 @@ export const PRIVACY: LegalSection[] = [
     id: 'whatsapp',
     heading: 'When you message us on WhatsApp',
     body: [
-      'Messages to our WhatsApp Business number reach us through Meta’s WhatsApp Business Platform. We store your number, the name on your WhatsApp profile and the messages exchanged, so that the practice can reply and keep a record of what was agreed. WhatsApp’s own handling of the message is governed by Meta’s terms and privacy policy.',
+      'Messages to our WhatsApp numbers reach us through Meta’s WhatsApp Business Platform. We store your number, the name on your WhatsApp profile and the messages exchanged, so that the practice can reply and keep a record of what was agreed. WhatsApp’s own handling of the message is governed by Meta’s terms and privacy policy.',
+      'Our WhatsApp assistant number is answered first by an AI assistant, and says so. As with the site assistant, your messages are sent to Anthropic, whose Claude model writes the reply, and are not used to train its models. It may ask for your name, email address, city, business name and what you need, so that it can open an enquiry for you and book a call; it never asks for PAN, Aadhaar, bank details or passwords. Photos and documents you send are kept by Meta and opened only by the practice; the files are not passed to the AI model. You can ask for a person at any time, and the practice can read and take over any conversation.',
+    ],
+  },
+  {
+    id: 'portal',
+    heading: 'When you use the client portal',
+    body: [
+      'Clients can sign in at /portal with the email address or phone number registered with us. A six-digit code is sent to that address or number (by email, or by WhatsApp from our assistant number); only a one-way hash of the code is stored, it expires in ten minutes and can be used once. To stop guessing, a few wrong attempts lock the code.',
+      'Once signed in, a session cookie keeps you signed in for up to fourteen days (see “What is stored in your browser”). We record when you signed in and your browser type, so that you and we can see unexpected sessions. Your invoices are fetched from Zoho Books when you open them; documents you upload are kept in private storage that is never publicly reachable. Signing out ends the session at once.',
+    ],
+  },
+  {
+    id: 'automated',
+    heading: 'Messages we send automatically',
+    body: [
+      'Some routine messages go out without anyone pressing send: a thank-you when you submit an enquiry, a reminder on the morning of a booked call, a reminder when one of our invoices to you is past due (at most once a week), and — for clients — a note when a deadline we are tracking for you is three days away. Each is about something you asked us for or an engagement already under way; none is marketing. Ask and we will switch any of them off for you.',
     ],
   },
   {
@@ -127,21 +151,27 @@ export const PRIVACY: LegalSection[] = [
       {
         term: 'Resend',
         detail:
-          'Email delivery. Sends the enquiry and application notifications and the monthly calendar email.',
+          'Email delivery. Sends enquiry and application notifications, acknowledgements and reminders, portal sign-in codes and the monthly calendar email.',
       },
       {
         term: 'Anthropic',
         detail:
-          'Writes the site assistant’s replies. Receives the conversation, not your IP address.',
+          'Writes the replies of the site assistant and the WhatsApp assistant. Receives the conversation, not your IP address or any file you send.',
+      },
+      {
+        term: 'Google',
+        detail:
+          'Google Calendar and Google Meet, for calls you book: the calendar event, the invitation and the video call.',
       },
       {
         term: 'Meta (WhatsApp)',
-        detail: 'Delivers WhatsApp messages between you and our business number.',
+        detail:
+          'Delivers WhatsApp messages between you and our business numbers, including portal sign-in codes and reminders.',
       },
       {
         term: 'Zoho',
         detail:
-          'Our CRM and accounting software (Zoho CRM and Zoho Books, India data centre). An enquiry may be recorded there as a lead, and a client’s billing details as a customer.',
+          'Our CRM and accounting software (Zoho CRM and Zoho Books, India data centre). An enquiry may be recorded there as a lead, and a client’s billing details as a customer; the invoices shown in the client portal are read from Zoho Books.',
       },
     ],
   },
@@ -151,7 +181,7 @@ export const PRIVACY: LegalSection[] = [
     body: [
       'Your theme choice, under the key `pp.theme`, so the site does not flash the wrong colour at you on the next page. It stays on your device and is never transmitted.',
       'For the length of the browser tab only (session storage, cleared when the tab closes): whether the opening animation has already played, the first page you landed on, the campaign tags of the link you arrived by, and — if you use the assistant — your conversation, so it survives moving between pages. The landing page and campaign tags leave your device only inside an enquiry you choose to send.',
-      'There are no cookies on the public site for visitors. The administrative console, which only the practice can reach, uses a session cookie to keep a signed-in user signed in, and a flag that tells the site to show the practice its editing tools.',
+      'There are no cookies on the public site for visitors. Clients who sign in to the client portal get one session cookie, `pp_portal`, which keeps them signed in for up to fourteen days and is deleted when they sign out. The administrative console, which only the practice can reach, uses a session cookie to keep a signed-in user signed in, and a flag that tells the site to show the practice its editing tools.',
     ],
   },
   {

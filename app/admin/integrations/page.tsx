@@ -4,6 +4,7 @@ import { SubmitButton } from '@/components/admin/form-bits';
 import {
   disconnectZoho,
   importBooksInvoices,
+  importClientsFromBooks,
   setAutoLeads,
   syncClientsToBooks,
   syncLeadsToCrm,
@@ -162,7 +163,12 @@ export default async function IntegrationsPage({
                   <SubmitButton tone="quiet">Save</SubmitButton>
                 </form>
 
-                <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  <form action={importClientsFromBooks}>
+                    <SubmitButton className="w-full" pendingText="Importing…">
+                      Books customers → website clients
+                    </SubmitButton>
+                  </form>
                   <form action={syncLeadsToCrm}>
                     <SubmitButton className="w-full" pendingText="Sending…">
                       Enquiries → CRM leads
@@ -181,7 +187,8 @@ export default async function IntegrationsPage({
                 </div>
                 <p className="text-ink-3 mt-3 text-[0.8125rem] leading-relaxed">
                   Safe to press more than once: anything already sent is remembered and skipped.
-                  Invoices import for clients that have been sent to Books first.
+                  Every morning the site also brings in new and changed Books customers and mirrors
+                  their invoices on its own — Books stays the record for billing details.
                 </p>
 
                 <form
