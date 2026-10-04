@@ -51,6 +51,7 @@ const PAGES = [
   '/news',
   '/about',
   '/contact',
+  '/book',
   '/careers',
   '/privacy',
   '/terms',
@@ -61,7 +62,7 @@ const PAGES = [
 ];
 
 /** Indexable pages must carry these. /lab must not be indexable at all. */
-const NOINDEX_EXPECTED = ['/lab'];
+const NOINDEX_EXPECTED = ['/lab', '/portal'];
 
 const failures = [];
 const warnings = [];

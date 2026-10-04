@@ -2,7 +2,13 @@ import Link from 'next/link';
 import { FileText, FolderLock, ReceiptIndianRupee } from 'lucide-react';
 import { ADMIN_FIELD, EmptyState, Field, Panel, Pill } from '@/components/admin/ui';
 import { AutoSubmitSelect, SubmitButton } from '@/components/admin/form-bits';
-import { createTask, deleteDocument, setTaskState, uploadDocument } from '@/app/admin/_actions/ops';
+import {
+  createTask,
+  deleteDocument,
+  setDocumentVisibility,
+  setTaskState,
+  uploadDocument,
+} from '@/app/admin/_actions/ops';
 import { serviceClient } from '@/lib/supabase';
 import { formatDate, formatINR, todayIST } from '@/lib/utils';
 
@@ -100,6 +106,15 @@ export async function ClientOps({ clientId, editable }: { clientId: string; edit
                 className="text-ink-2 text-[0.8125rem]"
               />
             </Field>
+            <label className="text-ink-2 flex items-center gap-2 text-[0.8125rem]">
+              <input
+                type="checkbox"
+                name="visible_to_client"
+                defaultChecked
+                className="h-4 w-4 accent-[var(--accent)]"
+              />
+              Show in the client’s portal
+            </label>
             <SubmitButton pendingText="Uploading…">Upload</SubmitButton>
           </form>
         ) : null}
@@ -124,10 +139,24 @@ export async function ClientOps({ clientId, editable }: { clientId: string; edit
                     </span>
                   )}
                   <span className="text-ink-3 text-[0.75rem]">
+                    {d.uploaded_by === 'client' ? 'From client · ' : ''}
                     {d.category} · {formatDate(d.created_at)}{' '}
                     {size(d.size_bytes) ? `· ${size(d.size_bytes)}` : ''}
                   </span>
                 </div>
+                {editable ? (
+                  <form action={setDocumentVisibility}>
+                    <input type="hidden" name="id" value={d.id} />
+                    <input
+                      type="hidden"
+                      name="visible"
+                      value={d.visible_to_client ? 'false' : 'true'}
+                    />
+                    <SubmitButton tone="quiet" pendingText="…" className="h-9 px-3">
+                      {d.visible_to_client ? 'In portal' : 'Hidden'}
+                    </SubmitButton>
+                  </form>
+                ) : null}
                 {editable ? (
                   <form action={deleteDocument}>
                     <input type="hidden" name="id" value={d.id} />

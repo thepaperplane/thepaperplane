@@ -1,13 +1,17 @@
 import Link from 'next/link';
-import { MessageCircle, Send } from 'lucide-react';
+import { Bot, MessageCircle, Paperclip, Send, UserRound } from 'lucide-react';
 import { ADMIN_FIELD, EmptyState, Field, PageHeader, Panel, Pill } from '@/components/admin/ui';
 import { SubmitButton } from '@/components/admin/form-bits';
 import { AutoRefresh } from '@/components/admin/auto-refresh';
 import {
+  clearNeedsHuman,
   renameWhatsAppContact,
+  saveBotSettings,
   sendWhatsAppTemplate,
   sendWhatsAppText,
+  setBotPaused,
 } from '@/app/admin/_actions/whatsapp';
+import { getSettings } from '@/lib/settings';
 import { requireRole } from '@/lib/auth';
 import { serviceClient } from '@/lib/supabase';
 import {
@@ -39,8 +43,11 @@ function Setup() {
   const steps = [
     <>
       In <strong>Meta for Developers</strong> (developers.facebook.com) create an app of type{' '}
-      <strong>Business</strong> and add the <strong>WhatsApp</strong> product. Add your business
-      phone number and verify it.
+      <strong>Business</strong> and add the <strong>WhatsApp</strong> product. Add a{' '}
+      <strong>new number used only for the assistant</strong> — a fresh SIM or virtual number that
+      is not on any WhatsApp app — and verify it. <strong>Never add +91 90255 65526</strong>: moving
+      a number to the Cloud API removes it from the WhatsApp Business app on your phone. Meta’s free
+      test number works for trying it out, but only with up to five numbers you register.
     </>,
     <>
       In <strong>Business Settings → System users</strong>, create a system user with admin access,
@@ -77,6 +84,59 @@ function Setup() {
   );
 }
 
+function BotSettings({ bot }: { bot: { enabled: boolean; number: string; dailyCap: number } }) {
+  return (
+    <Panel
+      title="Assistant settings"
+      description="The AI answers this number only. Your own line, +91 90255 65526, is refused here."
+    >
+      <form action={saveBotSettings} className="grid gap-4 px-5 py-4">
+        <label className="text-ink flex items-center gap-2.5 text-[0.875rem] font-medium">
+          <input
+            type="checkbox"
+            name="enabled"
+            defaultChecked={bot.enabled}
+            className="h-4 w-4 accent-[var(--accent)]"
+          />
+          Answer automatically
+        </label>
+        <Field
+          label="Assistant number"
+          htmlFor="bot-number"
+          hint="The new number connected in Meta, with country code. Used for the “Continue on WhatsApp” link on the website."
+        >
+          <input
+            id="bot-number"
+            name="number"
+            inputMode="tel"
+            defaultValue={bot.number ? `+${bot.number}` : ''}
+            placeholder="+91 9xxxx xxxxx"
+            className={ADMIN_FIELD}
+          />
+        </Field>
+        <Field
+          label="Most replies per day"
+          htmlFor="bot-cap"
+          hint="A ceiling on cost. When reached, new messages wait for you, marked “You”."
+        >
+          <input
+            id="bot-cap"
+            name="dailyCap"
+            type="number"
+            min={10}
+            max={5000}
+            defaultValue={bot.dailyCap}
+            className={ADMIN_FIELD}
+          />
+        </Field>
+        <div>
+          <SubmitButton>Save</SubmitButton>
+        </div>
+      </form>
+    </Panel>
+  );
+}
+
 /**
  * The business WhatsApp number, answered from the console. Conversations
  * arrive through the webhook; replies go out through Meta's Cloud API.
@@ -92,13 +152,17 @@ export default async function WhatsAppPage({
   const supabase = serviceClient();
 
   if (!ready || !supabase) {
+    const { whatsappBot } = await getSettings();
     return (
       <>
         <PageHeader
-          title="WhatsApp inbox"
-          description="Reply to customers on your business WhatsApp number without leaving the console."
+          title="WhatsApp assistant"
+          description="A separate WhatsApp number that answers prospects and clients by itself — onboarding, questions, consultation booking — with you able to step in on any conversation. Your own number, +91 90255 65526, is not touched."
         />
-        <Setup />
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+          <Setup />
+          <BotSettings bot={whatsappBot} />
+        </div>
       </>
     );
   }
@@ -127,6 +191,11 @@ export default async function WhatsAppPage({
       if (lastIn?.wa_message_id) await markRead(lastIn.wa_message_id);
     }
   }
+
+  const settings = await getSettings();
+  const bot = settings.whatsappBot;
+  const assistantOn = bot.enabled && Boolean(process.env.ANTHROPIC_API_KEY);
+  const waiting = list.filter((x) => x.needs_human).length;
 
   const lastInbound = selected?.last_inbound_at ? new Date(selected.last_inbound_at).getTime() : 0;
   const windowOpen = lastInbound > 0 && Date.now() - lastInbound < WINDOW_MS;
@@ -192,8 +261,16 @@ export default async function WhatsAppPage({
     <>
       <AutoRefresh every={8000} />
       <PageHeader
-        title="WhatsApp inbox"
-        description="Customers' messages to your business number. Free replies within 24 hours of their last message; after that, Meta allows approved templates only."
+        title="WhatsApp assistant"
+        description="The assistant number answers by itself. Pause it on any conversation to reply yourself. Free replies within 24 hours of the customer's last message; after that, Meta allows approved templates only."
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            {waiting ? <Pill tone="caution">{waiting} waiting for you</Pill> : null}
+            <Pill tone={assistantOn ? 'positive' : 'neutral'}>
+              <Bot className="h-3.5 w-3.5" /> Assistant {assistantOn ? 'on' : 'off'}
+            </Pill>
+          </div>
+        }
       />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
@@ -221,6 +298,11 @@ export default async function WhatsAppPage({
                           {x.last_message_at ? time.format(new Date(x.last_message_at)) : '—'}
                         </span>
                       </span>
+                      {x.needs_human ? (
+                        <Pill tone="caution">You</Pill>
+                      ) : x.bot_paused ? (
+                        <Pill>Paused</Pill>
+                      ) : null}
                       {x.unread ? <Pill tone="accent">{x.unread}</Pill> : null}
                     </Link>
                   </li>
@@ -242,6 +324,7 @@ export default async function WhatsAppPage({
               <TemplateForm />
             </div>
           </Panel>
+          <BotSettings bot={bot} />
         </div>
 
         <Panel
@@ -259,22 +342,51 @@ export default async function WhatsAppPage({
           }
           action={
             selected ? (
-              <form action={renameWhatsAppContact} className="flex items-center gap-2">
-                <input type="hidden" name="wa_id" value={selected.wa_id} />
-                <label htmlFor="wa-name" className="sr-only">
-                  Name
-                </label>
-                <input
-                  id="wa-name"
-                  name="name"
-                  defaultValue={selected.name ?? ''}
-                  placeholder="Add a name"
-                  className={`${ADMIN_FIELD} h-9 w-40`}
-                />
-                <SubmitButton tone="quiet" className="h-9">
-                  Save
-                </SubmitButton>
-              </form>
+              <div className="flex flex-wrap items-center gap-2">
+                <form action={setBotPaused}>
+                  <input type="hidden" name="wa_id" value={selected.wa_id} />
+                  <input
+                    type="hidden"
+                    name="paused"
+                    value={selected.bot_paused ? 'false' : 'true'}
+                  />
+                  <SubmitButton tone="quiet" className="h-9" pendingText="…">
+                    {selected.bot_paused ? (
+                      <>
+                        <Bot className="h-4 w-4" /> Hand back to assistant
+                      </>
+                    ) : (
+                      <>
+                        <UserRound className="h-4 w-4" /> Take over
+                      </>
+                    )}
+                  </SubmitButton>
+                </form>
+                {selected.needs_human ? (
+                  <form action={clearNeedsHuman}>
+                    <input type="hidden" name="wa_id" value={selected.wa_id} />
+                    <SubmitButton tone="quiet" className="h-9" pendingText="…">
+                      Mark handled
+                    </SubmitButton>
+                  </form>
+                ) : null}
+                <form action={renameWhatsAppContact} className="flex items-center gap-2">
+                  <input type="hidden" name="wa_id" value={selected.wa_id} />
+                  <label htmlFor="wa-name" className="sr-only">
+                    Name
+                  </label>
+                  <input
+                    id="wa-name"
+                    name="name"
+                    defaultValue={selected.name ?? ''}
+                    placeholder="Add a name"
+                    className={`${ADMIN_FIELD} h-9 w-40`}
+                  />
+                  <SubmitButton tone="quiet" className="h-9">
+                    Save
+                  </SubmitButton>
+                </form>
+              </div>
             ) : null
           }
         >
@@ -292,7 +404,22 @@ export default async function WhatsAppPage({
                     )}
                   >
                     {m.body}
+                    {m.media_id ? (
+                      <a
+                        href={`/api/admin/whatsapp/media/${m.media_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1.5 flex items-center gap-1.5 text-[0.8125rem] font-semibold underline underline-offset-2"
+                      >
+                        <Paperclip className="h-3.5 w-3.5" /> Open file
+                      </a>
+                    ) : null}
                     <span className="mt-1 block text-[0.6875rem] opacity-80">
+                      {m.direction === 'out'
+                        ? m.sent_by === 'assistant'
+                          ? 'Assistant · '
+                          : 'You · '
+                        : ''}
                       {time.format(new Date(m.created_at))}
                       {m.direction === 'out'
                         ? ` · ${m.error ? `failed: ${m.error}` : (m.status ?? 'sent')}`
@@ -302,6 +429,12 @@ export default async function WhatsAppPage({
                 ))}
               </ol>
               <div className="border-t border-[var(--hairline)] px-6 py-4">
+                {assistantOn && selected && !selected.bot_paused ? (
+                  <p className="text-ink-3 mb-3 text-[0.8125rem]">
+                    The assistant is answering this conversation. Press “Take over” to reply
+                    yourself without it joining in.
+                  </p>
+                ) : null}
                 {windowOpen ? (
                   <form action={sendWhatsAppText} className="flex items-end gap-3">
                     <input type="hidden" name="wa_id" value={waId} />

@@ -3,13 +3,17 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { serviceClient } from '@/lib/supabase';
 
 /**
- * WhatsApp Business, through Meta's Cloud API.
+ * WhatsApp Business, through Meta's Cloud API — on a DEDICATED ASSISTANT
+ * NUMBER. The practice's own number (+91 90255 65526) stays on the WhatsApp
+ * Business app exactly as it is: registering a number with the Cloud API
+ * takes it off the app, so that number must never be used here.
  *
  * Inbound messages arrive at /api/whatsapp/webhook, signed with the app
- * secret; replies go out from the console. Meta's rule that shapes the UI:
- * a free-form message can only be sent within 24 hours of the customer's
- * last message. Outside that window — or to start a conversation — only a
- * pre-approved template can be sent.
+ * secret; the assistant (lib/whatsapp-bot.ts) answers them, and the console
+ * can step in. Meta's rule that shapes everything: a free-form message can
+ * only be sent within 24 hours of the customer's last message. Outside that
+ * window — or to start a conversation — only a pre-approved template can be
+ * sent.
  *
  * Configuration is environment-only (nothing secret in the database):
  *   WHATSAPP_TOKEN            permanent system-user access token
@@ -66,6 +70,134 @@ async function graph<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 type SendResult = { messages?: { id: string }[] };
+
+async function send(payload: Record<string, unknown>): Promise<string> {
+  const res = await graph<SendResult>(`/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      ...payload,
+    }),
+  });
+  const id = res.messages?.[0]?.id;
+  if (!id) throw new Error('WhatsApp did not accept the message.');
+  return id;
+}
+
+const cut = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+
+/** Up to three tap-to-reply buttons under a message. */
+export async function sendButtons(
+  to: string,
+  body: string,
+  buttons: { id: string; title: string }[],
+): Promise<string> {
+  return send({
+    to,
+    type: 'interactive',
+    interactive: {
+      type: 'button',
+      body: { text: cut(body, 1024) },
+      action: {
+        buttons: buttons.slice(0, 3).map((b) => ({
+          type: 'reply',
+          reply: { id: cut(b.id, 256), title: cut(b.title, 20) },
+        })),
+      },
+    },
+  });
+}
+
+/** A list the customer opens and picks one row from (at most ten rows). */
+export async function sendList(
+  to: string,
+  body: string,
+  button: string,
+  sections: { title: string; rows: { id: string; title: string; description?: string }[] }[],
+): Promise<string> {
+  let budget = 10;
+  const trimmed = sections
+    .map((sec) => {
+      const rows = sec.rows.slice(0, Math.max(0, budget));
+      budget -= rows.length;
+      return {
+        title: cut(sec.title, 24),
+        rows: rows.map((r) => ({
+          id: cut(r.id, 200),
+          title: cut(r.title, 24),
+          ...(r.description ? { description: cut(r.description, 72) } : {}),
+        })),
+      };
+    })
+    .filter((sec) => sec.rows.length);
+  return send({
+    to,
+    type: 'interactive',
+    interactive: {
+      type: 'list',
+      body: { text: cut(body, 1024) },
+      action: { button: cut(button, 20), sections: trimmed },
+    },
+  });
+}
+
+/** "Typing…" on the customer's screen while the reply is written; marks it read too. */
+export async function typing(messageId: string): Promise<void> {
+  await graph(`/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      status: 'read',
+      message_id: messageId,
+      typing_indicator: { type: 'text' },
+    }),
+  }).catch(() => markRead(messageId));
+}
+
+/**
+ * A one-time sign-in code, through an approved AUTHENTICATION template
+ * (Meta's required category for codes; it carries a copy-code button).
+ */
+export async function sendAuthCode(
+  to: string,
+  code: string,
+  template: string,
+  language: string,
+): Promise<string> {
+  return send({
+    to,
+    type: 'template',
+    template: {
+      name: template,
+      language: { code: language },
+      components: [
+        { type: 'body', parameters: [{ type: 'text', text: code }] },
+        { type: 'button', sub_type: 'url', index: '0', parameters: [{ type: 'text', text: code }] },
+      ],
+    },
+  });
+}
+
+/** Fetches a media file a customer sent, for the console to open. */
+export async function fetchMedia(
+  mediaId: string,
+): Promise<{ bytes: ArrayBuffer; mime: string } | null> {
+  try {
+    const meta = await graph<{ url?: string; mime_type?: string }>(
+      `/${encodeURIComponent(mediaId)}`,
+    );
+    if (!meta.url) return null;
+    const res = await fetch(meta.url, {
+      headers: { Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}` },
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    return { bytes: await res.arrayBuffer(), mime: meta.mime_type ?? 'application/octet-stream' };
+  } catch {
+    return null;
+  }
+}
 
 export async function sendText(to: string, text: string): Promise<string> {
   const res = await graph<SendResult>(`/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
@@ -152,6 +284,7 @@ export async function listTemplates(): Promise<Template[]> {
 /* ------------------------------------------------------------- webhook ---- */
 
 type WebhookValue = {
+  metadata?: { phone_number_id?: string };
   contacts?: { wa_id: string; profile?: { name?: string } }[];
   messages?: {
     id: string;
@@ -164,7 +297,10 @@ type WebhookValue = {
     audio?: { id: string };
     video?: { id: string; caption?: string };
     button?: { text?: string };
-    interactive?: { button_reply?: { title?: string }; list_reply?: { title?: string } };
+    interactive?: {
+      button_reply?: { id?: string; title?: string };
+      list_reply?: { id?: string; title?: string; description?: string };
+    };
     location?: { latitude: number; longitude: number; name?: string };
   }[];
   statuses?: { id: string; status: string; errors?: { title?: string; message?: string }[] }[];
@@ -211,14 +347,33 @@ function describe(m: NonNullable<WebhookValue['messages']>[number]): {
   }
 }
 
-export async function ingestWebhook(payload: unknown): Promise<void> {
+export type Inbound = {
+  waId: string;
+  messageId: string;
+  text: string;
+  kind: string;
+  /** The id behind a tapped button or list row, e.g. "slot:2026-10-06T05:30:00.000Z". */
+  replyId: string | null;
+};
+
+/**
+ * Stores what Meta delivered and returns the inbound messages that are new
+ * (Meta retries deliveries; a repeat is dropped by the unique message id).
+ * Events for any other number on the same WhatsApp account are ignored.
+ */
+export async function ingestWebhook(payload: unknown): Promise<Inbound[]> {
+  const fresh: Inbound[] = [];
   const db = serviceClient();
-  if (!db) return;
+  if (!db) return fresh;
   const entries = (payload as { entry?: { changes?: { value?: WebhookValue }[] }[] })?.entry ?? [];
   for (const entry of entries) {
     for (const change of entry.changes ?? []) {
       const value = change.value;
       if (!value) continue;
+      const ours = process.env.WHATSAPP_PHONE_NUMBER_ID;
+      if (ours && value.metadata?.phone_number_id && value.metadata.phone_number_id !== ours) {
+        continue;
+      }
       const names = new Map((value.contacts ?? []).map((c) => [c.wa_id, c.profile?.name ?? null]));
 
       for (const m of value.messages ?? []) {
@@ -236,6 +391,13 @@ export async function ingestWebhook(payload: unknown): Promise<void> {
         });
         // A duplicate delivery (Meta retries) is a unique violation; skip it.
         if (error) continue;
+        fresh.push({
+          waId: m.from,
+          messageId: m.id,
+          text: body,
+          kind: m.type,
+          replyId: m.interactive?.button_reply?.id ?? m.interactive?.list_reply?.id ?? null,
+        });
         const { data: existing } = await db
           .from('wa_contacts')
           .select('unread, name')
@@ -261,4 +423,5 @@ export async function ingestWebhook(payload: unknown): Promise<void> {
       }
     }
   }
+  return fresh;
 }

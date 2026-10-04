@@ -132,6 +132,8 @@ export const FOOTER_NAV: { heading: string; items: NavItem[] }[] = [
       { href: '/about', label: 'About' },
       { href: '/careers', label: 'Careers' },
       { href: '/contact', label: 'Contact' },
+      { href: '/book', label: 'Book a call' },
+      { href: '/portal', label: 'Client login' },
       { href: '/privacy', label: 'Privacy' },
       { href: '/terms', label: 'Terms' },
       { href: '/cookies', label: 'Cookies' },

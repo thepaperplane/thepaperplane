@@ -1,10 +1,11 @@
+import { runDailyAutomations } from '@/lib/automations';
 import { apiError, apiOk, authorizeCron } from '@/lib/api';
 import { fetchFeed, toRow } from '@/lib/news';
 import { serviceClient } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 /**
  * Daily news refresh. Scheduled by Vercel Cron (see vercel.json).
@@ -25,6 +26,9 @@ export async function GET(request: Request) {
   await purgeOldConversations(supabase).catch((e) =>
     console.error('[cron/news] assistant purge failed', e),
   );
+  // The morning round of automations: Zoho sync, reminders, follow-ups and
+  // the owner's digest (lib/automations.ts). Never blocks the news fetch.
+  await runDailyAutomations().catch((e) => console.error('[cron/news] automations failed', e));
 
   const { data: sources, error: sourcesError } = await supabase
     .from('news_sources')

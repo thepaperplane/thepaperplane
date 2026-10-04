@@ -275,3 +275,78 @@ export async function sendApplicationNotification(application: {
     return { sent: false, error: error instanceof Error ? error.message : 'Send failed' };
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Plain branded notices: sign-in codes, reminders, acknowledgements   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * One layout for every message the practice sends on its own: a heading,
+ * a few paragraphs, an optional button. Text is escaped; links are ours.
+ */
+export async function sendNotice(opts: {
+  to: string;
+  subject: string;
+  eyebrow?: string;
+  heading: string;
+  paragraphs: string[];
+  cta?: { label: string; href: string };
+  replyTo?: string;
+}): Promise<SendResult> {
+  const resend = client();
+  if (!resend) {
+    console.info('[email] RESEND_API_KEY not set — skipping', opts.subject);
+    return { sent: false };
+  }
+  const html = `
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#12131a;">
+      ${opts.eyebrow ? `<p style="margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#1b6e92;">${esc(opts.eyebrow)}</p>` : ''}
+      <h1 style="margin:0 0 18px;font-size:22px;font-weight:600;letter-spacing:-.02em;line-height:1.3;">${esc(opts.heading)}</h1>
+      ${opts.paragraphs
+        .map(
+          (p) =>
+            `<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#44464f;white-space:pre-wrap;">${esc(p)}</p>`,
+        )
+        .join('')}
+      ${
+        opts.cta
+          ? `<p style="margin:22px 0 8px;"><a href="${esc(opts.cta.href)}" style="display:inline-block;background:#1b6e92;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 20px;border-radius:999px;">${esc(opts.cta.label)}</a></p>`
+          : ''
+      }
+      <p style="margin:28px 0 0;font-size:12px;color:#6b6d77;">${esc(SITE.name)} · ${esc(SITE.tagline)} · ${esc(SITE.url.replace('https://', ''))}</p>
+    </div>`;
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM,
+      to: opts.to,
+      replyTo: opts.replyTo ?? REPLY_TO,
+      subject: opts.subject,
+      html,
+      text: [
+        opts.heading,
+        '',
+        ...opts.paragraphs,
+        opts.cta ? `${opts.cta.label}: ${opts.cta.href}` : '',
+      ]
+        .join('\n')
+        .trim(),
+    });
+    if (error) return { sent: false, error: error.message };
+    return { sent: true, id: data?.id };
+  } catch (e) {
+    return { sent: false, error: e instanceof Error ? e.message : 'send failed' };
+  }
+}
+
+export async function sendPortalCode(to: string, code: string): Promise<SendResult> {
+  return sendNotice({
+    to,
+    subject: `${code} is your sign-in code`,
+    eyebrow: 'Client portal',
+    heading: `Your sign-in code: ${code}`,
+    paragraphs: [
+      'Enter this code on the sign-in page to open your client portal. It works once and expires in 10 minutes.',
+      'If you did not try to sign in, you can ignore this email — nobody can sign in without the code.',
+    ],
+  });
+}

@@ -29,7 +29,16 @@ const STARTERS = [
   'When is GSTR-3B due?',
 ];
 
-export function Assistant({ greeting, whatsapp }: { greeting: string; whatsapp: string }) {
+export function Assistant({
+  greeting,
+  whatsapp,
+  botNumber = '',
+}: {
+  greeting: string;
+  whatsapp: string;
+  /** The WhatsApp assistant's number; when set, the chat can continue there. */
+  botNumber?: string;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -286,13 +295,23 @@ export function Assistant({ greeting, whatsapp }: { greeting: string; whatsapp: 
           </form>
           <p className="pa-foot">
             General information from our website, not advice on your situation.{' '}
-            <a
-              href={`https://wa.me/${whatsapp.replace(/\D/g, '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <MessageCircle className="inline h-3 w-3" strokeWidth={2.4} /> WhatsApp a person
-            </a>
+            {botNumber ? (
+              <a
+                href={`https://wa.me/${botNumber.replace(/\D/g, '')}?text=${encodeURIComponent('Hello')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <MessageCircle className="inline h-3 w-3" strokeWidth={2.4} /> Continue on WhatsApp
+              </a>
+            ) : (
+              <a
+                href={`https://wa.me/${whatsapp.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <MessageCircle className="inline h-3 w-3" strokeWidth={2.4} /> WhatsApp a person
+              </a>
+            )}
           </p>
         </section>
       ) : null}

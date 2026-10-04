@@ -296,6 +296,8 @@ export type ClientDocumentRow = {
   size_bytes: number | null;
   notes: string | null;
   created_at: string;
+  visible_to_client: boolean;
+  uploaded_by: string | null;
 };
 
 export type TaskRow = {
@@ -450,6 +452,9 @@ export type WaContactRow = {
   last_inbound_at: string | null;
   unread: number;
   created_at: string;
+  bot_paused: boolean;
+  needs_human: boolean;
+  last_bot_at: string | null;
 };
 
 export type WaMessageRow = {
@@ -464,6 +469,67 @@ export type WaMessageRow = {
   error: string | null;
   sent_by: string | null;
   created_at: string;
+};
+
+export type MeetingRow = {
+  id: string;
+  source: 'website' | 'whatsapp' | 'console';
+  name: string;
+  email: string | null;
+  phone: string | null;
+  wa_id: string | null;
+  topic: string | null;
+  starts_at: string;
+  ends_at: string;
+  google_event_id: string | null;
+  meet_link: string | null;
+  status: 'booked' | 'cancelled' | 'done' | 'no_show';
+  enquiry_id: string | null;
+  client_id: string | null;
+  reminder_sent_at: string | null;
+  created_at: string;
+};
+
+export type PortalCodeRow = {
+  id: number;
+  identifier: string;
+  code_hash: string;
+  expires_at: string;
+  attempts: number;
+  ip_hash: string | null;
+  created_at: string;
+};
+
+export type PortalSessionRow = {
+  id: string;
+  token_hash: string;
+  identifier: string;
+  client_ids: string[];
+  active_client_id: string;
+  user_agent: string | null;
+  created_at: string;
+  expires_at: string;
+  last_seen_at: string;
+  revoked_at: string | null;
+};
+
+export type ClientPortalRow = {
+  client_id: string;
+  enabled: boolean;
+  last_login_at: string | null;
+  logins: number;
+  zoho_portal_invited_at: string | null;
+  updated_at: string;
+};
+
+export type AutomationLogRow = {
+  id: number;
+  at: string;
+  kind: string;
+  ref: string | null;
+  channel: string | null;
+  ok: boolean;
+  detail: string | null;
 };
 
 /** Shape expected by `createClient<Database>()`. */
@@ -508,6 +574,11 @@ export type Database = {
       integration_log: TableDef<IntegrationLogRow>;
       wa_contacts: TableDef<WaContactRow>;
       wa_messages: TableDef<WaMessageRow>;
+      meetings: TableDef<MeetingRow>;
+      portal_codes: TableDef<PortalCodeRow>;
+      portal_sessions: TableDef<PortalSessionRow>;
+      client_portal: TableDef<ClientPortalRow>;
+      automation_log: TableDef<AutomationLogRow>;
     };
     Views: Record<never, never>;
     Functions: {

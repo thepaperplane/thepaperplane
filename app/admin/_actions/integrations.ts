@@ -6,11 +6,12 @@ import { audit } from '@/lib/audit';
 import { serviceClient } from '@/lib/supabase';
 import {
   getZoho,
-  listBooksInvoices,
+  importBooksCustomers,
   logZoho,
   pushContact,
   pushLead,
   revokeZoho,
+  syncBooksInvoices,
 } from '@/lib/integrations/zoho';
 
 /**
@@ -121,50 +122,7 @@ export async function importBooksInvoices(): Promise<void> {
     return;
   }
   try {
-    const invoices = await listBooksInvoices(orgId);
-    const { data: links } = await db()
-      .from('integration_links')
-      .select('local_id, remote_id')
-      .eq('provider', 'zoho')
-      .eq('local_table', 'clients')
-      .eq('remote_module', 'books_contacts');
-    const clientFor = new Map((links ?? []).map((l) => [l.remote_id, l.local_id]));
-    const statusMap: Record<string, 'draft' | 'sent' | 'paid' | 'overdue' | 'void'> = {
-      draft: 'draft',
-      sent: 'sent',
-      viewed: 'sent',
-      partially_paid: 'sent',
-      unpaid: 'sent',
-      overdue: 'overdue',
-      paid: 'paid',
-      void: 'void',
-    };
-    let imported = 0;
-    let skipped = 0;
-    for (const inv of invoices) {
-      const clientId = clientFor.get(inv.customer_id);
-      if (!clientId) {
-        skipped++;
-        continue;
-      }
-      await db()
-        .from('invoices')
-        .upsert(
-          {
-            client_id: clientId,
-            number: inv.invoice_number,
-            description: `Imported from Zoho Books`,
-            issued_on: inv.date,
-            due_on: inv.due_date || null,
-            amount: inv.total,
-            status: statusMap[inv.status] ?? 'sent',
-            paid_on: inv.status === 'paid' ? inv.due_date || inv.date : null,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'number' },
-        );
-      imported++;
-    }
+    const { imported, skipped } = await syncBooksInvoices(orgId);
     await audit(profile.email, 'integrations.zoho.invoices', 'integrations', 'zoho', {
       imported,
       skipped,
@@ -177,6 +135,32 @@ export async function importBooksInvoices(): Promise<void> {
     revalidatePath('/admin/invoices');
   } catch (err) {
     await done('books.invoices', false, err instanceof Error ? err.message : String(err));
+  }
+}
+
+/**
+ * Brings every Zoho Books customer (and their contact people) into the
+ * website's client list — new ones created, existing ones matched and kept in
+ * step. The same runs automatically every morning.
+ */
+export async function importClientsFromBooks(): Promise<void> {
+  const profile = await requireRole('admin');
+  const orgId = String((await settings()).books_org_id ?? '');
+  if (!orgId) {
+    await done('books.import', false, 'No Zoho Books organisation found on this account.');
+    return;
+  }
+  try {
+    const r = await importBooksCustomers(orgId, null);
+    await audit(profile.email, 'integrations.zoho.import', 'integrations', 'zoho', r);
+    await done(
+      'books.import',
+      true,
+      `${r.seen} customers read: ${r.created} new clients, ${r.updated} updated, ${r.persons} contact people`,
+    );
+    revalidatePath('/admin/clients');
+  } catch (err) {
+    await done('books.import', false, err instanceof Error ? err.message : String(err));
   }
 }
 

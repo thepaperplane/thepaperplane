@@ -4,12 +4,13 @@ import { SubmitButton } from '@/components/admin/form-bits';
 import {
   disconnectZoho,
   importBooksInvoices,
+  importClientsFromBooks,
   setAutoLeads,
   syncClientsToBooks,
   syncLeadsToCrm,
 } from '@/app/admin/_actions/integrations';
 import { requireRole } from '@/lib/auth';
-import { getZoho, zohoConfigured } from '@/lib/integrations/zoho';
+import { getZoho, ZOHO_SCOPES, zohoConfigured } from '@/lib/integrations/zoho';
 import { whatsappConfigured } from '@/lib/integrations/whatsapp';
 import { serviceClient } from '@/lib/supabase';
 import type { IntegrationLogRow } from '@/lib/database.types';
@@ -68,6 +69,8 @@ export default async function IntegrationsPage({
   const zoho = await getZoho();
   const configured = zohoConfigured();
   const connected = zoho?.status === 'connected';
+  const granted = new Set((zoho?.scopes ?? '').split(/[\s,]+/).filter(Boolean));
+  const missingScopes = ZOHO_SCOPES.split(',').some((sc) => !granted.has(sc));
   const settings = (zoho?.settings ?? {}) as Record<string, unknown>;
   const wa = whatsappConfigured();
 
@@ -121,6 +124,18 @@ export default async function IntegrationsPage({
           <div className="px-6 py-5">
             {connected ? (
               <>
+                {missingScopes ? (
+                  <p className="bg-caution/10 text-ink mb-5 rounded-[var(--radius-md)] px-4 py-3 text-[0.8125rem] leading-relaxed">
+                    New features need one more Zoho permission.{' '}
+                    <a
+                      href="/api/admin/integrations/zoho/connect"
+                      className="text-accent font-semibold hover:underline"
+                    >
+                      Reconnect Zoho
+                    </a>{' '}
+                    once to grant it — nothing already synced is lost.
+                  </p>
+                ) : null}
                 <dl className="grid gap-3 text-[0.875rem] sm:grid-cols-2">
                   <div>
                     <dt className="text-ink-3 text-[0.75rem]">Account</dt>
@@ -162,7 +177,12 @@ export default async function IntegrationsPage({
                   <SubmitButton tone="quiet">Save</SubmitButton>
                 </form>
 
-                <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  <form action={importClientsFromBooks}>
+                    <SubmitButton className="w-full" pendingText="Importing…">
+                      Books customers → website clients
+                    </SubmitButton>
+                  </form>
                   <form action={syncLeadsToCrm}>
                     <SubmitButton className="w-full" pendingText="Sending…">
                       Enquiries → CRM leads
@@ -181,7 +201,8 @@ export default async function IntegrationsPage({
                 </div>
                 <p className="text-ink-3 mt-3 text-[0.8125rem] leading-relaxed">
                   Safe to press more than once: anything already sent is remembered and skipped.
-                  Invoices import for clients that have been sent to Books first.
+                  Every morning the site also brings in new and changed Books customers and mirrors
+                  their invoices on its own — Books stays the record for billing details.
                 </p>
 
                 <form

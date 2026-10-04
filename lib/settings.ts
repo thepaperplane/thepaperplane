@@ -43,6 +43,42 @@ export type SiteSettings = {
     notes: string;
     /** Most visitor messages answered per day across the whole site. */
     dailyCap: number;
+    /** economy | balanced | best — see lib/ai/claude.ts. */
+    tier: string;
+  };
+  whatsappBot: {
+    /** Answer the bot number automatically. */
+    enabled: boolean;
+    /** The bot number, digits only — used for "Chat on WhatsApp" links. Never shown as text. */
+    number: string;
+    /** Most replies the WhatsApp assistant sends per day, in total. */
+    dailyCap: number;
+  };
+  scheduling: {
+    enabled: boolean;
+    /** Days meetings can be booked on, 0 = Sunday. */
+    days: number[];
+    start: string;
+    end: string;
+    slotMinutes: number;
+    bufferMinutes: number;
+    /** Earliest booking, in hours from now. */
+    leadHours: number;
+    /** How far ahead slots are offered, in days. */
+    horizonDays: number;
+    title: string;
+  };
+  automations: {
+    meetingReminders: boolean;
+    invoiceReminders: boolean;
+    enquiryAcknowledgement: boolean;
+    deadlineNudges: boolean;
+    dailyDigest: boolean;
+    /** Approved WhatsApp template names (bot number), blank to use email only. */
+    reminderTemplate: string;
+    invoiceTemplate: string;
+    otpTemplate: string;
+    templateLanguage: string;
   };
 };
 
@@ -65,6 +101,30 @@ export const DEFAULT_SETTINGS: SiteSettings = {
       'Hello — I can answer questions about our services, deadlines and how we work, straight from this website. What can I help with?',
     notes: '',
     dailyCap: 400,
+    tier: 'economy',
+  },
+  whatsappBot: { enabled: true, number: '', dailyCap: 300 },
+  scheduling: {
+    enabled: true,
+    days: [1, 2, 3, 4, 5, 6],
+    start: '10:00',
+    end: '18:00',
+    slotMinutes: 30,
+    bufferMinutes: 15,
+    leadHours: 3,
+    horizonDays: 10,
+    title: 'The Paper Plane — consultation',
+  },
+  automations: {
+    meetingReminders: true,
+    invoiceReminders: true,
+    enquiryAcknowledgement: true,
+    deadlineNudges: true,
+    dailyDigest: true,
+    reminderTemplate: '',
+    invoiceTemplate: '',
+    otpTemplate: '',
+    templateLanguage: 'en',
   },
 };
 
@@ -77,7 +137,13 @@ function merge(stored: Record<string, unknown>): SiteSettings {
     if (value && typeof value === 'object') {
       Object.entries(value as Record<string, unknown>).forEach(([k, v]) => {
         const target = out[section] as Record<string, unknown>;
-        if (k in target && typeof v === typeof target[k]) target[k] = v;
+        if (
+          k in target &&
+          typeof v === typeof target[k] &&
+          Array.isArray(v) === Array.isArray(target[k])
+        ) {
+          target[k] = v;
+        }
       });
     }
   });
@@ -96,7 +162,7 @@ async function load(): Promise<SiteSettings> {
   }
 }
 
-export const getSettings = unstable_cache(load, ['site-settings-v2'], {
+export const getSettings = unstable_cache(load, ['site-settings-v3'], {
   tags: [SETTINGS_TAG],
   revalidate: 3600,
 });

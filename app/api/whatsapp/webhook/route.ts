@@ -1,8 +1,12 @@
 import { timingSafeEqual } from 'node:crypto';
+import { after } from 'next/server';
+import { respondTo } from '@/lib/whatsapp-bot';
 import { ingestWebhook, verifySignature, whatsappConfigured } from '@/lib/integrations/whatsapp';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// The assistant answers after Meta has its 200: room for a few tool rounds.
+export const maxDuration = 60;
 
 /**
  * Meta's webhook for the WhatsApp Business number.
@@ -46,7 +50,8 @@ export async function POST(request: Request) {
     return new Response('Bad request', { status: 400 });
   }
   try {
-    await ingestWebhook(payload);
+    const fresh = await ingestWebhook(payload);
+    if (fresh.length) after(() => respondTo(fresh));
   } catch (error) {
     // Still 200: Meta retries failures for days, and a poison message would
     // otherwise block the queue. The error is in the server log.
