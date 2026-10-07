@@ -19,7 +19,7 @@ import { SITE } from '@/lib/site';
 
 export const COOKIES_UPDATED = '4 October 2026';
 export const ACCESSIBILITY_UPDATED = '15 September 2026';
-export const SECURITY_UPDATED = '4 October 2026';
+export const SECURITY_UPDATED = '7 October 2026';
 export const COPYRIGHT_UPDATED = '15 September 2026';
 
 export const COOKIES: LegalSection[] = [
@@ -189,6 +189,14 @@ export const SECURITY: LegalSection[] = [
     body: [
       'Clients sign in with a one-time code sent to the email address or phone number already registered with us — there is no password to reuse or steal. Codes expire in ten minutes, are stored only as a salted one-way hash, and lock after a few wrong attempts; requests are rate-limited, and the sign-in form answers the same way whether or not an address belongs to a client, so it cannot be used to discover who our clients are.',
       'Every page and every invoice or document a signed-in client opens is checked against that client’s own record on the server, on every request. A session lasts at most fourteen days, can be ended by signing out, and is ended at once if the practice switches portal access off for that client.',
+    ],
+  },
+  {
+    id: 'quotations',
+    heading: 'Quotations',
+    body: [
+      'A quotation is addressed to one person and lives behind a link made of 144 random bits — it cannot be guessed, and it is not listed anywhere on the site, in the sitemap or by search engines. The page is never cached by a shared cache and cannot be framed. It stops working after a set number of days and a set number of opens, can be switched off by us at any time, and is replaced by a new link if we suspect it has been shared.',
+      'Every amount on a quotation is computed on our server from our price list; nothing in your browser can change it. Requests for quotations are rate-limited and screened before anything is sent.',
     ],
   },
   {

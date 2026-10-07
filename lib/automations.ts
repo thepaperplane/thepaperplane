@@ -4,6 +4,7 @@ import { getSettings } from './settings';
 import { SITE } from './site';
 import { sendNotice } from './email';
 import { zohoDailySync } from './integrations/zoho';
+import { quoteUrl } from './quotes/engine';
 import {
   normaliseWaId,
   sendTemplate,
@@ -306,6 +307,79 @@ export async function runDailyAutomations(opts: { manual?: boolean } = {}): Prom
     out.push(`Deadlines (3 days): ${soon?.length ?? 0}, ${nudged} clients nudged`);
   }
 
+  /* 4b. Quotations: nudge the unopened, the unanswered and the expiring ---- */
+  let quotesHeld = 0;
+  {
+    const { data: held } = await db()
+      .from('quotes')
+      .select('id', { count: 'exact', head: false })
+      .eq('status', 'pending_review');
+    quotesHeld = held?.length ?? 0;
+    let nudged = 0;
+    if (a.quoteFollowUps) {
+      const now = Date.now();
+      const DAY = 86_400_000;
+      const { data: open } = await db()
+        .from('quotes')
+        .select('*')
+        .in('status', ['sent', 'viewed'])
+        .limit(200);
+      for (const q of open ?? []) {
+        if (!q.email || q.email.endsWith('.invalid')) continue;
+        const sentAt = new Date(q.sent_at ?? q.created_at).getTime();
+        const lastView = q.last_viewed_at ? new Date(q.last_viewed_at).getTime() : null;
+        const left = new Date(q.valid_until).getTime() - now;
+        const kind =
+          left > 0 && left < 2 * DAY
+            ? 'expiring'
+            : !lastView && now - sentAt > 2 * DAY
+              ? 'unopened'
+              : lastView && now - lastView > 3 * DAY
+                ? 'unanswered'
+                : null;
+        if (!kind || (await sentRecently('quote_followup', `${q.id}:${kind}`, 60))) continue;
+        const first = q.name.split(' ')[0];
+        const copy = {
+          unopened: {
+            subject: `Your quotation is waiting — ${SITE.name}`,
+            heading: `${first}, in case it got lost in your inbox`,
+            body: [
+              'We prepared a personalised quotation for you, and it has not been opened yet.',
+              'If your plans have changed, no problem at all. If you would like to talk it through first, you can book a free call from the quotation page.',
+            ],
+          },
+          unanswered: {
+            subject: `Any questions about your quotation?`,
+            heading: `${first}, shall we talk it through?`,
+            body: [
+              'Every business is different, so the best next step is usually a short conversation where we understand you fully and confirm the final figure.',
+              'Your quotation is still open — you can ask us a question, add or remove a service, or book a free call from the page.',
+            ],
+          },
+          expiring: {
+            subject: `Your quotation closes on ${dateIN(q.valid_until)}`,
+            heading: `${first}, your quotation closes soon`,
+            body: [
+              `Your quotation stays open until ${dateIN(q.valid_until)}.`,
+              'If you need more time, just reply to this email and we will extend it.',
+            ],
+          },
+        }[kind];
+        const r = await sendNotice({
+          to: q.email,
+          subject: copy.subject,
+          eyebrow: 'Your quotation',
+          heading: copy.heading,
+          paragraphs: copy.body,
+          cta: { label: 'Open my quotation', href: quoteUrl(q.token) },
+        });
+        await log('quote_followup', `${q.id}:${kind}`, 'email', r.sent, `${q.number} ${kind}`);
+        if (r.sent) nudged++;
+      }
+    }
+    out.push(`Quotations: ${quotesHeld} waiting for review, ${nudged} followed up`);
+  }
+
   /* 5. The owner's digest (once a day, from the scheduled run) ------------ */
   if (a.dailyDigest && !opts.manual) {
     const since = new Date(Date.now() - 86400_000).toISOString();
@@ -330,6 +404,7 @@ export async function runDailyAutomations(opts: { manual?: boolean } = {}): Prom
       `Calls today: ${(meetings ?? []).map((m) => `${timeIN(m.starts_at)} ${m.name}`).join(', ') || 'none'}`,
       `Waiting for you on WhatsApp: ${(waiting ?? []).map((w) => w.name ?? `+${w.wa_id}`).join(', ') || 'nobody'}`,
       `Website assistant conversations (24h): ${chats ?? 0}`,
+      `Quotations waiting for your review: ${quotesHeld}`,
       `Overdue invoices: ${overdueCount} (${inr(overdueTotal)})`,
       `Client deadlines in the next 3 days: ${(soon ?? []).map((t) => t.title).join(', ') || 'none'}`,
       '',

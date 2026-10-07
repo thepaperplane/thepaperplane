@@ -11,7 +11,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
         // The console and every API surface stay out of the index.
         // The lab is an internal review surface, not a destination.
-        disallow: ['/admin', '/admin/', '/api/', '/lab', '/portal'],
+        disallow: ['/admin', '/admin/', '/api/', '/lab', '/portal', '/q/', '/get-quote'],
       },
     ],
     sitemap: `${base}/sitemap.xml`,

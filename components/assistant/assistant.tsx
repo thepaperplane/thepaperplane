@@ -23,6 +23,7 @@ type Msg = { role: 'user' | 'assistant'; content: string };
 const STORE = 'pp.assistant.v1';
 
 const STARTERS = [
+  'Do I need a GST registration?',
   'What does your GST service include?',
   'I have received an income tax notice',
   'Can you build a website for my business?',
@@ -81,6 +82,17 @@ export function Assistant({
   useEffect(() => {
     if (open) window.setTimeout(() => field.current?.focus(), 60);
   }, [open]);
+
+  // Other parts of the site can open the assistant, optionally with a starter.
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const prompt = (e as CustomEvent<{ prompt?: string }>).detail?.prompt;
+      if (prompt) setInput(prompt);
+      setOpen(true);
+    };
+    window.addEventListener('pp:assistant', onOpen);
+    return () => window.removeEventListener('pp:assistant', onOpen);
+  }, []);
 
   useEffect(() => {
     const el = log.current;

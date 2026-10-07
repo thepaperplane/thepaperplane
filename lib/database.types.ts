@@ -238,6 +238,7 @@ export type TestimonialRow = {
   author_role: string | null;
   company: string | null;
   avatar_url: string | null;
+  video_url: string | null;
   project_slug: string | null;
   rating: number | null;
   is_published: boolean;
@@ -532,6 +533,9 @@ export type AutomationLogRow = {
   detail: string | null;
 };
 
+export type { QuoteAddonRow, QuoteRow, QuoteServiceRow, QuoteViewRow } from './quotes/types';
+import type { QuoteAddonRow, QuoteRow, QuoteServiceRow, QuoteViewRow } from './quotes/types';
+
 /** Shape expected by `createClient<Database>()`. */
 type TableDef<Row> = {
   Row: Row;
@@ -579,6 +583,10 @@ export type Database = {
       portal_sessions: TableDef<PortalSessionRow>;
       client_portal: TableDef<ClientPortalRow>;
       automation_log: TableDef<AutomationLogRow>;
+      quote_services: TableDef<QuoteServiceRow>;
+      quotes: TableDef<QuoteRow>;
+      quote_views: TableDef<QuoteViewRow>;
+      quote_addons: TableDef<QuoteAddonRow>;
     };
     Views: Record<never, never>;
     Functions: {

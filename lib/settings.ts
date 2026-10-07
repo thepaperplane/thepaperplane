@@ -79,6 +79,25 @@ export type SiteSettings = {
     invoiceTemplate: string;
     otpTemplate: string;
     templateLanguage: string;
+    /** Nudge people who were sent a quotation and have not answered. */
+    quoteFollowUps: boolean;
+  };
+  quotes: {
+    /** auto: send every request that passes the filters · qualified: also needs the minimum score · manual: the owner approves each. */
+    mode: string;
+    minScore: number;
+    /** Days a quotation link stays valid. */
+    validDays: number;
+    /** Opens after which a link stops working until the owner renews it. */
+    maxViews: number;
+    /** Competitor names, domains or phrases (comma or newline separated). A match holds the request for review. */
+    blockedTerms: string;
+    /** A combination discount: this many services or more … */
+    comboMinServices: number;
+    /** … takes this percent off the one-time fees. 0 switches it off. */
+    comboPercent: number;
+    /** Printed under every quotation. */
+    taxNote: string;
   };
 };
 
@@ -125,6 +144,18 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     invoiceTemplate: '',
     otpTemplate: '',
     templateLanguage: 'en',
+    quoteFollowUps: true,
+  },
+  quotes: {
+    mode: 'qualified',
+    minScore: 30,
+    validDays: 14,
+    maxViews: 15,
+    blockedTerms: '',
+    comboMinServices: 3,
+    comboPercent: 0,
+    taxNote:
+      'Professional fees, exclusive of GST where applicable. Government fees, stamp duty and third-party charges are extra, at actual cost.',
   },
 };
 
@@ -162,7 +193,7 @@ async function load(): Promise<SiteSettings> {
   }
 }
 
-export const getSettings = unstable_cache(load, ['site-settings-v3'], {
+export const getSettings = unstable_cache(load, ['site-settings-v4'], {
   tags: [SETTINGS_TAG],
   revalidate: 3600,
 });

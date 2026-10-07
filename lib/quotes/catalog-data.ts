@@ -1,0 +1,1797 @@
+/**
+ * The service catalogue and its default prices.
+ *
+ * Taken from the practice's menu card. Prices here are only the defaults:
+ * the console's Pricing page stores overrides in the database
+ * (quote_services), and lib/quotes/engine.ts layers them on top. Nothing in
+ * this file is ever rendered on a public page — it reaches a visitor only
+ * inside a quotation addressed to them.
+ */
+import type { CatalogService } from './types';
+
+export const DEFAULT_CATALOG: CatalogService[] = [
+  {
+    id: 'partnership',
+    cat: 'start',
+    name: 'Partnership Firm Registration',
+    line: 'Make your business a recognised firm',
+    unit: 'one-time',
+    from: false,
+    note: 'Includes the partnership deed (up to 5 partners) and the firm PAN card.',
+    what: [
+      'Your firm registered with the Registrar of Firms',
+      'Partnership deed drafted for up to 5 partners — included',
+      'Firm PAN card applied for — included',
+      'Help choosing the firm name, capital and profit sharing',
+      'Clear guidance at every step, in plain language',
+    ],
+    docsTitle: 'Documents we will need',
+    docs: [
+      'PAN card and Aadhaar of every partner',
+      'Passport-size photo of every partner',
+      "Business address proof: EB bill or rent agreement with the owner's NOC",
+      'Two or three firm name options',
+      'Capital each partner invests and the profit-sharing ratio',
+    ],
+    steps: [
+      {
+        t: 'Share your details',
+        d: 'Tell us who the partners are, the firm name, capital and profit split.',
+      },
+      {
+        t: 'Deed is prepared',
+        d: 'The partnership deed is drafted for you to read and approve. It is included in the fee.',
+      },
+      {
+        t: 'Everyone signs',
+        d: 'All partners sign the deed on stamp paper.',
+      },
+      {
+        t: 'We file the registration',
+        d: 'We submit everything to the Registrar of Firms and apply for the firm PAN.',
+      },
+      {
+        t: 'You receive your papers',
+        d: 'The registered deed, certificate and firm PAN are handed over to you.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 5000,
+        period: 'once',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['gstreg', 'msme', 'books'],
+    value:
+      'Registered, your firm can bank, contract and prove who owns what — protection that costs far less than the dispute it prevents.',
+    passThrough: 'Stamp duty at actual cost.',
+    govFees: [
+      {
+        label: 'Registrar of Firms fee',
+        amount: null,
+        per: 'once',
+        note: 'Set by your state; confirmed before we file.',
+      },
+      {
+        label: 'Stamp duty on the deed',
+        amount: null,
+        per: 'once',
+        note: 'Depends on your state and the capital.',
+      },
+    ],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'deed',
+    cat: 'start',
+    name: 'Partnership Deed Drafting',
+    line: 'A clear deed every partner understands',
+    unit: 'up to 5 partners',
+    from: false,
+    note: 'Already included when you register a partnership firm with us.',
+    what: [
+      'A partnership deed drafted in plain language',
+      'Capital, profit sharing and roles captured correctly',
+      'Guidance on stamping and signing',
+    ],
+    docsTitle: 'Documents we will need',
+    docs: [
+      'PAN and Aadhaar of every partner',
+      'Capital each partner invests',
+      'Profit-sharing ratio and roles',
+      'Firm name and address',
+    ],
+    steps: [
+      {
+        t: 'Share the terms',
+        d: 'Tell us the partners, capital and profit split.',
+      },
+      {
+        t: 'We draft',
+        d: 'A deed is prepared for every partner to read.',
+      },
+      {
+        t: 'Review and change',
+        d: 'Partners suggest edits until all are comfortable.',
+      },
+      {
+        t: 'Sign on stamp paper',
+        d: 'We guide you through stamping and signing.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 2000,
+        period: 'once',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['partnership', 'gstreg'],
+    value:
+      'The deed settles who puts in what and who takes what. A clear one is cheap insurance against disagreement later.',
+    passThrough: 'Stamp duty at actual cost.',
+    govFees: [
+      {
+        label: 'Stamp duty on the deed',
+        amount: null,
+        per: 'once',
+        note: 'Depends on your state and the capital.',
+      },
+    ],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'company',
+    cat: 'start',
+    name: 'Private Limited & LLP',
+    line: 'A professional structure built for growth',
+    unit: 'professional fee',
+    from: true,
+    note: '',
+    what: [
+      'Company or LLP formed with the Registrar of Companies',
+      'Digital signatures and director IDs arranged for you',
+      'Founding documents prepared and explained',
+      'Guidance on the right structure for your plans',
+    ],
+    docsTitle: 'Documents we will need',
+    docs: [
+      'PAN card and Aadhaar of every director or partner',
+      'Passport-size photo of each',
+      'Personal address proof: recent bank statement or utility bill',
+      'Mobile number and email of each director or partner',
+      "Office address proof: EB bill or rent agreement with the owner's NOC",
+      'Two or three preferred company names',
+    ],
+    steps: [
+      {
+        t: 'Choose the structure',
+        d: 'We explain Private Limited, LLP and other options in plain words and help you pick.',
+      },
+      {
+        t: 'Check the name',
+        d: 'We test your name options so they are likely to be approved.',
+      },
+      {
+        t: 'Prepare the papers',
+        d: 'Digital signatures, director IDs and founding documents are readied for your review.',
+      },
+      {
+        t: 'We file',
+        d: 'The incorporation is submitted and we handle any queries from the authorities.',
+      },
+      {
+        t: 'You are incorporated',
+        d: 'You receive your certificate and guidance on next steps: GST, bank account and compliance.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 10000,
+        period: 'once',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['gstreg', 'msme', 'books'],
+    value:
+      'Choosing the right structure on day one avoids a costly restructure later — we help you pick before we file anything.',
+    passThrough: 'Government fees at actual cost.',
+    govFees: [
+      {
+        label: 'Government filing fees and stamp duty',
+        amount: null,
+        per: 'once',
+        note: 'Depend on the capital and state; confirmed before we file.',
+      },
+    ],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'gstreg',
+    cat: 'start',
+    name: 'GST Registration',
+    line: 'Get your GST number, hassle-free',
+    unit: 'for proprietorship',
+    from: false,
+    note: '',
+    what: [
+      'Your GST number for sales and tax credits',
+      'We answer any query raised by the tax officer',
+      'A simple guide to what to do after registration',
+    ],
+    docsTitle: 'Documents we will need',
+    docs: [
+      'PAN card and Aadhaar of the owner or partners',
+      'Passport-size photo',
+      "Business address proof: EB bill or rent agreement with the owner's NOC",
+      'Cancelled cheque or first page of bank passbook',
+      'Mobile number and email of the owner',
+      'Partnership firms: partnership deed and firm PAN',
+    ],
+    steps: [
+      {
+        t: 'Share documents',
+        d: 'Send the checklist items. Photos from your phone are fine.',
+      },
+      {
+        t: 'We prepare the application',
+        d: 'We fill in your business details and choose the right category.',
+      },
+      {
+        t: 'Quick verification',
+        d: 'You approve with an OTP or Aadhaar verification on your phone.',
+      },
+      {
+        t: 'We file and follow up',
+        d: 'We submit and answer any questions from the department.',
+      },
+      {
+        t: 'GST number delivered',
+        d: 'You receive your certificate and next-step guidance.',
+      },
+    ],
+    variants: [
+      {
+        id: 'prop',
+        label: 'Proprietorship',
+        price: 2000,
+        period: 'once',
+      },
+      {
+        id: 'firm',
+        label: 'Partnership firm or company',
+        price: 3000,
+        period: 'once',
+      },
+    ],
+    ask: 'variant',
+    askLabel: 'What type of business is it?',
+    related: ['gstret', 'books'],
+    value:
+      'Your GST number lets you invoice customers properly and claim tax credit on what you buy.',
+    passThrough: '',
+    govFees: [
+      {
+        label: 'GST registration',
+        amount: 0,
+        per: 'once',
+        note: 'There is no government fee for GST registration.',
+      },
+    ],
+    defaultVariant: 'prop',
+  },
+  {
+    id: 'msme',
+    cat: 'start',
+    name: 'MSME (Udyam) Registration',
+    line: 'Official recognition for your small business',
+    unit: 'one-time',
+    from: false,
+    note: '',
+    what: [
+      'Your Udyam certificate, recognising your business as an MSME',
+      'Eligibility for MSME benefits such as priority lending and government schemes',
+      'Done fully online. No office visits.',
+    ],
+    docsTitle: 'Documents we will need',
+    docs: [
+      'Aadhaar of the owner or authorised person',
+      'PAN card',
+      'Mobile number linked to Aadhaar',
+      'Bank account details',
+      'Business activity and start date',
+      'GST number, if you have one',
+    ],
+    steps: [
+      {
+        t: 'Share details',
+        d: 'Send your Aadhaar, PAN and a few business details.',
+      },
+      {
+        t: 'We fill the form',
+        d: 'We prepare your Udyam application accurately.',
+      },
+      {
+        t: 'OTP verification',
+        d: 'You approve with the OTP sent to your Aadhaar-linked mobile.',
+      },
+      {
+        t: 'Certificate delivered',
+        d: 'Your Udyam certificate is shared with you as a PDF.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 500,
+        period: 'once',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['gstreg', 'fssai'],
+    value:
+      'A small fee for recognised MSME status, and access to priority lending and government schemes.',
+    passThrough: '',
+    govFees: [
+      {
+        label: 'Udyam registration',
+        amount: 0,
+        per: 'once',
+        note: 'Udyam registration carries no government fee.',
+      },
+    ],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'pan',
+    cat: 'start',
+    name: 'PAN Card Application',
+    line: 'A new PAN for a person or a business',
+    unit: 'one-time',
+    from: false,
+    note: 'Already included when you register a partnership firm with us.',
+    what: [
+      'Application prepared and submitted for you',
+      'Correct details so there are no later corrections',
+      'Your PAN delivered to you by email',
+    ],
+    docsTitle: 'Documents we will need',
+    docs: [
+      'Aadhaar card and the mobile number linked to it',
+      'Passport-size photo and your signature on white paper',
+      'For a firm or company: registration papers and ID of the signatory',
+    ],
+    steps: [
+      {
+        t: 'Share details',
+        d: 'Send your Aadhaar, photo and signature.',
+      },
+      {
+        t: 'We prepare the application',
+        d: 'We fill every field carefully and show it to you.',
+      },
+      {
+        t: 'You verify',
+        d: 'A quick OTP confirmation on your phone.',
+      },
+      {
+        t: 'We submit',
+        d: 'The application is filed and tracked.',
+      },
+      {
+        t: 'PAN delivered',
+        d: 'Your PAN is sent to you as soon as it is issued.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 500,
+        period: 'once',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['gstreg', 'msme'],
+    value: 'One short application, done right the first time, so there are no corrections later.',
+    passThrough: '',
+    govFees: [
+      {
+        label: 'PAN application fee',
+        amount: null,
+        per: 'once',
+        note: 'A small fee; instant e-PAN through Aadhaar is free where you are eligible.',
+      },
+    ],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'fssai',
+    cat: 'start',
+    name: 'FSSAI Food Licence',
+    line: 'Basic registration, State or Central licence',
+    unit: 'per application',
+    from: false,
+    note: 'The same professional fee for Basic, State and Central licences.',
+    what: [
+      'The right licence type chosen for your business size',
+      'Application prepared and filed by us',
+      'Support on any query from the food safety department',
+    ],
+    docsTitle: 'Documents we will need',
+    docs: [
+      'Aadhaar and photo of the owner or partners',
+      "Business address proof: EB bill or rent agreement with the owner's NOC",
+      'List of the food products you make or sell',
+      'State or Central licence: layout plan of the premises',
+      'State or Central licence: water test report and list of machinery',
+      'Partnership deed or company papers, if applicable',
+    ],
+    steps: [
+      {
+        t: 'Pick the licence',
+        d: 'We tell you which licence your business needs.',
+      },
+      {
+        t: 'Collect documents',
+        d: 'We guide you through the checklist and tell you what to arrange.',
+      },
+      {
+        t: 'We file the application',
+        d: 'Everything is prepared and submitted for you.',
+      },
+      {
+        t: 'Queries and inspection',
+        d: 'We respond to department queries and prepare you for any inspection.',
+      },
+      {
+        t: 'Licence delivered',
+        d: 'You receive your licence and a short guide on displaying it and renewing it.',
+      },
+    ],
+    variants: [
+      {
+        id: 'basic',
+        label: 'Basic registration',
+        price: 1000,
+        period: 'once',
+      },
+      {
+        id: 'state',
+        label: 'State licence',
+        price: 1000,
+        period: 'once',
+      },
+      {
+        id: 'central',
+        label: 'Central licence',
+        price: 1000,
+        period: 'once',
+      },
+    ],
+    ask: 'variant',
+    askLabel: 'Which licence does your business need? (Not sure? Choose Basic and we will advise.)',
+    related: ['impexp', 'msme'],
+    value:
+      'The wrong licence type is a problem you meet at inspection. We choose the right one for your scale first.',
+    passThrough: 'Government licence fee at actual cost.',
+    govFees: [
+      {
+        label: 'Basic registration fee',
+        amount: 100,
+        per: 'year',
+        variants: ['basic'],
+        note: 'Indicative; per year.',
+      },
+      {
+        label: 'State licence fee',
+        amount: 2000,
+        per: 'year',
+        variants: ['state'],
+        note: 'Indicative; depends on the kind of food business, per year.',
+      },
+      {
+        label: 'Central licence fee',
+        amount: 7500,
+        per: 'year',
+        variants: ['central'],
+        note: 'Indicative; per year.',
+      },
+    ],
+    defaultVariant: 'basic',
+  },
+  {
+    id: 'impexp',
+    cat: 'start',
+    name: 'Import-Export Setup',
+    line: 'IE Code and export council registration',
+    unit: 'each',
+    from: false,
+    note: '',
+    what: [
+      'Your Import-Export Code to trade internationally',
+      'RCMC registration with the export promotion council',
+      'Guidance on your first steps as an exporter',
+    ],
+    docsTitle: 'Documents we will need',
+    docs: [
+      'Business PAN card',
+      'Cancelled cheque or bank certificate',
+      'Business address proof',
+      'Passport-size photo of the owner or partner',
+      'For RCMC: your IE Code and GST number',
+    ],
+    steps: [
+      {
+        t: 'Share documents',
+        d: 'Send the checklist items.',
+      },
+      {
+        t: 'We prepare the application',
+        d: 'We fill the DGFT application with your business details.',
+      },
+      {
+        t: 'Quick verification',
+        d: 'You confirm with an OTP or digital approval.',
+      },
+      {
+        t: 'We file and track',
+        d: 'The application is submitted and followed up.',
+      },
+      {
+        t: 'Code delivered',
+        d: 'You receive your IE Code. RCMC follows the same simple process.',
+      },
+    ],
+    variants: [
+      {
+        id: 'ie',
+        label: 'IE Code',
+        price: 1000,
+        period: 'once',
+      },
+      {
+        id: 'rcmc',
+        label: 'RCMC',
+        price: 1000,
+        period: 'once',
+      },
+      {
+        id: 'both',
+        label: 'IE Code and RCMC',
+        price: 2000,
+        period: 'once',
+      },
+    ],
+    ask: 'variant',
+    askLabel: 'Which registration do you need?',
+    related: ['fssai', 'gstreg'],
+    value:
+      'You cannot trade across borders without an IE Code. We set the registrations up in the right order.',
+    passThrough: 'Government fees, if any, at actual cost.',
+    govFees: [
+      {
+        label: 'IE Code fee',
+        amount: 500,
+        per: 'once',
+        variants: ['ie', 'both'],
+        note: 'Indicative.',
+      },
+      {
+        label: 'RCMC fee',
+        amount: null,
+        per: 'once',
+        variants: ['rcmc', 'both'],
+        note: 'Set by the export promotion council.',
+      },
+    ],
+    defaultVariant: 'ie',
+  },
+  {
+    id: 'rental',
+    cat: 'start',
+    name: 'Rental Agreement Drafting',
+    line: 'A clear, fair agreement for landlord and tenant',
+    unit: 'per agreement',
+    from: false,
+    note: '',
+    what: [
+      'A clearly written agreement both sides understand',
+      'Your rent, deposit and conditions captured correctly',
+      'Guidance on stamping and signing',
+    ],
+    docsTitle: 'Details we will need',
+    docs: [
+      'ID proof of landlord and tenant',
+      'Property address and ownership proof',
+      'Monthly rent, deposit and lease period',
+      'Any special conditions you want added',
+    ],
+    steps: [
+      {
+        t: 'Share the terms',
+        d: 'Tell us the rent, deposit, period and any special conditions.',
+      },
+      {
+        t: 'We draft',
+        d: 'A clear agreement is prepared in simple language.',
+      },
+      {
+        t: 'You review',
+        d: 'Both sides read it and ask for changes.',
+      },
+      {
+        t: 'Finalise and sign',
+        d: 'We guide you on stamp paper and signing.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 1000,
+        period: 'once',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['deed'],
+    value:
+      'A clear agreement protects landlord and tenant alike, and doubles as address proof for registrations.',
+    passThrough: 'Stamp duty at actual cost.',
+    govFees: [
+      {
+        label: 'Stamp duty',
+        amount: null,
+        per: 'once',
+        note: 'Depends on your state and the rent.',
+      },
+    ],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'gstret',
+    cat: 'tax',
+    name: 'GST Monthly Returns',
+    line: 'Filed on time, every month',
+    unit: 'per month',
+    from: true,
+    note: 'Priced by your monthly B2B invoice count. If you have both B2B and B2C sales, the B2B slab applies and B2C is included free.',
+    what: [
+      'GSTR-1 and GSTR-3B prepared and filed every month',
+      'Bills recorded and matched so nothing is missed',
+      'A short monthly summary of your tax position',
+      'We keep track of every due date for you',
+    ],
+    docsTitle: 'What we need each month',
+    docs: [
+      'Sales invoices for the month',
+      'Purchase invoices for the month',
+      'Bank statement for the month',
+      'GST portal login access (we guide you to share it safely)',
+    ],
+    steps: [
+      {
+        t: "You send the month's bills",
+        d: 'Share invoices and statements by WhatsApp, email or drive.',
+      },
+      {
+        t: 'We record and match',
+        d: 'Everything is entered and checked against your bank.',
+      },
+      {
+        t: 'You see the summary',
+        d: 'We share the numbers and the tax payable for your approval.',
+      },
+      {
+        t: 'We file the returns',
+        d: 'GSTR-1 and GSTR-3B are filed with your go-ahead.',
+      },
+      {
+        t: 'Acknowledgement shared',
+        d: 'You receive proof of filing and the payment details.',
+      },
+    ],
+    variants: [
+      {
+        id: 't0',
+        label: 'Nil return',
+        price: 500,
+        period: 'month',
+      },
+      {
+        id: 't1',
+        label: 'B2C only, any volume',
+        price: 1000,
+        period: 'month',
+      },
+      {
+        id: 't2',
+        label: '1 – 25 invoices',
+        price: 1000,
+        period: 'month',
+      },
+      {
+        id: 't3',
+        label: '26 – 50',
+        price: 1500,
+        period: 'month',
+      },
+      {
+        id: 't4',
+        label: '51 – 100',
+        price: 2500,
+        period: 'month',
+      },
+      {
+        id: 't5',
+        label: '101 – 200',
+        price: 3500,
+        period: 'month',
+      },
+      {
+        id: 't6',
+        label: '201 – 500',
+        price: 5000,
+        period: 'month',
+      },
+      {
+        id: 't7',
+        label: '501 – 1,000',
+        price: 7500,
+        period: 'month',
+      },
+      {
+        id: 't8',
+        label: '1,001 – 2,500',
+        price: 11000,
+        period: 'month',
+      },
+      {
+        id: 't9',
+        label: '2,501 – 5,000',
+        price: 15000,
+        period: 'month',
+      },
+      {
+        id: 't10',
+        label: '5,001 – 10,000',
+        price: 20000,
+        period: 'month',
+      },
+    ],
+    ask: 'variant',
+    askLabel: 'How many B2B invoices do you issue in a month?',
+    related: ['gstreg', 'books', 'notice'],
+    value:
+      'Filed on time every month, so a due date never costs you late fees or lost input credit.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 't2',
+  },
+  {
+    id: 'itr',
+    cat: 'tax',
+    name: 'Income Tax Return',
+    line: 'Accurate filing and every legal saving claimed',
+    unit: 'per return',
+    from: false,
+    note: 'Past-year or belated returns are charged per year',
+    what: [
+      'Return prepared for salary, business, capital gains or other income',
+      'Deductions and exemptions claimed properly',
+      'Your tax summary explained before we file',
+      'Help with e-verification and your acknowledgement',
+    ],
+    docsTitle: 'Documents we will need',
+    docs: [
+      'PAN card and Aadhaar',
+      'Form 16 or salary slips, if you are employed',
+      'Bank statements and interest certificates',
+      'Investment, insurance and loan proofs',
+      'Business income and expense details, if any',
+    ],
+    steps: [
+      {
+        t: 'Share your documents',
+        d: 'Send what you have. We tell you if anything is missing.',
+      },
+      {
+        t: 'We match your tax records',
+        d: 'We pull your tax statements from the portal and match them with your papers.',
+      },
+      {
+        t: 'You see the summary',
+        d: 'We explain your income, deductions and tax or refund before filing.',
+      },
+      {
+        t: 'We file the return',
+        d: 'Filed online with your approval.',
+      },
+      {
+        t: 'You verify, we hand over',
+        d: 'A quick OTP e-verification, then you get your acknowledgement.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 2000,
+        period: 'once',
+      },
+    ],
+    ask: 'qty',
+    askLabel: 'How many years of returns?',
+    related: ['books', 'project'],
+    value:
+      'Every legal deduction claimed and matched to your tax records, so you neither overpay nor invite a mismatch notice.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'books',
+    cat: 'tax',
+    name: 'Bookkeeping & Accounts',
+    line: 'Books that are always up to date',
+    unit: 'per month',
+    from: false,
+    note: '',
+    what: [
+      'Every transaction recorded',
+      'Bank and ledger reconciliation',
+      'Data ready for monthly GST and compliance filings',
+      'Year-end financial statements ready for your auditor or bank',
+    ],
+    docsTitle: 'Documents we will need',
+    docs: [
+      'Bank statements',
+      'Sales and purchase bills',
+      'Expense vouchers and receipts',
+      'Stock, loan and asset details',
+    ],
+    steps: [
+      {
+        t: 'Set up your books',
+        d: 'We set up your accounts in Zoho Books or Tally.',
+      },
+      {
+        t: 'You send bills',
+        d: 'Share bills and statements as they come.',
+      },
+      {
+        t: 'We record and reconcile',
+        d: 'Entries are made and matched with your bank.',
+      },
+      {
+        t: 'Monthly summary',
+        d: 'You see where money came from and where it went.',
+      },
+      {
+        t: 'Year-end statements',
+        d: 'Your financial statements are prepared and ready to share.',
+      },
+    ],
+    variants: [
+      {
+        id: 'month',
+        label: 'Monthly',
+        price: 3000,
+        period: 'month',
+      },
+      {
+        id: 'year',
+        label: 'Full year',
+        price: 25000,
+        period: 'year',
+      },
+    ],
+    ask: 'variant',
+    askLabel: 'Monthly, or the full year?',
+    related: ['gstret', 'itr', 'project'],
+    value:
+      'Books that are always current give you real numbers to decide with, and make every filing and loan application faster.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 'month',
+  },
+  {
+    id: 'notice',
+    cat: 'tax',
+    name: 'Tax Notice Replies',
+    line: 'Calm, correct answers to tax notices',
+    unit: 'per notice',
+    from: true,
+    note: 'Appeals and hearings are quoted after we read the order',
+    what: [
+      'Your notice explained in plain words',
+      'A well-drafted reply backed by your records',
+      'Filing on the portal within the deadline',
+      'Follow-up until the matter is closed',
+    ],
+    docsTitle: 'Documents we will need',
+    docs: [
+      'Copy of the notice or order',
+      'Returns already filed for that period',
+      'Related invoices, bank statements and records',
+      'Earlier letters or correspondence',
+      'Portal login access, shared securely',
+    ],
+    steps: [
+      {
+        t: 'Share the notice',
+        d: 'Send it as soon as you get it. Deadlines matter.',
+      },
+      {
+        t: 'We read and explain',
+        d: 'You get a plain-language explanation of what is being asked.',
+      },
+      {
+        t: 'We draft the reply',
+        d: 'Your reply is prepared with supporting records.',
+      },
+      {
+        t: 'You approve, we file',
+        d: 'Filed on the portal within the deadline.',
+      },
+      {
+        t: 'We follow up',
+        d: 'We track the matter until it is closed.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 2000,
+        period: 'once',
+      },
+    ],
+    ask: 'qty',
+    askLabel: 'How many notices?',
+    related: ['gstret', 'books'],
+    value:
+      'A notice answered on time and backed by your records is far calmer than one answered in a panic.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'project',
+    cat: 'tax',
+    name: 'Project Report for Loans',
+    line: 'A professional report banks take seriously',
+    unit: 'per report',
+    from: true,
+    note: '',
+    what: [
+      'A complete project report for bank loans and subsidy applications',
+      'Projected profits, cash flow and repayment capacity',
+      'Cost of project and means of finance laid out clearly',
+    ],
+    docsTitle: 'What we will need',
+    docs: [
+      'Your business idea: what you plan to build or sell',
+      'Promoter details and KYC',
+      'Cost of machinery, building and working capital needed',
+      'Supplier quotations',
+      'Past financials, if the business already runs',
+    ],
+    steps: [
+      {
+        t: 'Understand your plan',
+        d: 'A conversation about your business, market and goals.',
+      },
+      {
+        t: 'Collect costs and quotes',
+        d: 'We list what you need to invest and how it will be funded.',
+      },
+      {
+        t: 'Build the projections',
+        d: 'Sales, profit and loan repayment are projected clearly.',
+      },
+      {
+        t: 'Review together',
+        d: 'You read it and ask for changes.',
+      },
+      {
+        t: 'Final report delivered',
+        d: 'You receive the finished report as an editable file and a PDF.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 10000,
+        period: 'once',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['books', 'company'],
+    value:
+      'A bank reads your project report before it meets you. A well-built one is your strongest case for the loan.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'landing',
+    cat: 'web',
+    name: 'Landing Page & Business Website',
+    line: 'Your business, beautifully online',
+    unit: 'starting from',
+    from: true,
+    note: 'Care plan (hosting, backups, updates) ₹5,000 per year',
+    what: [
+      'Elegant design that looks perfect on phones, tablets and computers',
+      'Built to be found on Google, with SEO included',
+      'Call, WhatsApp and map buttons for your customers',
+      'Smooth, modern animations and quality imagery',
+      'Secure cloud hosting and care available',
+    ],
+    docsTitle: 'What we will need from you',
+    docs: [
+      'Business name, logo and brand colours',
+      'About you and your services (we can help write it)',
+      'Photos of your work, team or products',
+      'Contact details and social media links',
+      'Websites you like, for inspiration',
+      'Preferred domain name',
+    ],
+    steps: [
+      {
+        t: 'We talk',
+        d: 'A friendly chat to understand your business and what visitors should do on your site.',
+      },
+      {
+        t: 'Design preview',
+        d: 'You see how it will look before we build everything.',
+      },
+      {
+        t: 'We build',
+        d: 'Pages are built, tested on every device and refined with your feedback.',
+      },
+      {
+        t: 'Launch',
+        d: 'Domain, hosting and going live are all handled by us.',
+      },
+      {
+        t: 'Stay cared for',
+        d: 'Optional care plan: hosting, backups, security and small edits.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 25000,
+        period: 'once',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['domain', 'careplan', 'gbp', 'brand'],
+    value:
+      'Your website works every hour of the day: customers find you, trust you and get in touch while you are busy.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'booking',
+    cat: 'web',
+    name: 'Website with Online Bookings',
+    line: 'Let customers book and pay in advance',
+    unit: 'one-time',
+    from: false,
+    note: 'Ideal for clinics, salons, studios and consultants',
+    what: [
+      'A professional website that is easy to find on Google',
+      'Appointment booking that works around the clock',
+      'Advance payments collected online with Razorpay',
+      'Bookings sync to your Google Calendar',
+      'Mobile-friendly design with quality service images',
+    ],
+    docsTitle: 'What we will need from you',
+    docs: [
+      'Your services, timings and fees',
+      'Photos of your place, team and services',
+      'Logo and brand colours',
+      'Google account for calendar sync',
+      'Razorpay account (we help you set it up)',
+    ],
+    steps: [
+      {
+        t: 'Understand how you take bookings',
+        d: 'We learn your services, timings and rules.',
+      },
+      {
+        t: 'Design preview',
+        d: 'You see the website and booking flow first.',
+      },
+      {
+        t: 'Build booking and payments',
+        d: 'Calendar, advance payments and confirmations are connected.',
+      },
+      {
+        t: 'Test a full booking',
+        d: 'We book, pay and cancel as a customer would.',
+      },
+      {
+        t: 'Launch and train you',
+        d: 'You go live and learn how to manage bookings.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 30000,
+        period: 'once',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['videoconsult', 'whatsapp', 'gbp'],
+    value:
+      'Bookings and advance payments arrive without a phone call, so your front desk can focus on people.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'store',
+    cat: 'web',
+    name: 'Online Store',
+    line: 'Sell your products online, around the clock',
+    unit: 'starting from',
+    from: true,
+    note: 'Care plan ₹10,000 per year',
+    what: [
+      'A store designed for your brand that looks great on every device',
+      'Your product catalogue set up for you',
+      'Shopping cart and secure online payments',
+      'A shipping partner connected',
+      'Care plan: security checks, daily backups and quick help with orders',
+    ],
+    docsTitle: 'What we will need from you',
+    docs: [
+      'Product list with photos, prices and descriptions',
+      'Business details and bank account for payments',
+      'Shipping preferences and delivery areas',
+      'Logo, brand colours and packaging photos',
+      'Licences needed for your products, for example FSSAI for food',
+    ],
+    steps: [
+      {
+        t: 'Plan the store',
+        d: 'We agree on products, categories, payments and delivery.',
+      },
+      {
+        t: 'Design preview',
+        d: 'You see the look of the store before it is built.',
+      },
+      {
+        t: 'Add products and payments',
+        d: 'Catalogue, cart, secure payments and shipping are set up.',
+      },
+      {
+        t: 'Test a real order',
+        d: 'We place test orders from start to finish.',
+      },
+      {
+        t: 'Launch and train you',
+        d: 'The store goes live and we show you how to manage it.',
+      },
+      {
+        t: 'Stay cared for',
+        d: 'Optional care plan keeps it safe, backed up and running.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 50000,
+        period: 'once',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['domain', 'storecare', 'whatsapp', 'canva'],
+    value: 'A store that sells while you sleep, built so you can run it yourself.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'custom',
+    cat: 'web',
+    name: 'Custom Website & Web App',
+    line: 'If you can describe it, we can build it',
+    unit: 'starting point',
+    from: true,
+    note: 'You receive a fixed quote before any work begins',
+    what: [
+      'Customer or client portals with their own logins',
+      'Dashboards, reports and internal tools',
+      'Booking, billing, memberships and subscriptions',
+      'Connected to tools you already use, such as Zoho, Google and WhatsApp',
+      'Designed around exactly how your business works',
+    ],
+    docsTitle: 'What we will need from you',
+    docs: [
+      'A description of how the work flows today',
+      'Examples of apps or sites you admire',
+      'Who will use it and what each person should do',
+      'Forms, sheets or data you use today',
+      'Your timeline and budget range',
+    ],
+    steps: [
+      {
+        t: 'Discovery',
+        d: 'We listen, ask the right questions and map your idea.',
+      },
+      {
+        t: 'Proposal and fixed quote',
+        d: 'You get a clear scope, timeline and price before work begins.',
+      },
+      {
+        t: 'Design preview',
+        d: 'You see and approve the look and flow first.',
+      },
+      {
+        t: 'Built in stages',
+        d: 'You review progress at every stage, with no surprises.',
+      },
+      {
+        t: 'Test, train, launch',
+        d: 'We test thoroughly, train your team and take it live.',
+      },
+      {
+        t: 'Support',
+        d: 'Ongoing care and improvements as your business grows.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 75000,
+        period: 'once',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['ai', 'brand', 'careplan'],
+    value:
+      'Software shaped around how you actually work, with a fixed quote agreed before any work begins.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'domain',
+    cat: 'web',
+    name: 'Domain Purchase',
+    line: 'Your own web address, in your name',
+    unit: 'per domain',
+    from: false,
+    note: '',
+    what: [
+      'Domain name bought and set up in your name',
+      'Pointed to your website',
+      'Renewal reminders',
+    ],
+    docsTitle: 'Documents we will need',
+    docs: [
+      'Two or three preferred domain names',
+      'Your existing domain and website access, if any',
+    ],
+    steps: [
+      {
+        t: 'Pick the name',
+        d: 'We check availability for your options.',
+      },
+      {
+        t: 'We purchase and set up',
+        d: 'The domain is registered and connected.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 1016,
+        period: 'once',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['landing', 'store'],
+    value: 'Your name on the internet, set up properly in your ownership.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'careplan',
+    cat: 'web',
+    name: 'Website Care Plan',
+    line: 'Hosting, backups, security and small edits',
+    unit: 'per year',
+    from: false,
+    note: '',
+    what: [
+      'Secure hosting',
+      'Regular backups',
+      'Security updates',
+      'Small edits when you need them',
+    ],
+    docsTitle: 'Documents we will need',
+    docs: ['Your website access'],
+    steps: [
+      {
+        t: 'We take over the care',
+        d: 'Hosting, backups and updates start from the day you sign up.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 5000,
+        period: 'year',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['gbp'],
+    value:
+      'Hosting, backups and updates handled, so the site stays fast and safe without you thinking about it.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'storecare',
+    cat: 'web',
+    name: 'Online Store Care Plan',
+    line: 'Security checks, daily backups, order support',
+    unit: 'per year',
+    from: false,
+    note: '',
+    what: ['Security checks', 'Daily backups', 'Quick help with orders'],
+    docsTitle: 'Documents we will need',
+    docs: ['Your store access'],
+    steps: [
+      {
+        t: 'We take over the care',
+        d: 'Security and backups start from the day you sign up.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 10000,
+        period: 'year',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['gbp'],
+    value: 'Security checks, daily backups and quick help with orders, so the store keeps selling.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'brand',
+    cat: 'brand',
+    name: 'Brand Identity & Logo',
+    line: 'A look people remember',
+    unit: 'starting from',
+    from: true,
+    note: 'Premium packaging and brand storytelling on request',
+    what: [
+      'A logo that fits your business',
+      'Colour palette and fonts chosen with intent',
+      'A consistent look for social media, cards and packaging',
+      'Final files for print and digital use',
+    ],
+    docsTitle: 'What we will need from you',
+    docs: [
+      'Your brand name and tagline',
+      'What you do and who you serve',
+      'Colours and styles you like',
+      'Brands you admire, as references',
+      'Your existing logo, if any',
+    ],
+    steps: [
+      {
+        t: 'Briefing chat',
+        d: 'We learn your story, customers and the feeling you want.',
+      },
+      {
+        t: 'Concepts shared',
+        d: 'You see design directions with the reasoning behind them.',
+      },
+      {
+        t: 'You choose, we refine',
+        d: 'Your feedback shapes the final look.',
+      },
+      {
+        t: 'Brand kit delivered',
+        d: 'Logo files, colours and fonts are handed over, ready to use.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 3000,
+        period: 'once',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['canva', 'landing'],
+    value:
+      'A consistent identity makes a small business look established — every card, post and package works harder.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'canva',
+    cat: 'brand',
+    name: 'Canva Design Pack',
+    line: 'Ready-to-use designs you can edit yourself',
+    unit: 'starting from',
+    from: true,
+    note: '',
+    what: [
+      'Brochures, catalogues, menus and posters',
+      'Social media posts and stories in your brand style',
+      'Editable Canva templates so you can update them yourself',
+    ],
+    docsTitle: 'What we will need from you',
+    docs: [
+      'Text and offers to include',
+      'Photos and logo',
+      'Brand colours, if you have them',
+      'Sizes or formats needed, such as Instagram, A4 or banner',
+    ],
+    steps: [
+      {
+        t: 'Share your content',
+        d: 'Send the text, photos and any references.',
+      },
+      {
+        t: 'Design draft',
+        d: 'You see the first designs in your brand style.',
+      },
+      {
+        t: 'Your feedback',
+        d: 'We adjust until it feels right.',
+      },
+      {
+        t: 'Final files delivered',
+        d: 'Print-ready files and editable templates are shared.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 2000,
+        period: 'once',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['brand', 'landing'],
+    value: 'Editable templates mean your team can produce on-brand material in minutes.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'whatsapp',
+    cat: 'auto',
+    name: 'WhatsApp Automation',
+    line: 'Your business, answering on WhatsApp',
+    unit: 'starting from',
+    from: true,
+    note: '',
+    what: [
+      'Guided chat that lets customers book by themselves',
+      'Automatic confirmations and reminders',
+      'Payment links sent inside the chat',
+      'Easy reschedule and cancel',
+      'Answers to common questions about your business',
+    ],
+    docsTitle: 'What we will need from you',
+    docs: [
+      'Your business WhatsApp number',
+      'Your services, timings and prices',
+      'Payment gateway account, if you take payments',
+      'How you would like your messages to sound',
+    ],
+    steps: [
+      {
+        t: 'Map the conversation',
+        d: 'We plan what customers ask and how the chat should reply.',
+      },
+      {
+        t: 'Connect WhatsApp Business',
+        d: 'The official WhatsApp Business connection is set up for you.',
+      },
+      {
+        t: 'Build and test',
+        d: 'We test every path like a real customer would.',
+      },
+      {
+        t: 'Go live',
+        d: 'Your number starts answering automatically.',
+      },
+      {
+        t: 'Tune after launch',
+        d: 'We improve replies based on real conversations.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 5000,
+        period: 'once',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['booking', 'tools'],
+    value: 'Customers book and get answers on the app they already use — instantly, at any hour.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'tools',
+    cat: 'auto',
+    name: 'Smart Business Tools',
+    line: 'Little tools that save hours every week',
+    unit: 'starting from',
+    from: true,
+    note: '',
+    what: [
+      'Costing and pricing calculators',
+      'Order, stock or client trackers',
+      'Simple dashboards and reports',
+      'Auto-generated quotes and invoices',
+      'Built exactly around your process',
+    ],
+    docsTitle: 'What we will need from you',
+    docs: [
+      'How you do this task today',
+      'Your current sheets or forms',
+      'What you want the result to look like',
+      'Who will use the tool',
+    ],
+    steps: [
+      {
+        t: 'Understand the task',
+        d: 'We watch or listen to how you do it today.',
+      },
+      {
+        t: 'Sketch and agree',
+        d: 'You see what the tool will look like and do.',
+      },
+      {
+        t: 'Build',
+        d: 'The tool is built around your own numbers and rules.',
+      },
+      {
+        t: 'Test with your data',
+        d: 'We check it against real examples.',
+      },
+      {
+        t: 'Handover and training',
+        d: 'You get a simple guide and we show you how to use it.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 2000,
+        period: 'once',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['ai', 'whatsapp'],
+    value: 'A small tool that replaces a daily chore pays for itself in the hours it gives back.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'ai',
+    cat: 'auto',
+    name: 'AI & Workflow Automation',
+    line: 'Let software do the repeat work',
+    unit: 'starting from',
+    from: true,
+    note: '',
+    what: [
+      'Invoices, customers and reminders created automatically',
+      'Forms and sheets connected to Zoho, Google and more',
+      'AI helpers that draft replies, summarise and sort information',
+      'Alerts so nothing slips through',
+    ],
+    docsTitle: 'What we will need from you',
+    docs: [
+      'A list of tasks you repeat often',
+      'Tools you use, such as Zoho, Google Sheets, WhatsApp or email',
+      'Sample data or documents',
+      'How you prefer to be notified',
+    ],
+    steps: [
+      {
+        t: 'Spot what to automate',
+        d: 'We find the repeat tasks that cost you the most time.',
+      },
+      {
+        t: 'Draw the workflow',
+        d: 'You see the flow on paper before anything is built.',
+      },
+      {
+        t: 'Build and connect',
+        d: 'Your tools are connected and the automation is created.',
+      },
+      {
+        t: 'Test on real examples',
+        d: 'We run real cases to make sure it behaves.',
+      },
+      {
+        t: 'Handover',
+        d: 'You get a simple guide and ongoing support.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 5000,
+        period: 'once',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['tools', 'custom'],
+    value:
+      'Repetitive work done automatically and without slips, so your team’s time goes where only people can help.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'videoconsult',
+    cat: 'auto',
+    name: 'Video Consultation Module',
+    line: 'Let clients consult you on video, booked and paid online',
+    unit: 'one-time',
+    from: false,
+    note: 'Added to a website with online bookings',
+    what: [
+      'Video consultations booked from your website',
+      'Payment collected before the visit',
+      'Reminders sent automatically',
+    ],
+    docsTitle: 'Documents we will need',
+    docs: [
+      'Your consultation timings and fees',
+      'The Google account for your calendar',
+      'Payment gateway account, if you take payments',
+    ],
+    steps: [
+      {
+        t: 'Share how you consult',
+        d: 'Timings, fees and how you want visits to run.',
+      },
+      {
+        t: 'We build and connect',
+        d: 'Booking, payment and the video link are connected.',
+      },
+      {
+        t: 'Test together',
+        d: 'We run a test visit with you.',
+      },
+      {
+        t: 'Go live',
+        d: 'Clients can book and consult from your site.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 5000,
+        period: 'once',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['booking', 'gbp'],
+    value: 'Serve clients anywhere, with booking and payment built into the same visit.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 'std',
+  },
+  {
+    id: 'gbp',
+    cat: 'auto',
+    name: 'Google Business Profile',
+    line: 'Posts, reviews and local search tracking, every month',
+    unit: 'per month',
+    from: false,
+    note: '',
+    what: [
+      'Regular posts and offers on your Google profile',
+      'Reviews watched and replied to',
+      'Local search performance tracked',
+    ],
+    docsTitle: 'Documents we will need',
+    docs: [
+      'Business name, address, hours and photos',
+      'Access to your Google Business Profile, shared securely',
+    ],
+    steps: [
+      {
+        t: 'Share access and details',
+        d: 'We set up or take over your profile safely.',
+      },
+      {
+        t: 'We optimise',
+        d: 'Categories, photos and details are corrected.',
+      },
+      {
+        t: 'Monthly care',
+        d: 'Posts, reviews and tracking, every month.',
+      },
+    ],
+    variants: [
+      {
+        id: 'std',
+        label: '',
+        price: 2000,
+        period: 'month',
+      },
+    ],
+    ask: null,
+    askLabel: '',
+    related: ['landing', 'canva'],
+    value: 'Show up when people search near you, with fresh posts and reviews handled for you.',
+    passThrough: '',
+    govFees: [],
+    defaultVariant: 'std',
+  },
+];

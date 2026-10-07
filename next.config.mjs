@@ -97,6 +97,21 @@ const nextConfig = {
         ],
       },
       {
+        // Quotations are private to the person they were sent to: never
+        // indexed, archived, cached by a shared cache, or framed.
+        source: '/q/:path*',
+        headers: [
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Cache-Control', value: 'no-store, max-age=0' },
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' },
+          { key: 'Referrer-Policy', value: 'no-referrer' },
+        ],
+      },
+      {
+        source: '/get-quote',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
+      {
         source: '/api/:path*',
         headers: [{ key: 'X-Robots-Tag', value: 'noindex' }],
       },

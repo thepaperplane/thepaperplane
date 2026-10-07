@@ -62,7 +62,7 @@ const PAGES = [
 ];
 
 /** Indexable pages must carry these. /lab must not be indexable at all. */
-const NOINDEX_EXPECTED = ['/lab', '/portal'];
+const NOINDEX_EXPECTED = ['/lab', '/portal', '/get-quote'];
 
 const failures = [];
 const warnings = [];

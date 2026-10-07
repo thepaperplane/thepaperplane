@@ -6,6 +6,8 @@ import { pageOg } from '@/lib/site';
 import { loadPortfolio } from '@/lib/portfolio';
 import { loadContent, pick } from '@/lib/content';
 import { FlightRule } from '@/components/site/flight-rule';
+import { loadTestimonials } from '@/lib/public-data';
+import { PlayCircle } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Work',
@@ -22,7 +24,12 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function WorkPage() {
-  const [projects, copy] = await Promise.all([loadPortfolio(), loadContent('work')]);
+  const [projects, copy, testimonials] = await Promise.all([
+    loadPortfolio(),
+    loadContent('work'),
+    loadTestimonials(),
+  ]);
+  const stories = testimonials.filter((t) => t.video_url);
   const live = projects.filter((p) => p.status === 'live');
   const staged = projects.filter((p) => p.status === 'staged');
 
@@ -127,6 +134,41 @@ export default async function WorkPage() {
           </div>
         </Container>
       </Section>
+
+      {/* Client stories: links out, nothing embedded, so the site keeps its no-third-party promise. */}
+      {stories.length > 0 ? (
+        <Section className="pt-4 pb-16">
+          <Container>
+            <SectionHeading
+              eyebrow="Client stories"
+              title="In their own words"
+              lede="A few clients on camera, talking about working with us."
+            />
+            <ul className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {stories.map((t) => (
+                <li key={t.id} className="bento flex flex-col rounded-[var(--radius-lg)] p-6">
+                  <p className="text-ink-2 text-[0.9375rem] leading-relaxed">“{t.quote}”</p>
+                  <p className="text-ink mt-4 text-[0.875rem] font-semibold">
+                    {t.author_name}
+                    {t.company ? (
+                      <span className="text-ink-3 font-normal"> · {t.company}</span>
+                    ) : null}
+                  </p>
+                  <a
+                    href={t.video_url!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent mt-4 inline-flex h-10 items-center gap-2 text-[0.9375rem] font-semibold"
+                  >
+                    <PlayCircle className="h-5 w-5" aria-hidden="true" /> Watch the video
+                    <span className="sr-only"> (opens in a new tab)</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </Container>
+        </Section>
+      ) : null}
 
       {/* In progress */}
       {staged.length > 0 ? (

@@ -45,6 +45,7 @@ export async function saveAutomations(formData: FormData): Promise<void> {
     enquiryAcknowledgement: on('enquiryAcknowledgement'),
     deadlineNudges: on('deadlineNudges'),
     dailyDigest: on('dailyDigest'),
+    quoteFollowUps: on('quoteFollowUps'),
     ...parsed.data,
   };
   await db()
