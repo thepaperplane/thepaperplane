@@ -46,7 +46,7 @@ const FLASH: Record<string, string> = {
   'sent=whatsapp': 'Sent on WhatsApp.',
   'sent=email+whatsapp': 'Sent by email and on WhatsApp.',
   'sent=none':
-    'Not sent — there is no working email address, and WhatsApp only allows a message within a day of theirs. Copy the link below and send it yourself.',
+    'Not sent. The reason is in the yellow box below. Meanwhile, copy the link under “The client’s link” and send it yourself.',
   'saved=1': 'Saved.',
   'invoice=created': 'Invoice created as a draft. Find it under the client’s invoices.',
   'invoice=failed': 'The invoice could not be created — the number may already be in use.',
@@ -123,6 +123,14 @@ export default async function QuoteDetail({
           className="bg-sunken text-ink mb-5 rounded-[var(--radius-md)] px-4 py-3 text-[0.875rem] font-medium"
         >
           {flash}
+        </p>
+      ) : null}
+      {q.hold_reason?.startsWith('Not delivered') && q.status !== 'pending_review' ? (
+        <p
+          role="status"
+          className="bg-caution/10 text-ink mb-5 rounded-[var(--radius-md)] px-4 py-3 text-[0.875rem]"
+        >
+          <strong>Last send failed.</strong> {q.hold_reason}
         </p>
       ) : null}
       {q.status === 'pending_review' ? (

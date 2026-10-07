@@ -513,12 +513,14 @@ async function whatsappIfOpen(to: string | null | undefined, text: string): Prom
 export async function deliverQuote(
   q: QuoteRow,
   opts: { skipWhatsApp?: boolean } = {},
-): Promise<{ email: boolean; whatsapp: boolean }> {
+): Promise<{ email: boolean; whatsapp: boolean; error?: string }> {
   const url = quoteUrl(q.token);
   const first = q.name.split(' ')[0] || 'there';
   const until = dateIN(q.valid_until);
   let email = false;
-  if (q.email && !q.email.endsWith('.invalid')) {
+  let error: string | undefined;
+  if (!q.email || q.email.endsWith('.invalid')) error = 'This quotation has no email address.';
+  else {
     const r = await sendNotice({
       to: q.email,
       subject: `Your quotation from ${SITE.name} (${q.number})`,
@@ -532,6 +534,7 @@ export async function deliverQuote(
       cta: { label: 'View my quotation', href: url },
     });
     email = r.sent;
+    if (!r.sent) error = r.error ?? 'The email service did not accept the message.';
   }
   const whatsapp = opts.skipWhatsApp
     ? false
@@ -552,7 +555,7 @@ export async function deliverQuote(
       })
       .eq('id', q.id);
   }
-  return { email, whatsapp };
+  return { email, whatsapp, error: email || whatsapp ? undefined : error };
 }
 
 export async function notifyOwner(subject: string, lines: string[], path = '/admin/quotes') {
