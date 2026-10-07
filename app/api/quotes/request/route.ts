@@ -124,11 +124,11 @@ export async function POST(request: Request) {
       const r = await deliverQuote(q, { skipWhatsApp: true });
       sent = r.email;
       if (!sent) {
+        q.hold_reason = `Not delivered: ${(r.error ?? 'the email service did not accept it').slice(0, 200)}`;
         await supabase
           .from('quotes')
-          .update({ status: 'pending_review', hold_reason: 'The email could not be delivered' })
+          .update({ status: 'pending_review', hold_reason: q.hold_reason })
           .eq('id', q.id);
-        q.hold_reason = 'The email could not be delivered';
       }
     }
 

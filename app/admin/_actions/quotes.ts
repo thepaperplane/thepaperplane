@@ -133,9 +133,18 @@ export async function saveQuote(formData: FormData): Promise<void> {
     const r = await deliverQuote(q);
     sent =
       [r.email ? 'email' : '', r.whatsapp ? 'whatsapp' : ''].filter(Boolean).join('+') || 'none';
+    if (sent === 'none') await recordFailure(q.id, r.error);
   }
   touch(q.id);
   redirect(`/admin/quotes/${q.id}${sent ? `?sent=${sent}` : '?saved=1'}`);
+}
+
+/** Keeps the real reason a send failed where the console can show it. */
+async function recordFailure(id: string, error?: string) {
+  await db()
+    .from('quotes')
+    .update({ hold_reason: `Not delivered: ${(error ?? 'unknown error').slice(0, 200)}` })
+    .eq('id', id);
 }
 
 /** Releases a held request, or sends a quotation again. */
@@ -148,11 +157,13 @@ export async function sendQuoteNow(formData: FormData): Promise<void> {
   await audit(profile.email, 'quote.send', 'quotes', q.id, {
     email: r.email,
     whatsapp: r.whatsapp,
+    error: r.error,
   });
+  const sent =
+    [r.email ? 'email' : '', r.whatsapp ? 'whatsapp' : ''].filter(Boolean).join('+') || 'none';
+  if (sent === 'none') await recordFailure(q.id, r.error);
   touch(q.id);
-  redirect(
-    `/admin/quotes/${q.id}?sent=${[r.email ? 'email' : '', r.whatsapp ? 'whatsapp' : ''].filter(Boolean).join('+') || 'none'}`,
-  );
+  redirect(`/admin/quotes/${q.id}?sent=${sent}`);
 }
 
 export async function setQuoteStatus(formData: FormData): Promise<void> {
