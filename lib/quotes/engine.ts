@@ -11,6 +11,7 @@ import { getSettings, type SiteSettings } from '@/lib/settings';
 import { SITE } from '@/lib/site';
 import { serviceClient } from '@/lib/supabase';
 import { DEFAULT_CATALOG } from './catalog-data';
+import { checklistFor } from './checklists';
 import type {
   CatalogService,
   Period,
@@ -162,7 +163,30 @@ export function buildItems(
       });
     }
   }
-  return out;
+  return applyIncludes(catalog, out);
+}
+
+/**
+ * A service that another chosen service already includes (the deed and firm
+ * PAN inside a partnership registration, GST inside a company incorporation)
+ * is not a separate line: it would charge the client twice for one piece of
+ * work. It is dropped, and named on the line that includes it.
+ */
+export function applyIncludes(catalog: PricedService[], items: QuoteItem[]): QuoteItem[] {
+  const names = new Map(catalog.map((s) => [s.id, s.name]));
+  const included = new Set<string>();
+  for (const it of items) {
+    if (it.kind !== 'service' || !it.serviceId) continue;
+    catalog.find((s) => s.id === it.serviceId)?.includes.forEach((x) => included.add(x));
+  }
+  return items
+    .filter((it) => !(it.kind === 'service' && it.serviceId && included.has(it.serviceId)))
+    .map((it) => {
+      const svc = it.serviceId ? catalog.find((s) => s.id === it.serviceId) : undefined;
+      return svc?.includes.length
+        ? { ...it, includes: svc.includes.map((x) => names.get(x) ?? x) }
+        : it;
+    });
 }
 
 export function comboDiscount(items: QuoteItem[], s: SiteSettings['quotes']): number {
@@ -700,7 +724,8 @@ export async function addServiceToQuote(q: QuoteRow, serviceId: string): Promise
   if (q.items.some((i) => i.serviceId === serviceId)) return q;
   const [added] = buildItems(catalog, [{ serviceId }], { onlyActive: true });
   if (!added) throw new Error('That service is not available.');
-  const items = [...q.items, { ...added, addedByClient: true }];
+  const items = applyIncludes(catalog, [...q.items, { ...added, addedByClient: true }]);
+  if (items.length === q.items.length && !items.some((i) => i.serviceId === serviceId)) return q;
   const discount = comboDiscount(items, settings.quotes);
   const { data, error } = await db()
     .from('quotes')
@@ -738,4 +763,83 @@ export async function acceptQuote(q: QuoteRow, by: string): Promise<void> {
   await ensureClient({ ...q, status: 'accepted' }).catch((e) =>
     console.error('[quotes] could not create the client', e instanceof Error ? e.message : e),
   );
+}
+
+/* ------------------------------------------- the checklist message ------- */
+
+/**
+ * The practice's work-order message for an accepted quotation: for each
+ * service the numbered documents and details, then — only on a final
+ * quotation — the fee and how to pay, and the usual processing time. The
+ * same text goes by email and, inside the 24-hour window, on WhatsApp.
+ */
+export function checklistMessage(
+  q: QuoteRow,
+  settings: SiteSettings['quotes'],
+  addons: QuoteAddonRow[] = [],
+): string {
+  const final = q.kind === 'final';
+  const blocks: string[] = [];
+  for (const it of q.items) {
+    if (it.kind !== 'service' || !it.serviceId) continue;
+    const cl = checklistFor(it.serviceId, it.variantId);
+    if (!cl) continue;
+    const head = `${it.name}${it.label ? ` – ${it.label}` : ''}`.toUpperCase();
+    const lines = [head, '', 'Please share the following documents/details:', ''];
+    let n = 0;
+    for (const grp of cl.groups) for (const x of grp.items) lines.push(`${++n}. ${x.t}`);
+    if (it.includes?.length)
+      lines.push('', `Also included in this fee: ${it.includes.join(', ')}.`);
+    if (final && it.period === 'once') lines.push('', `💰 ${it.name} Fee: ${inr(it.amount)}`);
+    else if (final)
+      lines.push(
+        '',
+        `💰 ${it.name} Fee: ${inr(it.amount)}${it.period === 'month' ? ' per month' : ' per year'}`,
+      );
+    lines.push('', `⏱️ Processing Time: ${cl.timeline}`);
+    blocks.push(lines.join('\n'));
+  }
+  if (final && settings.upiId) {
+    const st = statement(q, addons);
+    blocks.push(
+      [
+        `Total to begin: ${inr(st.grand)}`,
+        '',
+        'Payment to be made through UPI to:',
+        settings.upiId,
+        '',
+        'Please make the payment to initiate the work.',
+        'Government fees, where applicable, are paid at actual cost and are not included above.',
+      ].join('\n'),
+    );
+  }
+  return blocks.join('\n\n————————————\n\n');
+}
+
+export async function sendChecklist(
+  q: QuoteRow,
+): Promise<{ email: boolean; whatsapp: boolean; error?: string }> {
+  const [settings, addons] = await Promise.all([getSettings(), getAddons(q.id)]);
+  const text = checklistMessage(q, settings.quotes, addons);
+  if (!text)
+    return { email: false, whatsapp: false, error: 'There is no checklist for these services.' };
+  let email = false;
+  let error: string | undefined;
+  if (q.email && !q.email.endsWith('.invalid')) {
+    const r = await sendNotice({
+      to: q.email,
+      subject: `What we need from you — ${q.number}`,
+      eyebrow: 'Documents and details',
+      heading: `${q.name.split(' ')[0]}, here is what to send us`,
+      paragraphs: [
+        ...text.split('\n\n————————————\n\n'),
+        'You can reply to this email with the documents, send them on WhatsApp, or see them laid out with pictures on your quotation page.',
+      ],
+      cta: { label: 'Open my quotation', href: quoteUrl(q.token) },
+    });
+    email = r.sent;
+    if (!r.sent) error = r.error;
+  } else error = 'This quotation has no email address.';
+  const whatsapp = await whatsappIfOpen(q.wa_id ?? q.phone, text.slice(0, 3800));
+  return { email, whatsapp, error: email || whatsapp ? undefined : error };
 }

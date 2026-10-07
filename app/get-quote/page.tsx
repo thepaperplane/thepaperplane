@@ -33,6 +33,7 @@ export default async function GetQuotePage({
       askLabel: s.askLabel,
       variants: s.variants.map((v) => ({ id: v.id, label: v.label })),
       defaultVariant: s.defaultVariant,
+      includes: s.includes,
     }));
   const pre = one('s')
     .split(',')
@@ -48,7 +49,7 @@ export default async function GetQuotePage({
             as="h1"
             eyebrow="Your quotation"
             title="Tell us what you need"
-            lede="Choose the services you are thinking about and tell us a little about your business. We will email you a personalised quotation — usually within minutes."
+            lede="Three short steps, then a personalised quotation lands in your inbox — usually within minutes."
           />
           <RequestForm
             services={services}

@@ -84,6 +84,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
       },
     ],
     defaultVariant: 'std',
+    includes: ['deed', 'pan'],
   },
   {
     id: 'deed',
@@ -146,17 +147,19 @@ export const DEFAULT_CATALOG: CatalogService[] = [
       },
     ],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'company',
     cat: 'start',
     name: 'Private Limited & LLP',
     line: 'A professional structure built for growth',
-    unit: 'professional fee',
+    unit: 'professional fee, starting from',
     from: true,
-    note: '',
+    note: 'Includes the company’s GST registration.',
     what: [
       'Company or LLP formed with the Registrar of Companies',
+      'GST registration of the new company — included',
       'Digital signatures and director IDs arranged for you',
       'Founding documents prepared and explained',
       'Guidance on the right structure for your plans',
@@ -188,21 +191,21 @@ export const DEFAULT_CATALOG: CatalogService[] = [
         d: 'The incorporation is submitted and we handle any queries from the authorities.',
       },
       {
-        t: 'You are incorporated',
-        d: 'You receive your certificate and guidance on next steps: GST, bank account and compliance.',
+        t: 'Incorporated and GST-registered',
+        d: 'You receive your certificate, the company’s GST number and guidance on next steps: bank account and compliance.',
       },
     ],
     variants: [
       {
         id: 'std',
         label: '',
-        price: 10000,
+        price: 30000,
         period: 'once',
       },
     ],
     ask: null,
     askLabel: '',
-    related: ['gstreg', 'msme', 'books'],
+    related: ['msme', 'books', 'brand'],
     value:
       'Choosing the right structure on day one avoids a costly restructure later — we help you pick before we file anything.',
     passThrough: 'Government fees at actual cost.',
@@ -215,6 +218,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
       },
     ],
     defaultVariant: 'std',
+    includes: ['gstreg'],
   },
   {
     id: 'gstreg',
@@ -289,6 +293,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
       },
     ],
     defaultVariant: 'prop',
+    includes: [],
   },
   {
     id: 'msme',
@@ -353,6 +358,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
       },
     ],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'pan',
@@ -417,6 +423,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
       },
     ],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'fssai',
@@ -512,6 +519,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
       },
     ],
     defaultVariant: 'basic',
+    includes: [],
   },
   {
     id: 'impexp',
@@ -599,6 +607,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
       },
     ],
     defaultVariant: 'ie',
+    includes: [],
   },
   {
     id: 'rental',
@@ -661,6 +670,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
       },
     ],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'gstret',
@@ -781,6 +791,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 't2',
+    includes: [],
   },
   {
     id: 'itr',
@@ -842,6 +853,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'books',
@@ -908,6 +920,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 'month',
+    includes: [],
   },
   {
     id: 'notice',
@@ -969,6 +982,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'project',
@@ -1029,6 +1043,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'landing',
@@ -1092,6 +1107,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'booking',
@@ -1154,6 +1170,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'store',
@@ -1219,6 +1236,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'custom',
@@ -1285,6 +1303,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'domain',
@@ -1329,6 +1348,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'careplan',
@@ -1368,6 +1388,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'storecare',
@@ -1401,6 +1422,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'brand',
@@ -1458,6 +1480,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'canva',
@@ -1512,6 +1535,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'whatsapp',
@@ -1572,6 +1596,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'tools',
@@ -1632,6 +1657,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'ai',
@@ -1692,6 +1718,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'videoconsult',
@@ -1745,6 +1772,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 'std',
+    includes: [],
   },
   {
     id: 'gbp',
@@ -1793,5 +1821,6 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     passThrough: '',
     govFees: [],
     defaultVariant: 'std',
+    includes: [],
   },
 ];

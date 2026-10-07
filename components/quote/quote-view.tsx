@@ -2,6 +2,7 @@ import Link from 'next/link';
 import {
   CalendarClock,
   Check,
+  Clock,
   FileText,
   MessageCircle,
   PlayCircle,
@@ -13,6 +14,10 @@ import {
   AddonDecision,
   MessageBox,
 } from '@/components/quote/quote-actions';
+import { PaymentPanel } from '@/components/quote/payment-panel';
+import { Checklist } from '@/components/quote/checklist';
+import { ProcessFlow } from '@/components/quote/process-flow';
+import { checklistFor } from '@/lib/quotes/checklists';
 import { dateIN, govTotals, inr, statement } from '@/lib/quotes/engine';
 import type { PricedService, QuoteAddonRow, QuoteItem, QuoteRow } from '@/lib/quotes/types';
 import { SITE, whatsappLink } from '@/lib/site';
@@ -114,6 +119,7 @@ export function QuoteView({
   addons,
   catalog,
   taxNote,
+  payment,
   work,
   stories,
   admin = false,
@@ -122,6 +128,8 @@ export function QuoteView({
   addons: QuoteAddonRow[];
   catalog: PricedService[];
   taxNote: string;
+  /** UPI details; shown only on an accepted final quotation. */
+  payment?: { upiId: string; upiName: string };
   work: QuoteWork[];
   stories: QuoteStory[];
   admin?: boolean;
@@ -133,7 +141,10 @@ export function QuoteView({
   const open = (q.status === 'sent' || q.status === 'viewed') && !admin;
   const byId = new Map(catalog.map((s) => [s.id, s]));
   const hasWeb = q.items.some((i) => i.serviceId && byId.get(i.serviceId)?.cat === 'web');
-  const have = new Set(q.items.map((i) => i.serviceId));
+  const have = new Set<string | undefined>(q.items.map((i) => i.serviceId));
+  q.items.forEach((i) =>
+    (i.serviceId ? byId.get(i.serviceId)?.includes : [])?.forEach((x) => have.add(x)),
+  );
   const suggestions = [
     ...new Set(q.items.flatMap((i) => (i.serviceId ? (byId.get(i.serviceId)?.related ?? []) : []))),
   ]
@@ -181,7 +192,7 @@ export function QuoteView({
         {/* The menu card */}
         <Card title="Your services">
           <ul className="divide-y divide-[var(--hairline)]">
-            {q.items.map((i) => {
+            {q.items.map((i, idx) => {
               const svc = i.serviceId ? byId.get(i.serviceId) : undefined;
               const day = perDay(i.amount, i.period);
               return (
@@ -217,6 +228,22 @@ export function QuoteView({
                     <p className="text-ink-3 mt-2 text-[0.8125rem] leading-relaxed">{i.note}</p>
                   ) : null}
 
+                  {i.includes?.length ? (
+                    <p className="text-ink-2 mt-3 flex flex-wrap items-center gap-2 text-[0.8125rem]">
+                      <span className="text-positive font-semibold">
+                        Also included in this fee:
+                      </span>
+                      {i.includes.map((x) => (
+                        <span
+                          key={x}
+                          className="bg-positive/10 text-positive rounded-full px-2.5 py-0.5 font-semibold"
+                        >
+                          {x}
+                        </span>
+                      ))}
+                    </p>
+                  ) : null}
+
                   {svc ? (
                     <div className="mt-3 grid gap-2">
                       <details className="group">
@@ -235,32 +262,53 @@ export function QuoteView({
                           ))}
                         </ul>
                       </details>
-                      {svc.docs.length ? (
-                        <details>
-                          <summary className="text-accent cursor-pointer text-[0.875rem] font-semibold">
-                            {svc.docsTitle}
-                          </summary>
-                          <ul className="text-ink-2 mt-2 ml-5 list-disc text-[0.875rem]">
-                            {svc.docs.map((d) => (
-                              <li key={d}>{d}</li>
-                            ))}
-                          </ul>
-                        </details>
-                      ) : null}
-                      {svc.steps.length ? (
-                        <details>
-                          <summary className="text-accent cursor-pointer text-[0.875rem] font-semibold">
-                            How it works
-                          </summary>
-                          <ol className="text-ink-2 mt-2 ml-5 list-decimal text-[0.875rem]">
-                            {svc.steps.map((s) => (
-                              <li key={s.t} className="mt-1">
-                                <strong className="text-ink">{s.t}.</strong> {s.d}
-                              </li>
-                            ))}
-                          </ol>
-                        </details>
-                      ) : null}
+                      {(() => {
+                        const cl = i.serviceId ? checklistFor(i.serviceId, i.variantId) : null;
+                        return (
+                          <details open={idx === 0}>
+                            <summary className="text-accent cursor-pointer text-[0.875rem] font-semibold">
+                              What we need from you, and how it works
+                              <span className="text-ink-3 ml-2 font-normal">
+                                {cl ? `${cl.count} items · ` : ''}
+                                {svc.steps.length} steps
+                              </span>
+                            </summary>
+                            <div className="mt-4 grid gap-6">
+                              {svc.steps.length ? (
+                                <div>
+                                  <h4 className="text-ink mb-3 font-[family-name:var(--font-sans)] text-[1rem] font-semibold tracking-normal">
+                                    How it works
+                                  </h4>
+                                  <ProcessFlow steps={svc.steps} label={`How ${svc.name} works`} />
+                                </div>
+                              ) : null}
+                              {cl ? (
+                                <>
+                                  <p className="bg-accent-wash text-ink flex gap-2.5 rounded-[var(--radius-md)] px-4 py-3 text-[0.875rem] leading-relaxed">
+                                    <Clock
+                                      className="text-accent mt-0.5 h-4 w-4 shrink-0"
+                                      aria-hidden="true"
+                                    />
+                                    <span>
+                                      <strong>Processing time.</strong> {cl.timeline}
+                                    </span>
+                                  </p>
+                                  <Checklist
+                                    groups={cl.groups}
+                                    title={`${svc.name}${i.label ? ` – ${i.label}` : ''}: please share`}
+                                  />
+                                </>
+                              ) : svc.docs.length ? (
+                                <ul className="text-ink-2 ml-5 list-disc text-[0.875rem]">
+                                  {svc.docs.map((d) => (
+                                    <li key={d}>{d}</li>
+                                  ))}
+                                </ul>
+                              ) : null}
+                            </div>
+                          </details>
+                        );
+                      })()}
                     </div>
                   ) : null}
 
@@ -477,6 +525,15 @@ export function QuoteView({
               </div>
             ) : null}
           </Card>
+        ) : null}
+
+        {accepted && q.kind === 'final' && payment?.upiId && st.grand > 0 ? (
+          <PaymentPanel
+            upiId={payment.upiId}
+            upiName={payment.upiName}
+            amount={st.grand}
+            reference={q.number}
+          />
         ) : null}
 
         {/* Next steps */}

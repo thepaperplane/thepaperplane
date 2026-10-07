@@ -16,6 +16,7 @@ import {
   inr,
   newToken,
   quoteUrl,
+  sendChecklist,
   statement,
   summarise,
   updateQuoteItems,
@@ -155,6 +156,25 @@ export async function sendQuoteNow(formData: FormData): Promise<void> {
   const q = await load(id.data);
   const r = await deliverQuote(q);
   await audit(profile.email, 'quote.send', 'quotes', q.id, {
+    email: r.email,
+    whatsapp: r.whatsapp,
+    error: r.error,
+  });
+  const sent =
+    [r.email ? 'email' : '', r.whatsapp ? 'whatsapp' : ''].filter(Boolean).join('+') || 'none';
+  if (sent === 'none') await recordFailure(q.id, r.error);
+  touch(q.id);
+  redirect(`/admin/quotes/${q.id}?sent=${sent}`);
+}
+
+/** Sends the numbered documents list (and, on a final quotation, the fee and payment details). */
+export async function sendChecklistNow(formData: FormData): Promise<void> {
+  const profile = await requireRole('editor');
+  const id = uuid.safeParse(formData.get('id'));
+  if (!id.success) return;
+  const q = await load(id.data);
+  const r = await sendChecklist(q);
+  await audit(profile.email, 'quote.checklist', 'quotes', q.id, {
     email: r.email,
     whatsapp: r.whatsapp,
     error: r.error,
@@ -462,6 +482,13 @@ const SettingsSchema = z.object({
   comboMinServices: z.coerce.number().int().min(2).max(10),
   comboPercent: z.coerce.number().min(0).max(30),
   taxNote: z.string().trim().min(5).max(500),
+  upiId: z
+    .string()
+    .trim()
+    .max(80)
+    .regex(/^[\w.\-]{2,}@[A-Za-z][A-Za-z0-9]{1,}$/, 'Enter a UPI ID like name@bank.')
+    .or(z.literal('')),
+  upiName: z.string().trim().min(2).max(60),
 });
 
 export async function saveQuoteSettings(formData: FormData): Promise<void> {

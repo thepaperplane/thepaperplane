@@ -335,6 +335,15 @@ as the GST-return slabs, and government charges shown as separate "at actual cos
 - **Add-ons** — extra work after acceptance is added to the quotation's ledger
   (`quote_addons`) with a price, approved by the client on their quotation page, and carried onto
   the **final invoice** with its date: the original quotation first, then each add-on.
+- **Documents and process** — every service has a numbered checklist (`lib/quotes/checklists.ts`,
+  modelled on the GST-registration message: send a scan, tell us, take a photo, share a location),
+  a typical processing time and an illustrated, animated process flow on the quotation page. On
+  acceptance the list is emailed; **Send the documents list** in the console also sends it on
+  WhatsApp. On a **Final** accepted quotation the page shows the fee, a UPI QR and "make the
+  payment to initiate the work" (UPI ID is set in Quotations → Filters). Processing times are
+  written as "typically" — keep them honest.
+- **Included services** — allied work is never sold twice: partnership registration includes the
+  deed and firm PAN, company incorporation includes GST registration (`includes` in the catalogue).
 - **Follow-ups** — Autopilot nudges unopened, unanswered and expiring quotations.
 
 Plain-language guidance — "do I need GST at ₹10 lakh turnover?" — comes from

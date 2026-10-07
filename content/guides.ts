@@ -74,7 +74,7 @@ export const GUIDES: Guide[] = [
       'LLP (limited liability partnership): partners’ personal liability is limited to what they put in. A little more paperwork and yearly filings; looks more established to banks and customers.',
       'Private limited company: a separate legal person owned through shares. Best when you plan to raise investment, hire with share options or grow large; the most compliance and filings each year.',
       'A rule of thumb to share: starting alone and small, a proprietorship is enough; two or more people in a business, a partnership firm or LLP; planning investors or fast growth, a private limited company. Always add that the right choice depends on their plans and the team helps them decide in the free first conversation.',
-      'Our partnership firm registration includes the partnership deed (up to 5 partners) and the firm’s PAN card; stamp duty and the Registrar’s fee are paid at actual cost.',
+      'Our partnership firm registration includes the partnership deed (up to 5 partners) and the firm’s PAN card; our company or LLP incorporation includes the company’s GST registration. Stamp duty and government fees are paid at actual cost.',
     ],
   },
   {
@@ -137,9 +137,9 @@ export const GUIDES: Guide[] = [
 
 /** The id → plain name list the assistants need to build a quote link. */
 export const QUOTE_SERVICE_IDS: [string, string][] = [
-  ['partnership', 'Partnership firm registration (includes the deed and firm PAN)'],
+  ['partnership', 'Partnership firm registration (includes the partnership deed and the firm PAN)'],
   ['deed', 'Partnership deed drafting on its own'],
-  ['company', 'Private limited company or LLP'],
+  ['company', 'Private limited company or LLP (includes the company’s GST registration)'],
   ['gstreg', 'GST registration'],
   ['msme', 'MSME (Udyam) registration'],
   ['pan', 'PAN card application'],
