@@ -79,6 +79,7 @@ export default async function QuotePage({ params }: { params: Promise<{ token: s
       addons={addons}
       catalog={catalog}
       taxNote={settings.quotes.taxNote}
+      payment={{ upiId: settings.quotes.upiId, upiName: settings.quotes.upiName }}
       work={projects
         .filter((p) => p.status === 'live')
         .map((p) => ({

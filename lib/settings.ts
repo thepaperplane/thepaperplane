@@ -98,6 +98,9 @@ export type SiteSettings = {
     comboPercent: number;
     /** Printed under every quotation. */
     taxNote: string;
+    /** Where clients pay once a final quotation is accepted. */
+    upiId: string;
+    upiName: string;
   };
 };
 
@@ -156,6 +159,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     comboPercent: 0,
     taxNote:
       'Professional fees, exclusive of GST where applicable. Government fees, stamp duty and third-party charges are extra, at actual cost.',
+    upiId: '6383839904@ptsbi',
+    upiName: 'The Paper Plane',
   },
 };
 
@@ -193,7 +198,7 @@ async function load(): Promise<SiteSettings> {
   }
 }
 
-export const getSettings = unstable_cache(load, ['site-settings-v4'], {
+export const getSettings = unstable_cache(load, ['site-settings-v5'], {
   tags: [SETTINGS_TAG],
   revalidate: 3600,
 });

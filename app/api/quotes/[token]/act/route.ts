@@ -6,6 +6,7 @@ import {
   hashIp,
   notifyOwner,
   openQuote,
+  sendChecklist,
   summarise,
 } from '@/lib/quotes/engine';
 import { serviceClient } from '@/lib/supabase';
@@ -49,6 +50,8 @@ export async function POST(request: Request, ctx: { params: Promise<{ token: str
     case 'accept': {
       if (!open) return apiError('This quotation can no longer be accepted.', 409);
       await acceptQuote(q, d.name);
+      // The list of what we need, straight away — they are at their most willing right now.
+      await sendChecklist({ ...q, status: 'accepted' }).catch(() => undefined);
       await notifyOwner(
         `Quotation accepted: ${q.name}`,
         [

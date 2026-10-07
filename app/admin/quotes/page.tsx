@@ -370,6 +370,30 @@ export default async function QuotesPage({
                 className={`${ADMIN_FIELD} h-auto py-3`}
               />
             </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label="UPI ID for payments"
+                htmlFor="qs-upi"
+                hint="Shown, with a QR code, only on an accepted quotation marked Final. Leave blank to hide payment."
+              >
+                <input
+                  id="qs-upi"
+                  name="upiId"
+                  defaultValue={s.upiId}
+                  placeholder="name@bank"
+                  className={ADMIN_FIELD}
+                />
+              </Field>
+              <Field label="Name shown on the payment" htmlFor="qs-upin">
+                <input
+                  id="qs-upin"
+                  name="upiName"
+                  required
+                  defaultValue={s.upiName}
+                  className={ADMIN_FIELD}
+                />
+              </Field>
+            </div>
             <label className="text-ink flex items-center gap-2.5 text-[0.875rem] font-medium">
               <input
                 type="checkbox"

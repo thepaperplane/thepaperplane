@@ -27,6 +27,11 @@ export const CATEGORIES: { id: CategoryId; label: string; line: string }[] = [
   { id: 'auto', label: 'Automation & AI', line: 'Smart tools and automation that save you hours.' },
 ];
 
+/** What a client is asked for: a scan or photo, something to tell us, a picture, or a map pin. */
+export type ChecklistKind = 'doc' | 'info' | 'photo' | 'location';
+export type ChecklistItem = { t: string; kind: ChecklistKind; note?: string };
+export type ChecklistGroup = { title: string; items: ChecklistItem[] };
+
 export type CatalogVariant = { id: string; label: string; price: number; period: Period };
 
 /** A government charge paid at actual cost, shown beside our fee and never mixed into it. */
@@ -59,6 +64,8 @@ export type CatalogService = {
   /** What the public request form asks about this service, if anything. */
   ask: 'variant' | 'qty' | null;
   askLabel: string;
+  /** Services this one already includes — never offered or charged separately beside it. */
+  includes: string[];
   /** Services suggested alongside this one. */
   related: string[];
   /** One line on why the price is worth it. */
@@ -88,6 +95,8 @@ export type QuoteItem = {
   value?: string;
   /** Government charges for this line, at actual cost, kept apart from the fee. */
   gov?: { label: string; amount: number | null; per: Period; note?: string }[];
+  /** Names of the allied services included in this line's fee. */
+  includes?: string[];
   /** Added by the client from a suggestion on the quote page. */
   addedByClient?: boolean;
 };

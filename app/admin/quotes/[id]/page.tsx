@@ -10,6 +10,7 @@ import {
   remindAddon,
   removeAddon,
   renewQuote,
+  sendChecklistNow,
   sendQuoteNow,
   setAddonStatus,
   setQuoteStatus,
@@ -403,6 +404,12 @@ export default async function QuoteDetail({
                     {q.sent_at ? 'Send again' : 'Send to the client'}
                   </SubmitButton>
                 </form>
+                <form action={sendChecklistNow}>
+                  <input type="hidden" name="id" value={q.id} />
+                  <SubmitButton tone="quiet" pendingText="Sending…">
+                    Send the documents list
+                  </SubmitButton>
+                </form>
                 <form action={renewQuote} className="flex items-center gap-2">
                   <input type="hidden" name="id" value={q.id} />
                   <input type="hidden" name="days" value={settings.quotes.validDays} />
@@ -523,6 +530,7 @@ export default async function QuoteDetail({
               addons={addons}
               catalog={catalog}
               taxNote={settings.quotes.taxNote}
+              payment={{ upiId: settings.quotes.upiId, upiName: settings.quotes.upiName }}
               work={projects
                 .filter((p) => p.status === 'live')
                 .map((p) => ({
