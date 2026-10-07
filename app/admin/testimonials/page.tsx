@@ -72,6 +72,23 @@ function TestimonialForm({ t }: { t?: TestimonialRow }) {
           ))}
         </select>
       </Field>
+      <div className="md:col-span-2">
+        <Field
+          label="Video link (optional)"
+          htmlFor={`v-${id}`}
+          hint="A YouTube, Instagram or Drive link to the client's video testimonial. It appears as a “Watch” link on the Our Work page and in web-development quotations. Nothing is embedded."
+        >
+          <input
+            id={`v-${id}`}
+            name="video_url"
+            type="url"
+            inputMode="url"
+            defaultValue={t?.video_url ?? ''}
+            placeholder="https://youtu.be/…"
+            className={ADMIN_FIELD}
+          />
+        </Field>
+      </div>
       <Field label="Photo (optional)" htmlFor={`a-${id}`} hint="Square image, PNG, JPG or WebP.">
         <input
           id={`a-${id}`}

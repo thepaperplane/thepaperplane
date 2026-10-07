@@ -110,8 +110,23 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         </div>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <PortalAccess clientId={id} editable={editable} />
+        {editable ? (
+          <Panel
+            title="Quotations"
+            description="A fresh quotation for new work, or extra services for this client."
+          >
+            <div className="px-6 py-5">
+              <Link
+                href={`/admin/quotes/new?client=${id}`}
+                className="bg-accent text-accent-ink hover:bg-accent-hover inline-flex h-10 items-center rounded-[var(--radius-md)] px-4 text-[0.875rem] font-semibold"
+              >
+                New quotation for this client
+              </Link>
+            </div>
+          </Panel>
+        ) : null}
       </div>
 
       <ClientOps clientId={id} editable={editable} />

@@ -34,7 +34,7 @@ export type LegalSection = {
   list?: string[];
 };
 
-export const PRIVACY_UPDATED = '4 October 2026';
+export const PRIVACY_UPDATED = '7 October 2026';
 export const TERMS_UPDATED = '14 September 2026';
 
 export const PRIVACY: LegalSection[] = [
@@ -74,6 +74,16 @@ export const PRIVACY: LegalSection[] = [
     body: [
       'Booking a call on the website, or through our WhatsApp assistant, stores your name, email address, optional phone number, what you would like to discuss and the time you chose. The call is placed in the practice’s own Google Calendar with you as a guest and a Google Meet link, so Google sends you the invitation and handles the video call under its own terms.',
       'On the morning of the call we send one reminder, by email and — if you booked on WhatsApp or have messaged us there — on WhatsApp. Booking records are kept with the enquiry they belong to.',
+    ],
+  },
+  {
+    id: 'quotation',
+    heading: 'When you ask for a quotation',
+    body: [
+      'Prices are not published on this website. If you ask for a quotation — through the request page, our assistants, or because we prepared one for you — we store what you gave us so that it can be prepared and followed up: your name, email address, optional phone number and business name, the services you chose and the answers you gave about them, anything you wrote, when you need it, and the campaign link you arrived by if there was one.',
+      'The quotation is a private page whose address is known only to you and us. It is sent to the email address you entered (or in the WhatsApp chat you started). It stops working after a set number of days or opens. Each time it is opened we record the time, your browser type and a one-way scrambled form of your network address — never the address itself — so that we can tell you have read it and notice if the link is being passed around. Quotations carry your name as a faint watermark for the same reason.',
+      'A quotation request is screened automatically before it is sent: for example, throwaway email addresses, repeated requests and requests that match names we have asked the system to look out for are held for a person to review rather than answered automatically. Nothing is blocked from contacting us another way. If you accept a quotation, a client record is created from it so that onboarding can begin.',
+      'Quotations and the add-ons asked for during a job are kept with the engagement as a record of what was agreed and charged, and for as long afterwards as a professional engagement requires; a quotation that was never accepted is kept for up to twelve months. Ask and we will delete it sooner.',
     ],
   },
   {
@@ -121,7 +131,7 @@ export const PRIVACY: LegalSection[] = [
     id: 'automated',
     heading: 'Messages we send automatically',
     body: [
-      'Some routine messages go out without anyone pressing send: a thank-you when you submit an enquiry, a reminder on the morning of a booked call, a reminder when one of our invoices to you is past due (at most once a week), and — for clients — a note when a deadline we are tracking for you is three days away. Each is about something you asked us for or an engagement already under way; none is marketing. Ask and we will switch any of them off for you.',
+      'Some routine messages go out without anyone pressing send: a thank-you when you submit an enquiry, a reminder on the morning of a booked call, a reminder when one of our invoices to you is past due (at most once a week), up to three gentle follow-ups on a quotation we sent you (if it has not been opened, is unanswered, or is about to close), and — for clients — a note when a deadline we are tracking for you is three days away. Each is about something you asked us for or an engagement already under way; none is marketing. Ask and we will switch any of them off for you.',
     ],
   },
   {

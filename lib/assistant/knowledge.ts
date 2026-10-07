@@ -1,3 +1,4 @@
+import { guidesText } from '@/content/guides';
 import 'server-only';
 import { SITE } from '@/lib/site';
 import { PRACTICE } from '@/content/practice';
@@ -151,9 +152,16 @@ let cached: string | null = null;
 /** The whole reference, built once per server instance. */
 export function siteKnowledge(): string {
   if (!cached) {
-    cached = [practice(), services(), anatomy(), notices(), calendar(), articles(), pages()].join(
-      '\n\n',
-    );
+    cached = [
+      practice(),
+      services(),
+      anatomy(),
+      notices(),
+      calendar(),
+      articles(),
+      pages(),
+      guidesText(),
+    ].join('\n\n');
   }
   return cached;
 }

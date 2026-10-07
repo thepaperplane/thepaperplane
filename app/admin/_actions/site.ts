@@ -58,6 +58,12 @@ const TestimonialSchema = z.object({
   author_role: text(120).optional(),
   company: text(160).optional(),
   project_slug: text(80).optional(),
+  video_url: z
+    .string()
+    .trim()
+    .max(300)
+    .refine((v) => v === '' || /^https:\/\/[^\s]+$/.test(v), 'Use a full https:// link.')
+    .optional(),
   rating: z.coerce.number().int().min(0).max(5).optional(),
   position: z.coerce.number().int().min(0).max(999).default(0),
   is_published: z.string().optional(),
@@ -75,6 +81,7 @@ export async function saveTestimonial(formData: FormData) {
     author_role: d.author_role || null,
     company: d.company || null,
     project_slug: d.project_slug || null,
+    video_url: d.video_url || null,
     rating: d.rating ? d.rating : null,
     position: d.position,
     is_published: d.is_published === 'on',
@@ -95,6 +102,7 @@ export async function saveTestimonial(formData: FormData) {
   );
   revalidateTag(TESTIMONIALS_TAG);
   revalidatePath('/');
+  revalidatePath('/work');
   revalidatePath('/admin/testimonials');
 }
 

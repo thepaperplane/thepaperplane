@@ -122,6 +122,12 @@ export function EnquiryCard({
 
         {editable ? (
           <div className="flex shrink-0 items-center gap-2">
+            <a
+              href={`/admin/quotes/new?enquiry=${enquiry.id}`}
+              className="text-accent hover:bg-accent-wash inline-flex h-9 items-center rounded-[var(--radius-sm)] px-3 text-[0.8125rem] font-semibold ring-1 ring-[var(--hairline)] ring-inset"
+            >
+              Send quotation
+            </a>
             <select
               aria-label={`Status for ${enquiry.name}`}
               value={enquiry.state}

@@ -41,6 +41,7 @@ const KIND: Record<string, string> = {
   deadline_nudge: 'Deadline nudge',
   daily_digest: 'Digest to you',
   enquiry_ack: 'Enquiry acknowledged',
+  quote_followup: 'Quotation follow-up',
 };
 
 const JOBS: { key: string; label: string; detail: string }[] = [
@@ -67,6 +68,12 @@ const JOBS: { key: string; label: string; detail: string }[] = [
     label: 'Nudge clients before deadlines',
     detail:
       'Client tasks due in the next three days get one email asking for anything still outstanding.',
+  },
+  {
+    key: 'quoteFollowUps',
+    label: 'Follow up on quotations',
+    detail:
+      'A gentle nudge when a quotation has not been opened, a question prompt after it was read, and a reminder before it expires.',
   },
   {
     key: 'dailyDigest',

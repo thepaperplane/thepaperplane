@@ -75,6 +75,7 @@ const PAGES = [
   '/about',
   '/contact',
   '/book',
+  '/get-quote',
   '/careers',
   '/privacy',
   '/terms',

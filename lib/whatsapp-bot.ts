@@ -7,6 +7,7 @@ import { sendEnquiryNotification } from '@/lib/email';
 import { autoPushLead } from '@/lib/integrations/zoho';
 import { sendButtons, sendList, sendText, typing, type Inbound } from '@/lib/integrations/whatsapp';
 import { availableSlots, bookMeeting, schedulingReady } from '@/lib/scheduling';
+import { createQuote, deliverQuote, notifyOwner, summarise } from '@/lib/quotes/engine';
 import { getSettings } from '@/lib/settings';
 import { SITE } from '@/lib/site';
 import { serviceClient } from '@/lib/supabase';
@@ -37,8 +38,9 @@ Who you are talking to
 
 How you answer
 - Use only the reference material below and the live notes. If something is not covered, say so plainly and offer to have the team confirm it. Never fill a gap from general knowledge — a confident answer the practice has not given is worse than "let me have the team confirm that".
-- Explain what the practice explains: what a notice section means, what a service includes, the statutory due dates, how an engagement runs. Anything that turns on the person's own facts (whether they owe tax, which regime suits them, how to answer their notice) needs a person to read their documents — say so, give the general position the reference states, and offer the free consultation.
-- Never quote fees, discounts or turnaround times, and never promise outcomes. Fees are agreed in writing after the first read, which is free.
+- Explain what the practice explains: what a notice section means, what a service includes, the statutory due dates, how an engagement runs.
+- Teach, in plain words. When someone describes their situation, use the PLAIN-LANGUAGE GUIDES in the reference: ask the one or two questions that decide the answer (what they sell or do, yearly sales, which state, whether they sell to other states or online), then explain in everyday language which rules usually apply to them and why, with the figures the guides state, and which of our services that points to. Explain any term you must use and state your assumptions. Finish by saying the team confirms the final position after seeing their documents, in the free consultation. Explain and let them choose — never tell them what they will owe or decide for them, and never go beyond the guides from your own memory of the law.
+- Never state a price, price range, "starting from" figure or discount in chat, and never promise outcomes or turnaround times. Prices appear only on a personalised quotation. When they ask about cost or are ready to go ahead, say that every client is different, so we prepare a quotation after understanding their need — then call send_quote with the service ids from the reference.
 - Keep it WhatsApp-short: one to four short sentences per message, or a brief list. Plain words, Indian conventions (₹, lakh, crore). Formatting: *bold* with single asterisks for one key phrase at most; no headings, no markdown links — write URLs in full. At most one emoji, and only if it fits.
 - In your first reply of a conversation, introduce yourself once as The Paper Plane's virtual assistant. If anyone asks whether they are talking to a person, say honestly that you are the virtual assistant and that a member of the team reviews every request.
 
@@ -61,7 +63,7 @@ Quick choices
 - When a question has two or three obvious answers (e.g. "Book a call / Ask a question / Talk to the team"), use show_quick_replies instead of asking them to type.
 
 When to bring in a person (request_human)
-- They ask for a person; they are upset or complaining; they want a quote or negotiation; anything about an ongoing engagement you cannot answer from the notes; anything legal, urgent (a deadline within 3 days) or sensitive. Tell them a team member will take it from here.
+- They ask for a person; they are upset or complaining; they want to negotiate a quotation or need a custom quote for something not in the reference; anything about an ongoing engagement you cannot answer from the notes; anything legal, urgent (a deadline within 3 days) or sensitive. Tell them a team member will take it from here.
 
 Existing clients
 - Help with what the notes show: invoice status, upcoming meetings, the portal link, booking a call. Anything about the work itself goes to request_human.
@@ -97,6 +99,44 @@ const TOOL_DEFS: Anthropic.Beta.BetaTool[] = [
         best_time: { type: 'string', description: 'When to reach them.' },
       },
       required: ['name', 'requirement'],
+    },
+  },
+  {
+    name: 'send_quote',
+    description:
+      'Prepare a personalised quotation for the services this customer needs and send them the private link in this chat (and by email if known). Use once you know what they need and have their name. Never say any price yourself — the quotation page shows it. Safe to call again if their needs change; it creates a fresh quotation.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Their name.' },
+        email: { type: 'string', description: 'Email address, if they gave one.' },
+        business_name: { type: 'string' },
+        requirement: {
+          type: 'string',
+          description: 'What they need, in their words, with the facts that decide the price.',
+        },
+        timeline: { type: 'string', enum: ['urgent', 'month', 'quarter', 'exploring'] },
+        services: {
+          type: 'array',
+          description: 'Service ids from the quotation id list in the reference.',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              variant: {
+                type: 'string',
+                description:
+                  'Optional variant id when you know it, e.g. gstreg: prop or firm; fssai: basic, state or central; books: month or year.',
+              },
+              qty: { type: 'integer', minimum: 1, maximum: 20 },
+            },
+            required: ['id'],
+          },
+          minItems: 1,
+          maxItems: 8,
+        },
+      },
+      required: ['name', 'requirement', 'services'],
     },
   },
   {
@@ -170,6 +210,23 @@ const SaveInput = z.object({
   budget: z.string().trim().max(120).optional(),
   timeline: z.string().trim().max(120).optional(),
   best_time: z.string().trim().max(120).optional(),
+});
+const QuoteInput = z.object({
+  name: z.string().trim().min(1).max(120),
+  email: z.string().trim().toLowerCase().email().max(320).optional().or(z.literal('')),
+  business_name: z.string().trim().max(160).optional(),
+  requirement: z.string().trim().min(2).max(3000),
+  timeline: z.enum(['urgent', 'month', 'quarter', 'exploring']).optional(),
+  services: z
+    .array(
+      z.object({
+        id: z.string().trim().max(40),
+        variant: z.string().trim().max(40).optional(),
+        qty: z.coerce.number().int().min(1).max(20).optional(),
+      }),
+    )
+    .min(1)
+    .max(8),
 });
 const BookInput = z.object({
   slot: z.string().max(80),
@@ -565,6 +622,52 @@ async function runTool(
           await autoPushLead(id);
         }
         return { result: 'Saved to the practice’s records.', enquiryId: id ?? undefined };
+      }
+
+      case 'send_quote': {
+        const p = QuoteInput.safeParse(call.input);
+        if (!p.success)
+          return {
+            result: 'Not sent: a name, what they need and at least one service id are needed.',
+            error: true,
+          };
+        const d = p.data;
+        const q = await createQuote({
+          source: 'whatsapp',
+          name: d.name,
+          email: d.email || null,
+          phone: `+${ctx.waId}`,
+          waId: ctx.waId,
+          company:
+            d.business_name && d.business_name.toLowerCase() !== 'individual'
+              ? d.business_name
+              : null,
+          requirement: d.requirement,
+          answers: { timeline: d.timeline ?? '' },
+          utm: { source: 'whatsapp', medium: 'assistant' },
+          enquiryId: ctx.enquiryId,
+          clientId: ctx.clientId,
+          items: d.services.map((s) => ({ serviceId: s.id, variantId: s.variant, qty: s.qty })),
+        });
+        if (q.status === 'pending_review') {
+          await notifyOwner(`Quotation held for review: ${q.name}`, [
+            `Requested on WhatsApp (+${ctx.waId}) for: ${summarise(q.items)}.`,
+            `Why it was held: ${q.hold_reason}.`,
+          ]);
+          return {
+            result:
+              'The quotation has been prepared and a team member will review and send it shortly. Tell the customer it will reach them here (and by email) soon, and do not mention any reason for the review.',
+          };
+        }
+        await deliverQuote(q);
+        await notifyOwner(`Quotation sent on WhatsApp: ${q.name}`, [
+          `${q.number} for ${summarise(q.items)}.`,
+          `Score ${q.score}. Sent by: ${q.sent_via.join(', ') || 'whatsapp'}.`,
+        ]);
+        return {
+          result: `The private quotation link has been sent in this chat${d.email ? ' and to their email' : ''}. Tell them in one line that it is their starting estimate, that every client is different so the team confirms the final figure after understanding everything, and offer a free consultation. Do not repeat any amount.`,
+          sent: true,
+        };
       }
 
       case 'offer_meeting_slots': {

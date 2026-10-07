@@ -29,6 +29,8 @@ import {
   ShieldCheck,
   Users,
   X,
+  FileSignature,
+  Tags,
 } from 'lucide-react';
 import { EDITOR_COOKIE } from '@/lib/console';
 import { LogoMark } from '@/components/brand/logo';
@@ -54,6 +56,8 @@ const NAV: { group: string; items: NavItem[] }[] = [
       { href: '/admin/enquiries', label: 'Leads & enquiries', icon: Inbox },
       { href: '/admin/clients', label: 'Clients', icon: Building2 },
       { href: '/admin/tasks', label: 'Tasks & deadlines', icon: CheckSquare },
+      { href: '/admin/quotes', label: 'Quotations', icon: FileSignature },
+      { href: '/admin/pricing', label: 'Pricing', icon: Tags },
       { href: '/admin/invoices', label: 'Invoices', icon: ReceiptIndianRupee },
       { href: '/admin/meetings', label: 'Meetings', icon: CalendarClock },
       { href: '/admin/whatsapp', label: 'WhatsApp assistant', icon: MessageCircle },

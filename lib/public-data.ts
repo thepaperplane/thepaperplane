@@ -25,7 +25,7 @@ export const loadTestimonials = unstable_cache(
     if (error) return [];
     return data ?? [];
   },
-  ['testimonials-v1'],
+  ['testimonials-v2'],
   { tags: [TESTIMONIALS_TAG], revalidate: 3600 },
 );
 

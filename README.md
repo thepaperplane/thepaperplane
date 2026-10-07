@@ -240,6 +240,8 @@ enough to remove the factor in Supabase and enrol a new one.
 | Meetings            | Google Calendar connection, bookable hours, every call booked, cancel            |
 | WhatsApp assistant  | The AI bot number: on/off, pause per chat, hand-overs, replies from the console  |
 | Site assistant      | On/off, quality/cost tier, opening line, daily limit, extra answers, transcripts |
+| Quotations          | Private per-client price pages, request link, filters, add-ons, final invoice    |
+| Pricing             | Edit every service's fee, government charges, suggestions                        |
 | Autopilot           | What runs on its own, readiness checklist, WhatsApp templates, activity log      |
 | Zoho & integrations | Zoho CRM + Books; Books customers → clients, invoices in, leads out              |
 
@@ -306,6 +308,38 @@ once, and one digest email to the owner. Enquiries get an instant acknowledgemen
 `/book`. Every message is logged in `automation_log`, and each job checks it has not already been
 done, so running twice sends nothing twice. WhatsApp messages outside the 24-hour window use the
 approved templates named in the console.
+
+### Quotations — prices that only clients see
+
+Prices appear **nowhere on the public site**: not in HTML, the sitemap, the assistants' replies or
+the Work page. The default menu card lives in `lib/quotes/catalog-data.ts`; the console's
+**Pricing** page stores overrides in `quote_services` (professional fees, per-variant fees such
+as the GST-return slabs, and government charges shown as separate "at actual cost" lines).
+
+- **Request** — `/get-quote` (unlisted, noindex; accepts `?s=gstreg,gstret` and `?src=instagram`).
+  The visitor picks services and answers the one or two questions each depends on. The server
+  builds the quotation and emails a private link; the response never contains a price.
+- **The page** — `/q/<token>`: 144-bit token, expiring (default 14 days), open-limited (default
+  15), watermarked with the client's name, `noindex`, `no-store`, no chrome. Menu-card layout with
+  what's included, documents, steps, a value line per service, government charges apart from our
+  fee, one-tap suggestions of related services with their price, web work and client video links
+  for website quotes, and an explanation that every client is different — it is a starting
+  estimate and the final fee is confirmed in writing after understanding the client.
+- **Filters** — every request is scored (business email, phone, business name, message,
+  value, urgency) and screened: throwaway emails, repeats and the console's competitor list are
+  _held for review_ rather than sent. Modes: auto / score threshold / manual. Nothing is
+  discarded.
+- **Separate quotes** — each enquiry gets a quotation containing only the services asked about.
+  The console builder (`/admin/quotes/new?enquiry=…`) edits amounts per client; the WhatsApp
+  assistant's `send_quote` tool and the website request do the same automatically, 24×7.
+- **Add-ons** — extra work after acceptance is added to the quotation's ledger
+  (`quote_addons`) with a price, approved by the client on their quotation page, and carried onto
+  the **final invoice** with its date: the original quotation first, then each add-on.
+- **Follow-ups** — Autopilot nudges unopened, unanswered and expiring quotations.
+
+Plain-language guidance — "do I need GST at ₹10 lakh turnover?" — comes from
+`content/guides.ts`, which both assistants use and nothing else. **Thresholds change: update the
+file (and `GUIDES_CHECKED`) when they do**, because the assistants repeat whatever it says.
 
 ### Integrations
 
