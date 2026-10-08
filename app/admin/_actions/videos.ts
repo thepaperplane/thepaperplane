@@ -51,6 +51,7 @@ const AttachSchema = z.object({
   projectId: uuid,
   path: z.string().max(200),
   kind: z.enum(['launch', 'testimonial', 'walkthrough']),
+  orientation: z.enum(['landscape', 'portrait']).default('landscape'),
   title: z.string().trim().max(120).optional(),
   width: z.number().int().min(0).max(10000).optional(),
   height: z.number().int().min(0).max(10000).optional(),
@@ -76,6 +77,7 @@ export async function attachProjectVideo(
     .insert({
       project_id: d.projectId,
       kind: d.kind,
+      orientation: d.orientation,
       title: d.title || null,
       path: d.path,
       width: d.width || null,
@@ -96,6 +98,7 @@ const UpdateSchema = z.object({
   id: uuid,
   title: z.string().trim().max(120).optional(),
   kind: z.enum(['launch', 'testimonial', 'walkthrough']),
+  orientation: z.enum(['landscape', 'portrait']).default('landscape'),
   position: z.coerce.number().int().min(0).max(99).default(0),
 });
 
@@ -108,6 +111,7 @@ export async function updateProjectVideo(formData: FormData): Promise<void> {
     .update({
       title: parsed.data.title || null,
       kind: parsed.data.kind,
+      orientation: parsed.data.orientation,
       position: parsed.data.position,
       is_published: formData.get('is_published') === 'on',
     })

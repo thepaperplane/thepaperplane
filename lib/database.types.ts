@@ -361,6 +361,7 @@ export type ProjectVideoRow = {
   path: string;
   width: number | null;
   height: number | null;
+  orientation: 'landscape' | 'portrait';
   position: number;
   is_published: boolean;
   created_at: string;

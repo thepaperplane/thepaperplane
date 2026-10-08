@@ -32,3 +32,9 @@ create table if not exists public.project_videos (
 );
 alter table public.project_videos enable row level security;
 create index if not exists project_videos_project_idx on public.project_videos (project_id, position);
+
+-- How the video is shown on the site: a wide player, or a tall one for phone-shaped footage.
+alter table public.project_videos
+  add column if not exists orientation text not null default 'landscape'
+  check (orientation in ('landscape', 'portrait'));
+update public.project_videos set orientation = 'portrait' where height is not null and width is not null and height > width;

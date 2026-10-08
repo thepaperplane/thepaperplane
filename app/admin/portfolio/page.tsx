@@ -201,7 +201,7 @@ export default async function AdminPortfolioPage() {
                           <div key={vid.id} className="bg-sunken rounded-[var(--radius-md)] p-4">
                             <form
                               action={updateProjectVideo}
-                              className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem_5rem_auto] sm:items-end"
+                              className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_9rem_9rem_4.5rem_auto] sm:items-end"
                             >
                               <input type="hidden" name="id" value={vid.id} />
                               <Field label="Title" htmlFor={`vtt-${vid.id}`}>
@@ -222,6 +222,17 @@ export default async function AdminPortfolioPage() {
                                   <option value="launch">Launch film</option>
                                   <option value="testimonial">Testimonial</option>
                                   <option value="walkthrough">Walkthrough</option>
+                                </select>
+                              </Field>
+                              <Field label="Shape" htmlFor={`vtr-${vid.id}`}>
+                                <select
+                                  id={`vtr-${vid.id}`}
+                                  name="orientation"
+                                  defaultValue={vid.orientation}
+                                  className={ADMIN_FIELD}
+                                >
+                                  <option value="landscape">Landscape</option>
+                                  <option value="portrait">Portrait</option>
                                 </select>
                               </Field>
                               <Field label="Order" htmlFor={`vto-${vid.id}`}>
