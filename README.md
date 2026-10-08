@@ -316,12 +316,12 @@ browser frame as it scrolls into view — fully browsable at true desktop width,
 preview" for anyone who prefers the image. Where it does not (a `X-Frame-Options` or
 `frame-ancestors` policy, as on Shopify storefronts), it shows a capture; the console's Portfolio
 page states which applies for each project and the header to add on a site you host. Full-page
-captures use ScreenshotOne's `by_sections` algorithm so `100vh` heroes are not stretched.
+captures use ScreenshotOne's `by_sections` algorithm so `100vh` heroes are not stretched. If a desktop capture comes back only about one screen tall (a site that scrolls inside a locked panel), it is retaken once with the inner scroll unlocked, and the console says so if the page still fits one screen.
 
 Each project can have **launch or testimonial videos** (`project_videos`, bucket `work-videos`).
 The console uploads straight to storage through a signed URL (up to 50 MB, MP4/WebM/MOV). On the
 site a project with no video shows no player; with one or more it autoplays muted while on screen,
-with play/pause, a sound toggle (one video speaks at a time) and full screen, and a still frame
+in the shape chosen at upload (landscape 16:9 or portrait 9:16), with play/pause, a sound toggle (one video speaks at a time) and full screen, and a still frame
 for visitors who prefer reduced motion.
 
 ### Quotations — prices that only clients see

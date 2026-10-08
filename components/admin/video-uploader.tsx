@@ -34,6 +34,7 @@ export function VideoUploader({ projectId }: { projectId: string }) {
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [kind, setKind] = useState<'launch' | 'testimonial' | 'walkthrough'>('launch');
   const [title, setTitle] = useState('');
+  const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -62,6 +63,7 @@ export function VideoUploader({ projectId }: { projectId: string }) {
         projectId,
         path: ticket.path,
         kind,
+        orientation,
         title,
         width,
         height,
@@ -88,6 +90,13 @@ export function VideoUploader({ projectId }: { projectId: string }) {
           type="file"
           required
           accept="video/mp4,video/webm,video/quicktime"
+          onChange={async (e) => {
+            // Suggest the shape from the footage itself; the owner can still change it.
+            const f = e.target.files?.[0];
+            if (!f) return;
+            const { width, height } = await dimensions(f);
+            if (width && height) setOrientation(height > width ? 'portrait' : 'landscape');
+          }}
           className="text-ink-2 text-[0.8125rem]"
         />
       </Field>
@@ -101,6 +110,21 @@ export function VideoUploader({ projectId }: { projectId: string }) {
           <option value="launch">Launch film</option>
           <option value="testimonial">Client testimonial</option>
           <option value="walkthrough">Walkthrough</option>
+        </select>
+      </Field>
+      <Field
+        label="Shape on the website"
+        htmlFor={`vo-${projectId}`}
+        hint="Landscape plays wide (16:9). Portrait plays tall (9:16), like a phone video. Set from the file automatically — change it if you prefer."
+      >
+        <select
+          id={`vo-${projectId}`}
+          value={orientation}
+          onChange={(e) => setOrientation(e.target.value as typeof orientation)}
+          className={ADMIN_FIELD}
+        >
+          <option value="landscape">Landscape (wide)</option>
+          <option value="portrait">Portrait (tall)</option>
         </select>
       </Field>
       <div className="md:col-span-2">

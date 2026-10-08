@@ -224,7 +224,11 @@ export async function recaptureProject(
   revalidatePath('/');
 
   return result.status === 'ready'
-    ? { ok: true, message: `${project.name} re-captured and published.` }
+    ? {
+        ok: true,
+        message: `${project.name} re-captured and published.`,
+        detail: result.notes?.join(' ') || undefined,
+      }
     : { ok: false, message: `Could not capture ${project.name}.`, detail: result.error };
 }
 

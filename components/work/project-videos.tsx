@@ -11,6 +11,7 @@ type Video = {
   src: string;
   width: number | null;
   height: number | null;
+  orientation: 'landscape' | 'portrait';
 };
 
 const LABEL: Record<Video['kind'], string> = {
@@ -116,9 +117,9 @@ export function ProjectVideos({ videos, name }: { videos: Video[]; name: string 
 
   if (!videos.length || !v) return null;
 
-  const portrait =
-    v.width && v.height ? v.height > v.width : v.kind === 'testimonial' ? false : false;
-  const ratio = v.width && v.height ? `${v.width} / ${v.height}` : '16 / 9';
+  // The owner chooses the shape; the footage is letterboxed rather than cropped.
+  const portrait = v.orientation === 'portrait';
+  const ratio = portrait ? '9 / 16' : '16 / 9';
 
   return (
     <div className="mt-8" ref={wrap}>
@@ -154,9 +155,9 @@ export function ProjectVideos({ videos, name }: { videos: Video[]; name: string 
       <div
         className={cn(
           'group relative mx-auto overflow-hidden rounded-[var(--radius-lg)] bg-black shadow-[0_18px_50px_-24px_rgb(0_0_0/0.55)]',
-          portrait ? 'max-w-[17rem]' : 'w-full',
+          portrait ? 'w-full max-w-[16rem]' : 'w-full',
         )}
-        style={{ aspectRatio: ratio, maxHeight: '28rem' }}
+        style={{ aspectRatio: ratio }}
       >
         <video
           key={v.id}

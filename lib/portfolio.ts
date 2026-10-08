@@ -33,6 +33,7 @@ export type ProjectVideo = {
   src: string;
   width: number | null;
   height: number | null;
+  orientation: 'landscape' | 'portrait';
 };
 
 const storage = (path: string | null | undefined) =>
@@ -100,6 +101,7 @@ async function loadRows(): Promise<PortfolioProject[]> {
       src: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/work-videos/${v.path}`,
       width: v.width,
       height: v.height,
+      orientation: v.orientation,
     });
     videos.set(v.project_id, list);
   }

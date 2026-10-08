@@ -96,7 +96,57 @@ const SETTLE_CSS = [
   '.reveal,[data-reveal],[data-aos],.aos-init,.wow,.fade-in,.fade-up,[data-animate],[data-scroll],[data-sal],.sal-animate{opacity:1!important;transform:none!important;visibility:visible!important;filter:none!important;clip-path:none!important}',
 ].join('');
 
-function buildShotUrl(target: string, viewport: Viewport, accessKey: string): string {
+/**
+ * For sites whose desktop layout locks the page (`overflow:hidden` on the
+ * document) and scrolls inside an inner panel: a screenshot only ever sees the
+ * first screen. This unlocks the document and any tall inner scroller so the
+ * page takes its natural height, then scrolls through it once so lazy images
+ * load. Used only as a second attempt, when the first capture came back about
+ * one screen tall.
+ */
+const UNLOCK_JS = `(async()=>{
+  const H = innerHeight;
+  const free = (e) => { for (const p of ['height','max-height','overflow','overflow-y']) e.style.setProperty(p, p==='max-height'?'none':p.startsWith('overflow')?'visible':'auto','important'); };
+  const scrollers = [...document.querySelectorAll('body *')].filter((e) => {
+    const cs = getComputedStyle(e);
+    return /(auto|scroll)/.test(cs.overflowY) && e.scrollHeight > e.clientHeight + H * 0.5 && e.clientHeight > H * 0.5;
+  });
+  for (const e of [document.documentElement, document.body, ...scrollers]) {
+    free(e);
+    for (let p = e.parentElement; p && p !== document.documentElement; p = p.parentElement) free(p);
+  }
+  document.documentElement.classList.remove('lenis-stopped','lenis-smooth');
+  const total = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+  for (let y = 0; y < total; y += H * 0.8) { scrollTo(0, y); await new Promise((r) => setTimeout(r, 220)); }
+  scrollTo(0, 0);
+  await new Promise((r) => setTimeout(r, 400));
+})()`;
+
+/** Pixel size of a WebP, read from its header (no image library needed). */
+export function webpSize(buf: Buffer): { w: number; h: number } | null {
+  if (
+    buf.length < 30 ||
+    buf.toString('ascii', 0, 4) !== 'RIFF' ||
+    buf.toString('ascii', 8, 12) !== 'WEBP'
+  )
+    return null;
+  const kind = buf.toString('ascii', 12, 16);
+  if (kind === 'VP8 ')
+    return { w: buf.readUInt16LE(26) & 0x3fff, h: buf.readUInt16LE(28) & 0x3fff };
+  if (kind === 'VP8L') {
+    const b = buf.readUInt32LE(21);
+    return { w: (b & 0x3fff) + 1, h: ((b >> 14) & 0x3fff) + 1 };
+  }
+  if (kind === 'VP8X') return { w: 1 + buf.readUIntLE(24, 3), h: 1 + buf.readUIntLE(27, 3) };
+  return null;
+}
+
+function buildShotUrl(
+  target: string,
+  viewport: Viewport,
+  accessKey: string,
+  opts: { unlock?: boolean } = {},
+): string {
   const params = new URLSearchParams({
     access_key: accessKey,
     url: target,
@@ -153,15 +203,22 @@ function buildShotUrl(target: string, viewport: Viewport, accessKey: string): st
     params.set('full_page', 'false');
   }
 
+  if (opts.unlock) params.set('scripts', UNLOCK_JS);
+
   return `https://api.screenshotone.com/take?${params.toString()}`;
 }
 
-async function fetchShot(target: string, viewport: Viewport, accessKey: string): Promise<Buffer> {
+async function fetchShot(
+  target: string,
+  viewport: Viewport,
+  accessKey: string,
+  opts: { unlock?: boolean } = {},
+): Promise<Buffer> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 60_000);
 
   try {
-    const response = await fetch(buildShotUrl(target, viewport, accessKey), {
+    const response = await fetch(buildShotUrl(target, viewport, accessKey, opts), {
       signal: controller.signal,
       cache: 'no-store',
     });
@@ -184,6 +241,8 @@ export type CaptureResult = {
   /** Full-length captures; best-effort, absent if the provider refused them. */
   desktopFullPath?: string;
   mobileFullPath?: string;
+  /** Something worth telling the owner even though the capture succeeded. */
+  notes?: string[];
   httpStatus: number | null;
   error?: string;
 };
@@ -244,9 +303,29 @@ export async function captureProject(slug: string, rawUrl: string): Promise<Capt
     // Full-length pages are a bonus, not a requirement: if the provider
     // times out on a very long page, the project still publishes with its
     // viewport captures and the frame simply does not scroll.
+    const notes: string[] = [];
     const full = await Promise.allSettled(
       (['desktop-full', 'mobile-full'] as const).map(async (kind) => {
-        const bytes = await fetchShot(url, kind, accessKey);
+        let bytes = await fetchShot(url, kind, accessKey);
+        if (kind === 'desktop-full') {
+          // About one screen tall means the page did not expand: take it again
+          // with inner scroll panels unlocked, and keep whichever is taller.
+          const first = webpSize(bytes);
+          if (first && first.h < 1500) {
+            try {
+              const retry = await fetchShot(url, kind, accessKey, { unlock: true });
+              const second = webpSize(retry);
+              if (second && second.h > first.h * 1.15) bytes = retry;
+            } catch {
+              /* the first capture still stands */
+            }
+            const final = webpSize(bytes);
+            if (final && final.h < 1100)
+              notes.push(
+                'The desktop page came back only one screen tall, so there is nothing to scroll in the desktop view. The site probably scrolls inside a fixed panel. Upload a tall screenshot under “Scrollable preview” to replace it.',
+              );
+          }
+        }
         const path = `${slug}/${kind}-${stamp}.webp`;
         const { error } = await supabase.storage
           .from(BUCKET)
@@ -265,6 +344,7 @@ export async function captureProject(slug: string, rawUrl: string): Promise<Capt
       mobilePath,
       desktopFullPath: desktopFull,
       mobileFullPath: mobileFull,
+      notes,
       httpStatus: reach.status,
     };
   } catch (error) {
