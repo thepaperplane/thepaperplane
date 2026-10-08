@@ -65,6 +65,7 @@ export function BrowserFrame({
   const viewport = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLDivElement>(null);
   const peeked = useRef(false);
+  const declinedLive = useRef(false);
 
   const shot = device === 'desktop' ? desktop : (mobile ?? desktop);
   const src = shot.full ?? shot.src;
@@ -125,6 +126,24 @@ export function BrowserFrame({
     setStalled(false);
     setMode('live');
   };
+
+  // Where the site allows it, open the real thing as soon as the frame is on
+  // screen — lazily, so a page of projects never loads them all at once.
+  useEffect(() => {
+    const el = frame.current;
+    if (!live || mode !== 'shot' || declinedLive.current || !el) return;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e?.isIntersecting && !declinedLive.current) {
+          io.disconnect();
+          goLive();
+        }
+      },
+      { threshold: 0.4 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [live, mode]);
 
   const siteWidth = device === 'desktop' ? 1440 : 390;
   const scale = box.w ? box.w / siteWidth : 0;
@@ -333,7 +352,14 @@ export function BrowserFrame({
               Try it live
             </button>
           ) : (
-            <button type="button" onClick={() => setMode('shot')} className="bframe-golive">
+            <button
+              type="button"
+              onClick={() => {
+                declinedLive.current = true;
+                setMode('shot');
+              }}
+              className="bframe-golive"
+            >
               Back to preview
             </button>
           )

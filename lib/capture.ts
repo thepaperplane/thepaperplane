@@ -129,6 +129,10 @@ function buildShotUrl(target: string, viewport: Viewport, accessKey: string): st
     params.set('device_scale_factor', mobile ? '2' : '1');
     if (mobile) params.set('viewport_mobile', 'true');
     params.set('full_page', 'true');
+    // Stitch the page section by section at a fixed window height. The default
+    // stretches the browser to the whole page, which makes every 100vh hero
+    // enormous and the layout look oversized.
+    params.set('full_page_algorithm', 'by_sections');
     params.set('full_page_scroll', 'true');
     // Scroll in steps and pause at each, so lazy images actually load.
     params.set('full_page_scroll_by', mobile ? '700' : '800');

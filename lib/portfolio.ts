@@ -22,6 +22,17 @@ export type PortfolioProject = Project & {
   outcome: string | null;
   /** The site allows itself to be framed, so /work can show it live. */
   frameable: boolean;
+  /** Published launch or testimonial videos. Empty for most projects, and then nothing is shown. */
+  videos: ProjectVideo[];
+};
+
+export type ProjectVideo = {
+  id: string;
+  kind: 'launch' | 'testimonial' | 'walkthrough';
+  title: string | null;
+  src: string;
+  width: number | null;
+  height: number | null;
 };
 
 const storage = (path: string | null | undefined) =>
@@ -38,6 +49,7 @@ function fromStatic(): PortfolioProject[] {
     featured: p.status === 'live' && i < 3,
     outcome: null,
     frameable: false,
+    videos: [],
   }));
 }
 
@@ -58,13 +70,18 @@ async function loadRows(): Promise<PortfolioProject[]> {
   const supabase = serviceClient();
   if (!supabase) return fromStatic();
 
-  const [{ data, error }, { data: media }] = await Promise.all([
+  const [{ data, error }, { data: media }, { data: vids }] = await Promise.all([
     supabase
       .from('projects')
       .select('*')
       .in('status', ['live', 'staged'])
       .order('position', { ascending: true }),
     supabase.from('project_media').select('*'),
+    supabase
+      .from('project_videos')
+      .select('*')
+      .eq('is_published', true)
+      .order('position', { ascending: true }),
   ]);
 
   if (error || !data?.length) {
@@ -73,6 +90,19 @@ async function loadRows(): Promise<PortfolioProject[]> {
   }
 
   const extras = new Map((media ?? []).map((m) => [m.project_id, m]));
+  const videos = new Map<string, ProjectVideo[]>();
+  for (const v of vids ?? []) {
+    const list = videos.get(v.project_id) ?? [];
+    list.push({
+      id: v.id,
+      kind: v.kind,
+      title: v.title,
+      src: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/work-videos/${v.path}`,
+      width: v.width,
+      height: v.height,
+    });
+    videos.set(v.project_id, list);
+  }
 
   return data.map((row) => {
     const m = extras.get(row.id);
@@ -104,6 +134,7 @@ async function loadRows(): Promise<PortfolioProject[]> {
       featured: m ? m.is_featured : row.status === 'live',
       outcome: m?.outcome ?? null,
       frameable: false,
+      videos: videos.get(row.id) ?? [],
     } satisfies PortfolioProject;
   });
 }

@@ -4,9 +4,12 @@ import { ProjectRow } from '@/components/admin/project-row';
 import { ADMIN_FIELD, EmptyState, Field, PageHeader, Panel } from '@/components/admin/ui';
 import { SubmitButton } from '@/components/admin/form-bits';
 import { saveProjectMedia } from '@/app/admin/_actions/site';
+import { deleteProjectVideo, updateProjectVideo } from '@/app/admin/_actions/videos';
+import { VideoUploader } from '@/components/admin/video-uploader';
+import { inspectFraming } from '@/lib/embed';
 import { requireProfile, canEdit } from '@/lib/auth';
 import { serviceClient } from '@/lib/supabase';
-import type { ProjectMediaRow, ProjectRow as Project } from '@/lib/database.types';
+import type { ProjectMediaRow, ProjectRow as Project, ProjectVideoRow } from '@/lib/database.types';
 
 export const dynamic = 'force-dynamic';
 // Re-capturing takes four full-page screenshots, each of which waits for the
@@ -14,6 +17,44 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
 export const metadata = { title: 'Portfolio' };
+
+function FramingNote({
+  status,
+  url,
+}: {
+  status?: Awaited<ReturnType<typeof inspectFraming>>;
+  url: string;
+}) {
+  if (!status) return null;
+  return (
+    <div className="border-t border-dashed border-[var(--hairline)] px-6 py-3 text-[0.8125rem]">
+      {status.allowed ? (
+        <p className="text-positive font-medium">
+          Live view works: visitors can browse this site inside the frame on the Work page.
+        </p>
+      ) : (
+        <details>
+          <summary className="text-ink-2 cursor-pointer font-medium">
+            <span className="text-caution">Live view is blocked</span> — {status.reason} Visitors
+            see the preview image instead. How to enable it
+          </summary>
+          <div className="text-ink-3 mt-3 grid gap-2 leading-relaxed">
+            <p>
+              The site decides whether it may be shown inside another page. For a site you host (for
+              example on Vercel), add this header and remove any{' '}
+              <code className="ref">X-Frame-Options</code>:
+            </p>
+            <pre className="bg-sunken text-ink overflow-x-auto rounded-lg p-3 text-[0.75rem]">{`Content-Security-Policy: frame-ancestors 'self' https://www.thepaperplane.co.in https://thepaperplane.co.in`}</pre>
+            <p>
+              Hosted storefronts such as Shopify do not allow this to be changed; for those, upload
+              a launch film or walkthrough above and keep the preview image. Address checked: {url}
+            </p>
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
 
 export default async function AdminPortfolioPage() {
   const profile = await requireProfile();
@@ -23,13 +64,21 @@ export default async function AdminPortfolioPage() {
   let projects: Project[] = [];
 
   const media = new Map<string, ProjectMediaRow>();
+  const videos = new Map<string, ProjectVideoRow[]>();
+  const framing = new Map<string, Awaited<ReturnType<typeof inspectFraming>>>();
   if (supabase) {
-    const [{ data }, { data: m }] = await Promise.all([
+    const [{ data }, { data: m }, { data: v }] = await Promise.all([
       supabase.from('projects').select('*').order('position', { ascending: true }),
       supabase.from('project_media').select('*'),
+      supabase.from('project_videos').select('*').order('position', { ascending: true }),
     ]);
     projects = data ?? [];
     (m ?? []).forEach((row) => media.set(row.project_id, row));
+    (v ?? []).forEach((row) =>
+      videos.set(row.project_id, [...(videos.get(row.project_id) ?? []), row]),
+    );
+    const checks = await Promise.all(projects.map((p) => inspectFraming(p.url)));
+    projects.forEach((p, i) => framing.set(p.id, checks[i]!));
   }
 
   return (
@@ -134,6 +183,98 @@ export default async function AdminPortfolioPage() {
                       </form>
                     </details>
                   ) : null}
+                  {editable ? (
+                    <details className="border-t border-dashed border-[var(--hairline)] px-6 py-3">
+                      <summary className="text-accent cursor-pointer text-[0.8125rem] font-semibold">
+                        Videos beside the preview
+                        {(videos.get(project.id) ?? []).length
+                          ? ` · ${(videos.get(project.id) ?? []).length} uploaded`
+                          : ' · none — nothing is shown on the site'}
+                      </summary>
+                      <div className="mt-4 grid gap-5">
+                        <p className="text-ink-3 text-[0.8125rem] leading-relaxed">
+                          Launch films and client testimonials play beside the website preview,
+                          muted at first with a sound button. Projects without a video simply show
+                          no player. Only upload a testimonial the client has agreed to publish.
+                        </p>
+                        {(videos.get(project.id) ?? []).map((vid) => (
+                          <div key={vid.id} className="bg-sunken rounded-[var(--radius-md)] p-4">
+                            <form
+                              action={updateProjectVideo}
+                              className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem_5rem_auto] sm:items-end"
+                            >
+                              <input type="hidden" name="id" value={vid.id} />
+                              <Field label="Title" htmlFor={`vtt-${vid.id}`}>
+                                <input
+                                  id={`vtt-${vid.id}`}
+                                  name="title"
+                                  defaultValue={vid.title ?? ''}
+                                  className={ADMIN_FIELD}
+                                />
+                              </Field>
+                              <Field label="Type" htmlFor={`vtk-${vid.id}`}>
+                                <select
+                                  id={`vtk-${vid.id}`}
+                                  name="kind"
+                                  defaultValue={vid.kind}
+                                  className={ADMIN_FIELD}
+                                >
+                                  <option value="launch">Launch film</option>
+                                  <option value="testimonial">Testimonial</option>
+                                  <option value="walkthrough">Walkthrough</option>
+                                </select>
+                              </Field>
+                              <Field label="Order" htmlFor={`vto-${vid.id}`}>
+                                <input
+                                  id={`vto-${vid.id}`}
+                                  name="position"
+                                  type="number"
+                                  min={0}
+                                  max={99}
+                                  defaultValue={vid.position}
+                                  className={ADMIN_FIELD}
+                                />
+                              </Field>
+                              <div className="flex items-center gap-3">
+                                <label className="text-ink-2 flex items-center gap-2 text-[0.8125rem]">
+                                  <input
+                                    type="checkbox"
+                                    name="is_published"
+                                    defaultChecked={vid.is_published}
+                                    className="h-4 w-4 accent-[var(--accent)]"
+                                  />
+                                  Show
+                                </label>
+                                <SubmitButton tone="quiet" pendingText="…">
+                                  Save
+                                </SubmitButton>
+                              </div>
+                            </form>
+                            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                              <video
+                                src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/work-videos/${vid.path}#t=0.1`}
+                                controls
+                                preload="metadata"
+                                className="max-h-40 rounded-lg bg-black"
+                              />
+                              <form action={deleteProjectVideo}>
+                                <input type="hidden" name="id" value={vid.id} />
+                                <SubmitButton
+                                  tone="danger"
+                                  confirm="Delete this video permanently?"
+                                  pendingText="Deleting…"
+                                >
+                                  Delete
+                                </SubmitButton>
+                              </form>
+                            </div>
+                          </div>
+                        ))}
+                        <VideoUploader projectId={project.id} />
+                      </div>
+                    </details>
+                  ) : null}
+                  <FramingNote status={framing.get(project.id)} url={project.url} />
                 </li>
               );
             })}
@@ -144,10 +285,9 @@ export default async function AdminPortfolioPage() {
       <p className="text-ink-quaternary mt-5 flex items-start gap-2 text-[0.8125rem] leading-relaxed">
         <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={2} />
         <span>
-          Previews are captured images rather than live iframes. Most client sites send
-          frame-blocking headers, so an embedded live view would render an empty box — captures look
-          identical, load far faster, and keep working regardless of the client&rsquo;s header
-          policy.
+          Where a client&rsquo;s site allows being shown inside another page, the Work page opens it
+          live, fully browsable, at true desktop width. Where it does not, the page shows a captured
+          preview instead — each project above says which applies and how to change it.
         </span>
       </p>
     </>

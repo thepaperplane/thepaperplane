@@ -353,6 +353,19 @@ export type ProjectMediaRow = {
   updated_at: string;
 };
 
+export type ProjectVideoRow = {
+  id: string;
+  project_id: string;
+  kind: 'launch' | 'testimonial' | 'walkthrough';
+  title: string | null;
+  path: string;
+  width: number | null;
+  height: number | null;
+  position: number;
+  is_published: boolean;
+  created_at: string;
+};
+
 export type PageViewRow = {
   day: string;
   path: string;
@@ -587,6 +600,7 @@ export type Database = {
       quotes: TableDef<QuoteRow>;
       quote_views: TableDef<QuoteViewRow>;
       quote_addons: TableDef<QuoteAddonRow>;
+      project_videos: TableDef<ProjectVideoRow>;
     };
     Views: Record<never, never>;
     Functions: {
