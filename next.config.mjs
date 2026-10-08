@@ -30,7 +30,7 @@ const csp = [
   `img-src 'self' data: blob: https://*.supabase.co${supabaseHost ? ` https://${supabaseHost}` : ''}`,
   "font-src 'self' data:",
   `connect-src 'self' https://*.supabase.co wss://*.supabase.co${isProd ? '' : ' ws:'}`,
-  "media-src 'self'",
+  `media-src 'self' https://*.supabase.co${supabaseHost ? ` https://${supabaseHost}` : ''}`,
   // Client sites shown live on /work, when they allow it (lib/embed.ts).
   "frame-src 'self' https:",
   "frame-ancestors 'self'",

@@ -57,3 +57,40 @@ export async function isFrameable(url: string | null | undefined): Promise<boole
     clearTimeout(timer);
   }
 }
+
+/**
+ * Why a site can or cannot be shown inside our page, in words for the owner.
+ * Not cached: it runs only when the console's portfolio page is opened.
+ */
+export async function inspectFraming(
+  url: string | null | undefined,
+): Promise<{ allowed: boolean; reason: string }> {
+  if (!url || !/^https:\/\//i.test(url))
+    return { allowed: false, reason: 'The address is not an https:// address.' };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch(url, {
+      redirect: 'follow',
+      signal: controller.signal,
+      cache: 'no-store',
+      headers: { 'User-Agent': 'PaperPlaneBot/1.0 (+https://www.thepaperplane.co.in)' },
+    });
+    if (!res.ok) return { allowed: false, reason: `the site answered HTTP ${res.status}.` };
+    if (allowsFraming(res.headers)) return { allowed: true, reason: '' };
+    const xfo = res.headers.get('x-frame-options');
+    if (xfo) return { allowed: false, reason: `it sends X-Frame-Options: ${xfo}.` };
+    const csp = (res.headers.get('content-security-policy') ?? '')
+      .split(';')
+      .map((d) => d.trim())
+      .find((d) => d.toLowerCase().startsWith('frame-ancestors'));
+    return {
+      allowed: false,
+      reason: `it sends ${csp ?? 'a frame policy'}, which does not include this website.`,
+    };
+  } catch {
+    return { allowed: false, reason: 'the site could not be reached to check.' };
+  } finally {
+    clearTimeout(timer);
+  }
+}

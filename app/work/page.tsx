@@ -5,6 +5,7 @@ import { BrowserFrame } from '@/components/work/browser-frame';
 import { pageOg } from '@/lib/site';
 import { loadPortfolio } from '@/lib/portfolio';
 import { loadContent, pick } from '@/lib/content';
+import { ProjectVideos } from '@/components/work/project-videos';
 import { FlightRule } from '@/components/site/flight-rule';
 import { loadTestimonials } from '@/lib/public-data';
 import { PlayCircle } from 'lucide-react';
@@ -113,6 +114,11 @@ export default async function WorkPage() {
                         </div>
                       ))}
                     </dl>
+                  ) : null}
+
+                  {/* Only when this project has a published video. */}
+                  {project.videos.length ? (
+                    <ProjectVideos videos={project.videos} name={project.name} />
                   ) : null}
 
                   <ul className="mt-6 flex flex-wrap gap-2">
