@@ -3,7 +3,9 @@ import { ARTICLES } from '@/content/knowledge';
 import { SITE } from '@/lib/site';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? SITE.url;
+  // Always the canonical host (the bare domain redirects to www), so Search Console
+  // sees one consistent set of URLs.
+  const base = SITE.url;
   const now = new Date();
 
   const staticRoutes: {
