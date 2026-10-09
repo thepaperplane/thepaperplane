@@ -282,6 +282,21 @@ export type EnquiryForCrm = Linkable & {
   service_id: string | null;
 };
 
+function channelOf(message: string | null): string {
+  const m = (message ?? '').toLowerCase();
+  if (m.includes('website assistant')) return 'Website assistant';
+  if (m.includes('whatsapp')) return 'WhatsApp';
+  if (m.includes('quotation') || m.includes('get-quote')) return 'Quotation request';
+  if (m.includes('meeting') || m.includes('booking')) return 'Meeting booking';
+  return 'Contact form';
+}
+
+function leadTags(message: string | null): string[] {
+  return channelOf(message) === 'Quotation request'
+    ? ['Website lead', 'Quote requested']
+    : ['Website lead'];
+}
+
 /** One enquiry → one CRM Lead. Skips anything already linked. */
 export async function pushLead(e: EnquiryForCrm): Promise<string | null> {
   const already = await linked('enquiries', 'Leads');
@@ -300,6 +315,10 @@ export async function pushLead(e: EnquiryForCrm): Promise<string | null> {
           Phone: e.phone ?? undefined,
           Company: e.company || e.name,
           Lead_Source: 'Website',
+          Lead_Status: 'Not Contacted',
+          Service_Wanted: e.service_id ?? undefined,
+          Enquiry_Channel: channelOf(e.message),
+          Tag: leadTags(e.message).map((name) => ({ name })),
           Description: [e.service_id ? `Service: ${e.service_id}` : '', e.message ?? '']
             .filter(Boolean)
             .join('\n\n')
