@@ -1,8 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { after } from 'next/server';
-import { zohoSyncAll } from '@/lib/integrations/zoho';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { requireRole } from '@/lib/auth';
@@ -114,9 +112,6 @@ export async function createClient(
         : `Could not save: ${error.message}`,
     };
   }
-
-  // Keep Zoho Books in step without making the owner wait for it.
-  after(() => zohoSyncAll({ force: true }).catch(() => undefined));
 
   // Every new client starts with the standard onboarding sequence.
   await supabase.rpc('seed_onboarding', { target_client: data.id });
