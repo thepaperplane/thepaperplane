@@ -49,7 +49,11 @@ export function shapeFor(
 
 let shared: Anthropic | null = null;
 export function anthropic(): Anthropic {
-  shared ??= new Anthropic();
+  // A key that is not tied to one workspace needs the workspace named on every call.
+  const workspace = process.env.ANTHROPIC_WORKSPACE_ID?.trim();
+  shared ??= new Anthropic(
+    workspace ? { defaultHeaders: { 'anthropic-workspace-id': workspace } } : {},
+  );
   return shared;
 }
 
