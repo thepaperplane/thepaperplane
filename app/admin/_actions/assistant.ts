@@ -6,6 +6,11 @@ import { requireRole } from '@/lib/auth';
 import { audit } from '@/lib/audit';
 import { SETTINGS_TAG } from '@/lib/settings';
 import { serviceClient } from '@/lib/supabase';
+import Anthropic from '@anthropic-ai/sdk';
+import { anthropic, modelFor, shapeFor } from '@/lib/ai/claude';
+import type { Tier } from '@/lib/ai/claude';
+import { getSettings } from '@/lib/settings';
+import { stableSystem, TOOLS } from '@/lib/assistant/prompt';
 
 /**
  * The site assistant, from the owner's side: whether it runs, what it says
@@ -105,4 +110,53 @@ export async function deleteConversation(formData: FormData): Promise<void> {
   await db().from('assistant_conversations').delete().eq('id', id.data);
   await audit(profile.email, 'assistant.conversation.delete', 'assistant_conversations', id.data);
   revalidatePath('/admin/assistant');
+}
+
+export type AssistantTest = { ok: boolean; message: string } | null;
+
+/** Sends one tiny real request, shaped like a visitor's, and says plainly what happened. */
+export async function testAssistant(_prev: AssistantTest, _form: FormData): Promise<AssistantTest> {
+  await requireRole('admin');
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return {
+      ok: false,
+      message: 'ANTHROPIC_API_KEY is missing in Vercel (Production). Add it and redeploy.',
+    };
+  }
+  const settings = await getSettings();
+  const model = modelFor(settings.assistant.tier as Tier);
+  try {
+    const res = await anthropic().beta.messages.create({
+      model,
+      max_tokens: 40,
+      ...shapeFor(model, 'low'),
+      system: [stableSystem()],
+      tools: TOOLS,
+      messages: [{ role: 'user', content: 'Say hello in five words.' }],
+    });
+    const text = res.content
+      .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text')
+      .map((b) => b.text)
+      .join('')
+      .trim();
+    return { ok: true, message: `Working. ${model} replied: “${text || '(empty)'}”` };
+  } catch (e) {
+    if (e instanceof Anthropic.APIError) {
+      const m = e.message || '';
+      let hint = '';
+      if (e.status === 401)
+        hint =
+          ' → The API key is wrong or revoked. Create a new key at console.anthropic.com and replace ANTHROPIC_API_KEY in Vercel, then redeploy.';
+      else if (/credit balance|billing/i.test(m))
+        hint =
+          ' → No credit on the Anthropic account. Add a small amount under Plans & Billing in console.anthropic.com.';
+      else if (e.status === 404) hint = ' → The model name is not available to this key.';
+      else if (e.status === 403) hint = ' → This key is not allowed to use that model.';
+      return { ok: false, message: `Anthropic said ${e.status}: ${m}${hint}` };
+    }
+    return {
+      ok: false,
+      message: `Could not reach Anthropic: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
 }
