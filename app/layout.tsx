@@ -85,6 +85,13 @@ export const metadata: Metadata = {
     'workflow automation',
   ],
   alternates: { canonical: '/' },
+  // Search Console / Bing ownership tags, taken from env so nothing is hard-coded.
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
+    other: process.env.BING_SITE_VERIFICATION
+      ? { 'msvalidate.01': process.env.BING_SITE_VERIFICATION }
+      : undefined,
+  },
   openGraph: {
     type: 'website',
     locale: SITE.locale,

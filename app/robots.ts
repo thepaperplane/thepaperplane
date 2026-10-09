@@ -2,7 +2,9 @@ import type { MetadataRoute } from 'next';
 import { SITE } from '@/lib/site';
 
 export default function robots(): MetadataRoute.Robots {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? SITE.url;
+  // Always the canonical host (the bare domain redirects to www), so Search Console
+  // sees one consistent set of URLs.
+  const base = SITE.url;
 
   return {
     rules: [
