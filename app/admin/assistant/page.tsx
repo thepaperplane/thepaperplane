@@ -11,6 +11,7 @@ import {
   Stat,
 } from '@/components/admin/ui';
 import { SubmitButton } from '@/components/admin/form-bits';
+import { AssistantTestButton } from '@/components/admin/assistant-test';
 import {
   deleteKnowledge,
   saveAssistantSettings,
@@ -156,6 +157,16 @@ export default async function AssistantPage() {
           </p>
         </Panel>
       ) : null}
+
+      <Panel
+        className="mb-6"
+        title="Check it is working"
+        description="Sends one tiny real message to the AI and shows exactly what comes back — including the reason if it fails."
+      >
+        <div className="px-6 py-5">
+          <AssistantTestButton />
+        </div>
+      </Panel>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Stat
