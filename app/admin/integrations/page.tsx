@@ -183,9 +183,11 @@ export default async function IntegrationsPage({
                     Sync everything with Zoho now
                   </SubmitButton>
                   <p className="text-ink-3 mt-2 text-[0.8125rem] leading-relaxed">
-                    Brings in new and changed Books customers and invoices, sends new clients to
-                    Books and new enquiries to the CRM. This also runs by itself whenever you open
-                    the console.
+                    Brings in new and changed Books customers and invoices, and sends new enquiries
+                    to the CRM as leads. Only clients marked Onboarding or Active (with an email or
+                    GSTIN) are ever sent to Books, and only when you press this button; leads and
+                    enquiries never reach Books. The pull-in part also runs by itself whenever you
+                    open the console.
                   </p>
                 </form>
 

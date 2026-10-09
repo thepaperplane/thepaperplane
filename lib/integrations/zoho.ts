@@ -327,6 +327,24 @@ export type ClientForBooks = Linkable & {
 export async function pushContact(c: ClientForBooks, orgId: string): Promise<string | null> {
   const already = await linked('clients', 'books_contacts');
   if (already.has(c.id)) return null;
+
+  // Never create a second customer for someone Books already has: look them
+  // up by GSTIN, then by email, and link to the existing one instead.
+  const org = encodeURIComponent(orgId);
+  for (const q of [
+    c.gstin ? `gst_no=${encodeURIComponent(c.gstin)}` : '',
+    c.email ? `email=${encodeURIComponent(c.email)}` : '',
+  ].filter(Boolean)) {
+    const found = await zohoFetch<{ contacts?: { contact_id: string; contact_type?: string }[] }>(
+      `/books/v3/contacts?organization_id=${org}&${q}`,
+    );
+    const hit = found.contacts?.find((x) => !x.contact_type || x.contact_type === 'customer');
+    if (hit) {
+      await link('clients', c.id, 'books_contacts', hit.contact_id);
+      return hit.contact_id;
+    }
+  }
+
   const res = await zohoFetch<{ contact?: { contact_id: string }; message?: string }>(
     `/books/v3/contacts?organization_id=${encodeURIComponent(orgId)}`,
     {
@@ -733,6 +751,7 @@ let syncing = false;
  * finished within `minGapMs`, so browsing the console never hammers Zoho.
  */
 export async function zohoSyncAll(opts: {
+  /** The owner pressed the button (also the only time clients go to Books). */
   force?: boolean;
   minGapMs?: number;
 }): Promise<FullSyncResult> {
@@ -759,23 +778,34 @@ export async function zohoSyncAll(opts: {
     } catch (e) {
       errors.push(`customers: ${e instanceof Error ? e.message : e}`);
     }
-    try {
-      const done = await linked('clients', 'books_contacts');
-      const { data } = await supabase
-        .from('clients')
-        .select('id, name, legal_name, email, phone, gstin')
-        .order('created_at', { ascending: true })
-        .limit(500);
-      let sent = 0;
-      for (const c of (data ?? []).filter((x) => !done.has(x.id))) {
-        if (await pushContact({ ...c, name: c.legal_name || c.name }, orgId)) sent++;
+    // Books holds paying customers only. Website clients go across solely on
+    // the owner's own button press, and only when they are real engagements
+    // (onboarding or active) with an email or GSTIN to match on. Leads,
+    // dormant and closed records, and anything without an identifier, stay out.
+    if (opts.force) {
+      try {
+        const done = await linked('clients', 'books_contacts');
+        const { data } = await supabase
+          .from('clients')
+          .select('id, name, legal_name, email, phone, gstin, status')
+          .in('status', ['onboarding', 'active'])
+          .order('created_at', { ascending: true })
+          .limit(500);
+        const eligible = (data ?? []).filter((x) => !done.has(x.id));
+        const usable = eligible.filter((x) => x.email || x.gstin);
+        let sent = 0;
+        for (const c of usable) {
+          if (await pushContact({ ...c, name: c.legal_name || c.name }, orgId)) sent++;
+        }
+        if (sent) {
+          parts.push(`${sent} active clients sent to Books`);
+          changed = true;
+        }
+        const skipped = eligible.length - usable.length;
+        if (skipped) parts.push(`${skipped} skipped (no email or GSTIN)`);
+      } catch (e) {
+        errors.push(`clients→Books: ${e instanceof Error ? e.message : e}`);
       }
-      if (sent) {
-        parts.push(`${sent} clients sent to Books`);
-        changed = true;
-      }
-    } catch (e) {
-      errors.push(`clients→Books: ${e instanceof Error ? e.message : e}`);
     }
     try {
       const i = await syncBooksInvoices(orgId);
