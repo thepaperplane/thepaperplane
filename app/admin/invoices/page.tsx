@@ -12,6 +12,7 @@ import {
 } from '@/components/admin/ui';
 import { AutoSubmitSelect, SubmitButton } from '@/components/admin/form-bits';
 import { createInvoice, setInvoiceStatus } from '@/app/admin/_actions/ops';
+import { syncEverything } from '@/app/admin/_actions/integrations';
 import { requireProfile } from '@/lib/auth';
 import { serviceClient } from '@/lib/supabase';
 import { formatDate, formatINR, todayIST } from '@/lib/utils';
@@ -69,6 +70,13 @@ export default async function InvoicesPage() {
       <PageHeader
         title="Invoices"
         description="Record what you bill and mark it paid. The console keeps the running totals."
+        action={
+          <form action={syncEverything}>
+            <SubmitButton tone="quiet" pendingText="Syncing with Zoho…">
+              Sync with Zoho
+            </SubmitButton>
+          </form>
+        }
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">

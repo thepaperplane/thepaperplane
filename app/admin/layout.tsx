@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { AdminShell } from '@/components/admin/admin-shell';
 import { currentProfile } from '@/lib/auth';
+import { ZohoAutoSync } from '@/components/admin/zoho-auto-sync';
 
 export const metadata: Metadata = {
   title: { default: 'Admin', template: '%s · Admin' },
@@ -14,5 +15,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // that any other /admin route already has a session by the time we get here.
   if (!profile) return <>{children}</>;
 
-  return <AdminShell profile={profile}>{children}</AdminShell>;
+  return (
+    <AdminShell profile={profile}>
+      <ZohoAutoSync />
+      {children}
+    </AdminShell>
+  );
 }
