@@ -4,6 +4,7 @@ import { SubmitButton } from '@/components/admin/form-bits';
 import {
   disconnectZoho,
   importBooksInvoices,
+  syncEverything,
   importClientsFromBooks,
   setAutoLeads,
   syncClientsToBooks,
@@ -175,6 +176,17 @@ export default async function IntegrationsPage({
                     Send every new enquiry to Zoho CRM automatically
                   </label>
                   <SubmitButton tone="quiet">Save</SubmitButton>
+                </form>
+
+                <form action={syncEverything} className="mt-6">
+                  <SubmitButton className="w-full" pendingText="Syncing everything…">
+                    Sync everything with Zoho now
+                  </SubmitButton>
+                  <p className="text-ink-3 mt-2 text-[0.8125rem] leading-relaxed">
+                    Brings in new and changed Books customers and invoices, sends new clients to
+                    Books and new enquiries to the CRM. This also runs by itself whenever you open
+                    the console.
+                  </p>
                 </form>
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">

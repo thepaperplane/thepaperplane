@@ -12,6 +12,7 @@ import {
   pushLead,
   revokeZoho,
   syncBooksInvoices,
+  zohoSyncAll,
 } from '@/lib/integrations/zoho';
 
 /**
@@ -183,4 +184,25 @@ export async function disconnectZoho(): Promise<void> {
   await revokeZoho();
   await audit(profile.email, 'integrations.zoho.disconnect', 'integrations', 'zoho');
   revalidatePath('/admin/integrations');
+}
+
+/** The one button: everything, both ways. */
+export async function syncEverything(): Promise<void> {
+  const profile = await requireRole('editor');
+  const r = await zohoSyncAll({ force: true });
+  await audit(profile.email, 'integrations.zoho.sync_all', 'integrations', 'zoho', {
+    detail: r.detail,
+  });
+  revalidatePath('/admin', 'layout');
+}
+
+/**
+ * Runs when the console is opened: a quiet sync if the last one is stale.
+ * Returns whether anything changed so the page can refresh itself.
+ */
+export async function autoSyncZoho(): Promise<boolean> {
+  await requireRole('editor');
+  const r = await zohoSyncAll({ minGapMs: 5 * 60_000 });
+  if (r.changed) revalidatePath('/admin', 'layout');
+  return r.changed;
 }

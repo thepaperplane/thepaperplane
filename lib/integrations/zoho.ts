@@ -715,28 +715,104 @@ export async function enableZohoPortal(orgId: string, customerId: string): Promi
   );
 }
 
+export type FullSyncResult = {
+  ran: boolean;
+  detail: string;
+  changed: boolean;
+};
+
+let syncing = false;
+
 /**
- * The daily round: customers in from Books, invoices mirrored. Runs from the
- * daily cron; quietly does nothing when Zoho is not connected.
+ * Everything, both ways, in one pass: Books customers in (new clients are
+ * created, existing ones kept in step), website clients not yet in Books sent
+ * across, Books invoices mirrored, and new enquiries sent to the CRM.
+ *
+ * `force` is the owner pressing the button. Without it (the automatic run
+ * when the console is opened, and the daily cron) a pass is skipped if one
+ * finished within `minGapMs`, so browsing the console never hammers Zoho.
  */
-export async function zohoDailySync(): Promise<string> {
+export async function zohoSyncAll(opts: {
+  force?: boolean;
+  minGapMs?: number;
+}): Promise<FullSyncResult> {
   const row = await getZoho();
-  if (!row || row.status !== 'connected') return 'zoho not connected';
+  if (!row || row.status !== 'connected')
+    return { ran: false, detail: 'Zoho not connected', changed: false };
   const orgId = await booksOrgId();
-  if (!orgId) return 'no books organisation';
-  try {
-    const c = await importBooksCustomers(orgId, row.last_sync_at);
-    const i = await syncBooksInvoices(orgId);
-    const detail = `${c.created} new, ${c.updated} updated clients, ${c.persons} contacts; ${i.imported} invoices`;
-    await logZoho('daily.sync', true, detail);
-    await db()
-      .from('integrations')
-      .update({ last_sync_at: new Date().toISOString(), last_error: null })
-      .eq('provider', 'zoho');
-    return detail;
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    await logZoho('daily.sync', false, msg);
-    return msg;
+  if (!orgId) return { ran: false, detail: 'No Books organisation', changed: false };
+  const gap = opts.minGapMs ?? 5 * 60_000;
+  if (!opts.force && row.last_sync_at && Date.now() - new Date(row.last_sync_at).getTime() < gap) {
+    return { ran: false, detail: 'Recently synced', changed: false };
   }
+  if (syncing) return { ran: false, detail: 'Sync already running', changed: false };
+  syncing = true;
+  const supabase = db();
+  const parts: string[] = [];
+  const errors: string[] = [];
+  let changed = false;
+  try {
+    try {
+      const c = await importBooksCustomers(orgId, opts.force ? null : row.last_sync_at);
+      parts.push(`${c.created} new / ${c.updated} updated clients`);
+      if (c.created || c.updated) changed = true;
+    } catch (e) {
+      errors.push(`customers: ${e instanceof Error ? e.message : e}`);
+    }
+    try {
+      const done = await linked('clients', 'books_contacts');
+      const { data } = await supabase
+        .from('clients')
+        .select('id, name, legal_name, email, phone, gstin')
+        .order('created_at', { ascending: true })
+        .limit(500);
+      let sent = 0;
+      for (const c of (data ?? []).filter((x) => !done.has(x.id))) {
+        if (await pushContact({ ...c, name: c.legal_name || c.name }, orgId)) sent++;
+      }
+      if (sent) {
+        parts.push(`${sent} clients sent to Books`);
+        changed = true;
+      }
+    } catch (e) {
+      errors.push(`clients→Books: ${e instanceof Error ? e.message : e}`);
+    }
+    try {
+      const i = await syncBooksInvoices(orgId);
+      parts.push(`${i.imported} invoices`);
+      if (i.imported) changed = true;
+    } catch (e) {
+      errors.push(`invoices: ${e instanceof Error ? e.message : e}`);
+    }
+    try {
+      const done = await linked('enquiries', 'Leads');
+      const { data } = await supabase
+        .from('enquiries')
+        .select('id, name, email, phone, company, message, service_id')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      let sent = 0;
+      for (const e of (data ?? []).filter((x) => !done.has(x.id))) {
+        if (await pushLead(e)) sent++;
+      }
+      if (sent) parts.push(`${sent} leads sent to CRM`);
+    } catch (e) {
+      errors.push(`leads: ${e instanceof Error ? e.message : e}`);
+    }
+    const ok = errors.length === 0;
+    const detail = [...parts, ...errors].join('; ');
+    await logZoho(opts.force ? 'sync.manual' : 'sync.auto', ok, detail);
+    await supabase
+      .from('integrations')
+      .update({ last_sync_at: new Date().toISOString(), last_error: ok ? null : detail })
+      .eq('provider', 'zoho');
+    return { ran: true, detail, changed };
+  } finally {
+    syncing = false;
+  }
+}
+
+/** The daily round, run by the cron. */
+export async function zohoDailySync(): Promise<string> {
+  return (await zohoSyncAll({ force: true })).detail;
 }

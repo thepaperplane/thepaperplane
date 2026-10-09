@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { Building2, Plus, Search } from 'lucide-react';
 import { DataTable, EmptyState, PageHeader, Panel, Pill } from '@/components/admin/ui';
+import { SubmitButton } from '@/components/admin/form-bits';
+import { syncEverything } from '@/app/admin/_actions/integrations';
 import { requireProfile, canEdit } from '@/lib/auth';
 import { serviceClient } from '@/lib/supabase';
 import type { ClientRow, ClientStatus } from '@/lib/database.types';
@@ -63,13 +65,20 @@ export default async function ClientsPage({
         description="Every relationship the practice holds, from first enquiry through to active engagement."
         action={
           canEdit(profile.role) ? (
-            <Link
-              href="/admin/clients/new"
-              className="bg-brand-600 hover:bg-brand-700 text-accent-ink inline-flex h-11 items-center gap-2 rounded-[var(--radius-md)] px-4 text-[0.9375rem] font-semibold transition-colors"
-            >
-              <Plus className="h-4 w-4" strokeWidth={2.2} />
-              Add client
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <form action={syncEverything}>
+                <SubmitButton tone="quiet" pendingText="Syncing with Zoho…">
+                  Sync with Zoho
+                </SubmitButton>
+              </form>
+              <Link
+                href="/admin/clients/new"
+                className="bg-brand-600 hover:bg-brand-700 text-accent-ink inline-flex h-11 items-center gap-2 rounded-[var(--radius-md)] px-4 text-[0.9375rem] font-semibold transition-colors"
+              >
+                <Plus className="h-4 w-4" strokeWidth={2.2} />
+                Add client
+              </Link>
+            </div>
           ) : null
         }
       />
