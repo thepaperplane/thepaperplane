@@ -41,12 +41,21 @@ const SEEN_KEY = 'pp.seen';
  * already been painted, and hiding it then is a flicker rather than a
  * decision.
  */
-export const LOADER_SCRIPT = `(function(){var d=document.documentElement;try{
+/*
+ * The opening animation is switched off: an overlay that covers the page for
+ * the first two seconds holds back the largest-contentful-paint and the
+ * speed scores. Set INTRO_ENABLED to true to bring it back.
+ */
+const INTRO_ENABLED = false;
+
+export const LOADER_SCRIPT = INTRO_ENABLED
+  ? `(function(){var d=document.documentElement;try{
 if(sessionStorage.getItem('${SEEN_KEY}')){d.classList.add('pp-ready');return;}
 if(matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('pp-ready');return;}
 sessionStorage.setItem('${SEEN_KEY}','1');
 d.classList.add('pp-intro');
-}catch(e){d.classList.add('pp-ready');}})();`;
+}catch(e){d.classList.add('pp-ready');}})();`
+  : `document.documentElement.classList.add('pp-ready');`;
 
 export function Loader() {
   useEffect(() => {
