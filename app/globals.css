@@ -419,6 +419,16 @@
     transform: none;
   }
 
+  /* The first screen is never hidden waiting for scripts: its text is the
+     largest paint on the page, and a fade that starts only after hydration
+     holds that paint back by seconds on a phone. */
+  .reveal-ready .hero .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    will-change: auto;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .reveal-ready .reveal {
       opacity: 1;

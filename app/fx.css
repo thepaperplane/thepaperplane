@@ -398,28 +398,24 @@
   }
 
   .reveal-ready .reveal[data-reveal='words'] .hw {
-    opacity: 0;
-    transform: translateY(0.5em) rotateX(-75deg);
-    transition:
-      opacity 0.9s var(--ease-out-editorial) calc(var(--wi, 0) * 90ms + 80ms),
-      transform 1.1s var(--ease-emphasis) calc(var(--wi, 0) * 90ms + 80ms);
+    /* A CSS entrance that starts at once. The headline is the largest paint on
+       the page, so it must not wait for scripts to arm it, nor start invisible. */
+    animation: hw-rise 0.8s var(--ease-emphasis) both;
+    animation-delay: calc(var(--wi, 0) * 70ms);
   }
 
-  .pp-intro .reveal-ready .reveal[data-reveal='words'] .hw,
-  .reveal-ready.pp-intro .reveal[data-reveal='words'] .hw {
-    transition-delay: calc(var(--wi, 0) * 90ms + 1100ms);
-  }
-
-  .reveal-ready .reveal[data-reveal='words'][data-shown='true'] .hw {
-    opacity: 1;
-    transform: none;
+  @keyframes hw-rise {
+    from {
+      transform: translateY(0.3em);
+    }
+    to {
+      transform: none;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .reveal-ready .reveal[data-reveal='words'] .hw {
-      opacity: 1;
-      transform: none;
-      transition: none;
+      animation: none;
     }
   }
 
@@ -1095,7 +1091,8 @@
 
       @keyframes sw-light {
         from {
-          opacity: 0.16;
+          /* Dim, but still legible: large text needs 3:1 against the page. */
+          opacity: 0.45;
         }
         to {
           opacity: 1;
