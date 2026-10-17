@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import { Clock, Globe, Mail, MessageCircle, Phone } from 'lucide-react';
+import { Clock, Globe, Mail, MapPin, MessageCircle, Phone } from 'lucide-react';
 import { Card, Container, Eyebrow, Section, SectionHeading } from '@/components/ui';
 import { ContactForm } from '@/components/contact/contact-form';
-import { pageOg } from '@/lib/site';
+import { pageOg, SITE } from '@/lib/site';
 import { getSettings, whatsappHref } from '@/lib/settings';
 import { loadContent, pick } from '@/lib/content';
 
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * NOTE: no address block and no embedded map, by design — the practice is
+ * The office address comes from SITE.address; there is no embedded map. The practice is
  * remote-first. Contact channels only.
  */
 export default async function ContactPage() {
@@ -115,13 +115,31 @@ export default async function ContactPage() {
                     </span>
                   </li>
                   <li className="flex items-start gap-3.5">
+                    <MapPin className="text-ink-3 mt-0.5 h-4 w-4 shrink-0" strokeWidth={2} />
+                    <span>
+                      <span className="text-ink-3 block text-[0.75rem] font-medium">Office</span>
+                      <a
+                        href={SITE.address.mapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-ink hover:text-accent block text-[0.9375rem] leading-relaxed transition-colors"
+                      >
+                        {SITE.address.lines.map((l) => (
+                          <span key={l} className="block">
+                            {l}
+                          </span>
+                        ))}
+                      </a>
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3.5">
                     <Globe className="text-ink-3 mt-0.5 h-4 w-4 shrink-0" strokeWidth={2} />
                     <span>
                       <span className="text-ink-3 block text-[0.75rem] font-medium">
                         How we work
                       </span>
                       <span className="text-ink block text-[0.9375rem]">
-                        {'Remote-first practice serving clients across India'}
+                        {'Based in Coimbatore, serving clients across India online'}
                       </span>
                     </span>
                   </li>

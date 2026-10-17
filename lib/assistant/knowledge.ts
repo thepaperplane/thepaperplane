@@ -28,7 +28,7 @@ const line = (s: string) => s.replace(/\s+/g, ' ').trim();
 function practice(): string {
   const out = ['## The practice'];
   out.push(
-    `${SITE.name} — "${SITE.tagline}". ${line(SITE.description)} ${SITE.serviceModel}. Founded ${SITE.foundedYear}. No public office address; all work is done remotely through secure online channels.`,
+    `${SITE.name} — "${SITE.tagline}". ${line(SITE.description)} ${SITE.serviceModel}. Founded ${SITE.foundedYear}. Office: ${SITE.address.oneLine}. Most work is done online through secure channels, so clients anywhere in India can be served; for a visit, suggest booking a time first.`,
   );
   for (const side of PRACTICE) {
     out.push(`### ${side.heading} (${side.name}) — ${side.statement}`);

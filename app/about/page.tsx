@@ -204,7 +204,7 @@ export default async function AboutPage() {
         </Container>
       </Section>
 
-      {/* Practice facts — note: no address, by design */}
+      {/* Practice facts, including the office */}
       <Section tone="sunken" className="py-16 sm:py-20">
         <Container>
           <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
@@ -215,8 +215,9 @@ export default async function AboutPage() {
               </h2>
               <p className="text-ink-3 mt-5 text-lg leading-relaxed">
                 Every statutory portal we work in is online. Every document we need moves digitally.
-                Running without a public office removes overhead that clients would otherwise pay
-                for, and removes geography as a constraint on who we can serve.
+                We are based in Coimbatore, but nothing about the work needs you to be here. That
+                keeps overhead low for clients and removes geography as a constraint on who we can
+                serve.
               </p>
               <p className="text-ink-3 mt-4 text-lg leading-relaxed">
                 What replaces a reception desk is responsiveness: a named contact, a stated
@@ -237,7 +238,8 @@ export default async function AboutPage() {
               <dl className="divide-y divide-[var(--hairline)]">
                 {[
                   { term: 'Practice model', detail: SITE.serviceModel, icon: Globe },
-                  { term: 'Clients served', detail: 'Across India', icon: Building2 },
+                  { term: 'Office', detail: SITE.address.oneLine, icon: Building2 },
+                  { term: 'Clients served', detail: 'Across India', icon: Globe },
                   { term: 'Working hours', detail: SITE.hours, icon: Users },
                   {
                     term: 'Disciplines',
