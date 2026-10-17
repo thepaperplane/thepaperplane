@@ -593,8 +593,8 @@ export function QuoteView({
 
         <footer className="text-ink-3 pb-4 text-[0.8125rem] leading-relaxed">
           <p>
-            {SITE.name} · {SITE.email} · {SITE.phone}. This quotation is private to {q.name} and
-            stays open until {dateIN(q.valid_until)}.
+            {SITE.name} · {SITE.address.oneLine} · {SITE.email} · {SITE.phone}. This quotation is
+            private to {q.name} and stays open until {dateIN(q.valid_until)}.
           </p>
         </footer>
       </div>

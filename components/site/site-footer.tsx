@@ -8,9 +8,8 @@ import { getSettings, whatsappHref } from '@/lib/settings';
 /**
  * Colophon.
  *
- * Masthead and index, then the brand line set large as a sign-off. No address
- * block and no PostalAddress schema — the practice is remote-first, and
- * `areaServed` in the organisation JSON-LD is the correct markup for that.
+ * Masthead and index, then the brand line set large as a sign-off. The office
+ * address comes from SITE.address, the same source as the organisation schema.
  * Contact channels come from the console's settings, so a changed number is
  * one edit, not a deploy.
  */
@@ -134,9 +133,18 @@ export async function SiteFooter() {
         <Rule className="mt-12" />
 
         <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-          <p className="text-ink-3 text-[length:var(--text-micro)]">
-            © {year} {SITE.name}
-          </p>
+          <div className="text-ink-3 text-[length:var(--text-micro)]">
+            <p>
+              © {year} {SITE.name}
+            </p>
+            <address className="mt-3 leading-relaxed not-italic">
+              {SITE.address.lines.map((l) => (
+                <span key={l} className="block">
+                  {l}
+                </span>
+              ))}
+            </address>
+          </div>
           <p className="text-ink-3 max-w-[68ch] text-[length:var(--text-micro)] leading-relaxed">
             Compliance dates, penalty figures and explanatory material on this site are general
             guidance reflecting the standard statutory position at the time of writing. Due dates

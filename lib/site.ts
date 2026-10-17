@@ -21,6 +21,28 @@ export const SITE = {
   hours: 'Monday – Saturday · 09:00 – 19:00 IST',
   serviceModel: 'Remote-first practice serving clients across India',
   serviceArea: 'India',
+  /** The office. One source: the footer, contact and about pages, schema and emails all read this. */
+  address: {
+    lines: [
+      'Genora Workspace',
+      '256, Srinivasa Spaces',
+      'Kandasamy Layout',
+      'Near Lakshmi Mills',
+      'Papanaickenpalayam',
+      'Coimbatore, Tamil Nadu 641037',
+    ],
+    street:
+      'Genora Workspace, 256, Srinivasa Spaces, Kandasamy Layout, Near Lakshmi Mills, Papanaickenpalayam',
+    locality: 'Coimbatore',
+    region: 'Tamil Nadu',
+    postalCode: '641037',
+    country: 'IN',
+    /** One line, for emails, schema and the assistants. */
+    oneLine:
+      'Genora Workspace, 256, Srinivasa Spaces, Kandasamy Layout, Near Lakshmi Mills, Papanaickenpalayam, Coimbatore, Tamil Nadu 641037',
+    mapsUrl:
+      'https://www.google.com/maps/search/?api=1&query=Genora+Workspace+256+Srinivasa+Spaces+Kandasamy+Layout+Papanaickenpalayam+Coimbatore+641037',
+  },
   foundedYear: 2023,
 } as const;
 
@@ -145,8 +167,8 @@ export const FOOTER_NAV: { heading: string; items: NavItem[] }[] = [
 ];
 
 /**
- * Organization schema. Uses `areaServed` rather than a PostalAddress,
- * which is the correct markup for a practice without a public office.
+ * Organization schema: the office as a PostalAddress, plus `areaServed`
+ * because clients are served across India.
  */
 export function organizationJsonLd() {
   return {
@@ -161,6 +183,14 @@ export function organizationJsonLd() {
     description: SITE.description,
     logo: `${SITE.url}/favicon.svg`,
     image: `${SITE.url}/og/default.png`,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: SITE.address.street,
+      addressLocality: SITE.address.locality,
+      addressRegion: SITE.address.region,
+      postalCode: SITE.address.postalCode,
+      addressCountry: SITE.address.country,
+    },
     areaServed: { '@type': 'Country', name: 'India' },
     availableLanguage: ['en', 'ta'],
     contactPoint: {

@@ -155,6 +155,7 @@ export function renderCalendarEmail(opts: {
         <div style="background:#f5f5f7;padding:20px 28px;">
           <p style="margin:0;font-size:12px;color:#86868b;">
             ${esc(SITE.name)} · <a href="mailto:${SITE.email}" style="color:#1c75c8;text-decoration:none;">${SITE.email}</a><br>
+            ${esc(SITE.address.oneLine)}<br>
             <a href="${unsubscribeUrl}" style="color:#86868b;text-decoration:underline;">Unsubscribe</a>
           </p>
         </div>
