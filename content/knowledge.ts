@@ -37,17 +37,28 @@ export type AnatomyStep = {
   diagram: DiagramKey;
 };
 
-/** Keys of the scene set in components/knowledge/scenes.tsx. */
+/** One scene per stage, drawn for that stage (components/knowledge/scenes.tsx). */
 export type DiagramKey =
-  | 'normalise'
-  | 'match'
-  | 'chase'
-  | 'offset'
-  | 'archive'
-  | 'inspect'
-  | 'assemble'
-  | 'compare'
-  | 'structure';
+  | 'gst-normalise'
+  | 'gst-match'
+  | 'gst-chase'
+  | 'gst-offset'
+  | 'gst-archive'
+  | 'itr-ais'
+  | 'itr-heads'
+  | 'itr-gains'
+  | 'itr-regime'
+  | 'itr-file'
+  | 'scr-validity'
+  | 'scr-evidence'
+  | 'scr-research'
+  | 'scr-draft'
+  | 'scr-hearing'
+  | 'inc-structure'
+  | 'inc-name'
+  | 'inc-draft'
+  | 'inc-filing'
+  | 'inc-handover';
 
 export type ServiceAnatomy = {
   id: string;
@@ -105,7 +116,7 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'Your books, in your format, mapped to GST fields. GSTINs validated, place of supply corrected, reverse-charge entries separated.',
         share: 20,
         risk: 'Wrong place of supply turns a valid credit into an ineligible one.',
-        diagram: 'normalise',
+        diagram: 'gst-normalise',
       },
       {
         label: 'GSTR-2B three-way match',
@@ -113,7 +124,7 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'Every purchase invoice matched against the auto-drafted statement and your ledger. Mismatches are listed, not absorbed.',
         share: 35,
         risk: 'Silently claiming unmatched credit is the single most common cause of GST demand notices.',
-        diagram: 'match',
+        diagram: 'gst-match',
       },
       {
         label: 'Vendor default chase',
@@ -121,7 +132,7 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'Suppliers who have not uploaded invoices are identified and pursued so you can withhold payment until they do.',
         share: 20,
         risk: 'Unchased defaults become permanently lost credit once the claim window closes.',
-        diagram: 'chase',
+        diagram: 'gst-chase',
       },
       {
         label: 'Liability computation and set-off',
@@ -129,7 +140,7 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'Output liability computed, credit set off in the statutory order, net cash position confirmed before payment.',
         share: 15,
         risk: 'Incorrect set-off order overstates cash payable or triggers interest.',
-        diagram: 'offset',
+        diagram: 'gst-offset',
       },
       {
         label: 'Filing and archival',
@@ -137,7 +148,7 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'GSTR-1 and 3B filed, acknowledgements archived with the working papers that produced them.',
         share: 10,
         risk: 'Filings without retained workings cannot be defended three years later.',
-        diagram: 'archive',
+        diagram: 'gst-archive',
       },
     ],
   },
@@ -174,7 +185,7 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'Every reported interest payment, dividend, securities transaction and high-value entry traced to your records — or formally explained.',
         share: 30,
         risk: 'Unreconciled entries are the most common trigger for a section 143(1) adjustment.',
-        diagram: 'match',
+        diagram: 'itr-ais',
       },
       {
         label: 'Head-wise classification',
@@ -182,7 +193,7 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'Income correctly assigned across salary, house property, business, capital gains and other sources.',
         share: 15,
         risk: 'Misclassification changes the rate, the set-off rights and the carry-forward position.',
-        diagram: 'normalise',
+        diagram: 'itr-heads',
       },
       {
         label: 'Capital gains computation',
@@ -190,7 +201,7 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'Holding periods, indexation where available, grandfathering, and loss set-off ordering applied transaction by transaction.',
         share: 25,
         risk: 'Errors here are large, obvious to the department, and expensive to unwind.',
-        diagram: 'offset',
+        diagram: 'itr-gains',
       },
       {
         label: 'Regime comparison',
@@ -198,14 +209,14 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'Old and new regime computed in parallel, with the difference put in front of you before the election is made.',
         share: 15,
         risk: 'The election is binding for the year — and for businesses, for longer.',
-        diagram: 'compare',
+        diagram: 'itr-regime',
       },
       {
         label: 'Filing and e-verification',
         detail: 'Return filed, verification completed inside the window, acknowledgement archived.',
         share: 15,
         risk: 'An unverified return is legally treated as never filed.',
-        diagram: 'archive',
+        diagram: 'itr-file',
       },
     ],
   },
@@ -241,7 +252,7 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'Jurisdiction, limitation period, sanctioning authority and service of notice tested before the merits are touched at all.',
         share: 20,
         risk: 'A procedurally void notice can end proceedings outright — but only if challenged in time.',
-        diagram: 'inspect',
+        diagram: 'scr-validity',
       },
       {
         label: 'Evidence assembly',
@@ -249,7 +260,7 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'Bank trails, contracts, invoices and confirmations collected and indexed into a paper book.',
         share: 30,
         risk: 'Evidence produced late is frequently refused at the appellate stage.',
-        diagram: 'assemble',
+        diagram: 'scr-evidence',
       },
       {
         label: 'Legal research',
@@ -257,7 +268,7 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'Binding precedent identified from jurisdictional High Court and Tribunal decisions on the specific point.',
         share: 20,
         risk: 'An argument without authority is an opinion the officer is free to disregard.',
-        diagram: 'inspect',
+        diagram: 'scr-research',
       },
       {
         label: 'Written submission drafting',
@@ -265,7 +276,7 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'Facts, law and relief drafted as a self-contained document that still reads correctly to a stranger in three years.',
         share: 20,
         risk: 'Submissions that assume context the reader lacks fail on appeal.',
-        diagram: 'assemble',
+        diagram: 'scr-draft',
       },
       {
         label: 'Hearing representation',
@@ -273,7 +284,7 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'Appearance through the faceless portal or in person, with responses to further queries inside their deadlines.',
         share: 10,
         risk: 'A missed hearing is decided ex parte, on the department’s version alone.',
-        diagram: 'archive',
+        diagram: 'scr-hearing',
       },
     ],
   },
@@ -310,7 +321,7 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'Entity type, shareholding split, authorised capital and founder vesting decided against your actual plans.',
         share: 25,
         risk: 'The wrong structure becomes a restructuring cost, plus tax, later.',
-        diagram: 'structure',
+        diagram: 'inc-structure',
       },
       {
         label: 'Name reservation',
@@ -318,7 +329,7 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'Options tested against existing companies, trademark classes and naming rules before submission.',
         share: 15,
         risk: 'Rejections cost fees and days, and can repeat indefinitely.',
-        diagram: 'inspect',
+        diagram: 'inc-name',
       },
       {
         label: 'Constitutional drafting',
@@ -326,7 +337,7 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'Memorandum and articles drafted around your object clauses rather than pasted from a template.',
         share: 25,
         risk: 'Narrow object clauses block activities you have not thought of yet.',
-        diagram: 'assemble',
+        diagram: 'inc-draft',
       },
       {
         label: 'Integrated filing',
@@ -334,7 +345,7 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'DIN, DSC, PAN, TAN, EPFO, ESIC, professional tax and bank account submitted as a single application.',
         share: 20,
         risk: 'One inconsistent field rejects the entire bundle.',
-        diagram: 'structure',
+        diagram: 'inc-filing',
       },
       {
         label: 'Post-incorporation handover',
@@ -342,7 +353,7 @@ export const SERVICE_ANATOMY: ServiceAnatomy[] = [
           'Certificate, statutory registers, share certificates and a twelve-month compliance calendar handed over.',
         share: 15,
         risk: 'First-year compliance is missed most often by companies that were never told it had begun.',
-        diagram: 'archive',
+        diagram: 'inc-handover',
       },
     ],
   },
