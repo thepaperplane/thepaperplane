@@ -9,7 +9,8 @@
  * `script-src` keeps 'unsafe-inline' because Next.js streams its own inline
  * bootstrap scripts, and the alternative — a per-request nonce — would make
  * every page dynamic and throw away static rendering. What the policy still
- * guarantees is that no script can come from a third-party origin, nothing can
+ * guarantees is that no script can come from a third-party origin (bar the
+ * Google tag's own host, www.googletagmanager.com), nothing can
  * frame the site, forms cannot post off-site and plugins cannot load.
  * Development keeps 'unsafe-eval' for React's dev tooling only.
  */
@@ -25,11 +26,11 @@ const isProd = process.env.NODE_ENV === 'production';
 
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isProd ? '' : " 'unsafe-eval'"}`,
+  `script-src 'self' 'unsafe-inline' https://www.googletagmanager.com${isProd ? '' : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: https://*.supabase.co${supabaseHost ? ` https://${supabaseHost}` : ''}`,
+  `img-src 'self' data: blob: https://*.supabase.co https://www.google-analytics.com https://www.googletagmanager.com${supabaseHost ? ` https://${supabaseHost}` : ''}`,
   "font-src 'self' data:",
-  `connect-src 'self' https://*.supabase.co wss://*.supabase.co${isProd ? '' : ' ws:'}`,
+  `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com${isProd ? '' : ' ws:'}`,
   `media-src 'self' https://*.supabase.co${supabaseHost ? ` https://${supabaseHost}` : ''}`,
   // Client sites shown live on /work, when they allow it (lib/embed.ts).
   "frame-src 'self' https:",

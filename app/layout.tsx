@@ -149,6 +149,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       suppressHydrationWarning
     >
       <head>
+        {/* Google tag (gtag.js) — kept first in <head>, one per page. */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-XH514KBVVD" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-XH514KBVVD');`,
+          }}
+        />
         {/* Applies the stored theme before first paint. Without this, anyone
             who chose dark gets a white flash on every navigation. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
