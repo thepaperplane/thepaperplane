@@ -23,21 +23,21 @@ Request ─▶ Screen ─▶ Automated quotation ─▶ Client asks for final �
             held)
 ```
 
-| #   | Stage                        | Who    | What happens                                                                                                                                                                                                        | Target                                  |
-| --- | ---------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| 1   | **Request**                  | Client | Chooses services on `/get-quote`, or a team member builds one in the console. Only a name is needed to make a console link; the website form needs an email so the quotation has somewhere to go.                   | —                                       |
-| 2   | **Screen**                   | System | Scores the request. It is either sent at once, or **held** (disposable email, blocked term, repeat requests, low score, or _Manual_ mode). Nothing is discarded.                                                    | instant                                 |
-| 3   | **Release** _(only if held)_ | Team   | Console → Quotations → _Held for review_ → **Release automated quotation**.                                                                                                                                         | same working day                        |
-| 4   | **Automated quotation**      | System | Emails a private link. The email never contains a price.                                                                                                                                                            | instant                                 |
-| 5   | **Client reads / adds**      | Client | May tick _People who ask for this often add_. Each shows a starting price range and is marked _awaiting approval_ — it is **not** priced.                                                                           | —                                       |
-| 6   | **Ask for the final**        | Client | Presses **Request my final quotation**. Status becomes _final requested_; the client gets an acknowledgement; the team is emailed.                                                                                  | —                                       |
-| 7   | **Confirm scope and price**  | Team   | Call the client (or WhatsApp). Agree scope, options, quantities, discount and any added services.                                                                                                                   | within **1 working day** of the request |
-| 8   | **Edit**                     | Team   | Console → the quotation → **Edit**. Set the real amount on every line, including anything the client added. Government fees stay separate, at actual cost.                                                          | —                                       |
-| 9   | **Approve**                  | Team   | On the quotation: tick the three checks, then **Approve and issue the final quotation**. Amounts freeze, "from" wording goes, validity restarts, the approver and time are recorded. Optionally send it right away. | —                                       |
-| 10  | **Accept**                   | Client | Reads the final and presses **Accept this quotation** (or the team records a phone agreement).                                                                                                                      | validity: 14 days by default            |
-| 11  | **Onboard**                  | System | Client record and onboarding created; the documents checklist is sent with the fee and UPI details.                                                                                                                 | instant                                 |
-| 12  | **Add-ons**                  | Both   | Anything beyond scope is _priced first_, approved by the client, and carried onto the invoice with its date.                                                                                                        | before any extra work starts            |
-| 13  | **Invoice**                  | Team   | Console → the quotation → **Create the invoice** (original quotation + every approved add-on).                                                                                                                      | on acceptance                           |
+| #   | Stage                       | Who    | What happens                                                                                                                                                                                                                 | Target                                  |
+| --- | --------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| 1   | **Request**                 | Client | Chooses services on `/get-quote`, or a team member builds one in the console. Only a name is needed to make a console link; the website form needs an email so the quotation has somewhere to go.                            | —                                       |
+| 2   | **Wait for approval**       | System | Every request from `/get-quote` or WhatsApp is saved as _Awaiting approval_. **Nothing is sent automatically.** The score and screening note (disposable email, blocked term, repeat requests) are shown to help you decide. | instant                                 |
+| 3   | **Review, edit, send**      | Team   | Console → Quotations → _Awaiting approval_ → open it → **Edit** services/prices if needed → **Send to the client** (or **Make the link live** and share it yourself).                                                        | same working day                        |
+| 4   | **Automated quotation**     | System | Emails a private link. The email never contains a price.                                                                                                                                                                     | instant                                 |
+| 5   | **Client reads / adds**     | Client | May tick _People who ask for this often add_. Each shows a starting price range and is marked _awaiting approval_ — it is **not** priced.                                                                                    | —                                       |
+| 6   | **Ask for the final**       | Client | Presses **Request my final quotation**. Status becomes _final requested_; the client gets an acknowledgement; the team is emailed.                                                                                           | —                                       |
+| 7   | **Confirm scope and price** | Team   | Call the client (or WhatsApp). Agree scope, options, quantities, discount and any added services.                                                                                                                            | within **1 working day** of the request |
+| 8   | **Edit**                    | Team   | Console → the quotation → **Edit**. Set the real amount on every line, including anything the client added. Government fees stay separate, at actual cost.                                                                   | —                                       |
+| 9   | **Approve**                 | Team   | On the quotation: tick the three checks, then **Approve and issue the final quotation**. Amounts freeze, "from" wording goes, validity restarts, the approver and time are recorded. Optionally send it right away.          | —                                       |
+| 10  | **Accept**                  | Client | Reads the final and presses **Accept this quotation** (or the team records a phone agreement).                                                                                                                               | validity: 14 days by default            |
+| 11  | **Onboard**                 | System | Client record and onboarding created; the documents checklist is sent with the fee and UPI details.                                                                                                                          | instant                                 |
+| 12  | **Add-ons**                 | Both   | Anything beyond scope is _priced first_, approved by the client, and carried onto the invoice with its date.                                                                                                                 | before any extra work starts            |
+| 13  | **Invoice**                 | Team   | Console → the quotation → **Create the invoice** (original quotation + every approved add-on).                                                                                                                               | on acceptance                           |
 
 ### Suggestions ("People who ask for this often add")
 
@@ -69,7 +69,7 @@ Request ─▶ Screen ─▶ Automated quotation ─▶ Client asks for final �
 
 | Event                                           | Reply by                                         |
 | ----------------------------------------------- | ------------------------------------------------ |
-| Held automated quotation                        | End of the same working day                      |
+| Request awaiting approval                       | End of the same working day                      |
 | Final quotation requested                       | 1 working day                                    |
 | Client message on a quotation                   | 1 working day                                    |
 | Add-on requested                                | Price back to the client within 1 working day    |
@@ -84,3 +84,11 @@ Request ─▶ Screen ─▶ Automated quotation ─▶ Client asks for final �
   quotations are watermarked and labelled so they cannot be mistaken for a final.
 - **Automations** — follow-up nudges go to clients who have not opened or answered. They never
   contain prices.
+
+## Communication timeline
+
+Every quotation has a **Communication timeline** in the console: the request as the client
+made it, every edit by the team, each email or WhatsApp sent (and any that failed), the client
+opening the link, their messages in full, add-on requests and decisions, reminders, approvals
+and acceptance — with who did it and when. If it is not on the timeline, it did not happen
+through the system; log phone calls by adding a note to the quotation.

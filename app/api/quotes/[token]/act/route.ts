@@ -117,6 +117,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ token: str
       return apiOk({ ok: true });
     }
     case 'message': {
+      await logEvent(q.id, 'client', 'message_from_client', d.text);
       await notifyOwner(
         `Message on quotation ${q.number} from ${q.name}`,
         [d.text, '', `${q.email ?? ''} ${q.phone ?? ''}`.trim()],
@@ -178,6 +179,12 @@ export async function POST(request: Request, ctx: { params: Promise<{ token: str
           decided_at: new Date().toISOString(),
         })
         .eq('id', addon.id);
+      await logEvent(
+        q.id,
+        'client',
+        d.decision === 'approve' ? 'addon_approved' : 'addon_declined',
+        `${addon.title} — ₹${Number(addon.amount).toLocaleString('en-IN')}`,
+      );
       await notifyOwner(
         `${q.name} ${d.decision === 'approve' ? 'approved' : 'declined'} an add-on`,
         [`${q.number}: ${addon.title} — ₹${Number(addon.amount).toLocaleString('en-IN')}`],

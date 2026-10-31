@@ -398,8 +398,11 @@ export async function createQuote(input: CreateInput): Promise<QuoteRow> {
       settings: s,
     });
     score = screen.score;
-    hold = screen.hold;
-    status = hold ? 'pending_review' : 'sent';
+    // Nothing a visitor requests ever leaves automatically. Every request waits
+    // for the team to read it, edit it if needed, and send it from the console.
+    // The screening result is kept as a note to help the reviewer.
+    hold = screen.hold ?? 'Awaiting your approval';
+    status = 'pending_review';
   }
 
   const validUntil = new Date(Date.now() + (input.validDays ?? s.validDays) * 86_400_000);
@@ -439,7 +442,9 @@ export async function createQuote(input: CreateInput): Promise<QuoteRow> {
         input.source === 'console' ? (input.createdBy ?? 'team') : 'client',
         'created',
         hold
-          ? `Automated quotation requested via ${input.source}; held for review: ${hold}.`
+          ? `Quotation requested via ${input.source}: ${summarise(items)}.${
+              input.requirement ? ` They wrote: ${input.requirement.slice(0, 300)}` : ''
+            } Waiting for approval (${hold}).`
           : `Created via ${input.source}.`,
       );
       return data;
@@ -575,6 +580,13 @@ export async function deliverQuote(
     ? false
     : await whatsappIfOpen(q.wa_id ?? q.phone, copy.wa(first, url));
   const via = [email ? 'email' : '', whatsapp ? 'whatsapp' : ''].filter(Boolean);
+  if (!via.length)
+    await logEvent(
+      q.id,
+      opts.actor ?? 'system',
+      'send_failed',
+      `Could not send the ${q.kind === 'final' ? 'final ' : ''}quotation: ${error ?? 'unknown error'}`,
+    );
   if (via.length) {
     await db()
       .from('quotes')
@@ -593,7 +605,12 @@ export async function deliverQuote(
       q.id,
       opts.actor ?? 'system',
       q.kind === 'final' ? 'final_sent' : 'sent',
-      `Sent by ${via.join(' and ')}.`,
+      `${q.kind === 'final' ? 'Final quotation' : 'Quotation'} sent to ${[
+        email ? q.email : '',
+        whatsapp ? 'WhatsApp chat' : '',
+      ]
+        .filter(Boolean)
+        .join(' and ')}.`,
     );
   }
   return { email, whatsapp, error: email || whatsapp ? undefined : error };
@@ -683,6 +700,7 @@ export async function requestFinal(q: QuoteRow, note?: string): Promise<QuoteRow
 /** Tells the client their request arrived and when to expect the final quotation. */
 export async function acknowledgeFinalRequest(q: QuoteRow): Promise<void> {
   if (!q.email || q.email.endsWith('.invalid')) return;
+  await logEvent(q.id, 'system', 'ack_emailed', `Acknowledgement emailed to ${q.email}.`);
   await sendNotice({
     to: q.email,
     subject: `We have your request — ${q.number}`,
@@ -856,6 +874,12 @@ export async function openQuote(
         })
         .eq('id', q.id);
       q.view_count += 1;
+      await logEvent(
+        q.id,
+        'client',
+        'opened',
+        q.first_viewed_at ? undefined : 'First time they opened the link.',
+      );
     }
   }
   return { ok: true, quote: q };
@@ -1059,5 +1083,13 @@ export async function sendChecklist(
     if (!r.sent) error = r.error;
   } else error = 'This quotation has no email address.';
   const whatsapp = await whatsappIfOpen(q.wa_id ?? q.phone, text.slice(0, 3800));
+  await logEvent(
+    q.id,
+    'system',
+    email || whatsapp ? 'checklist_sent' : 'send_failed',
+    email || whatsapp
+      ? `Documents list sent by ${[email ? 'email' : '', whatsapp ? 'WhatsApp' : ''].filter(Boolean).join(' and ')}.`
+      : `Documents list not sent: ${error ?? 'unknown error'}`,
+  );
   return { email, whatsapp, error: email || whatsapp ? undefined : error };
 }

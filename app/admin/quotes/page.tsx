@@ -32,7 +32,7 @@ const when = new Intl.DateTimeFormat('en-IN', {
 
 const TABS: [string, string][] = [
   ['final', 'Final requested'],
-  ['review', 'Needs review'],
+  ['review', 'Awaiting approval'],
   ['open', 'Out with clients'],
   ['accepted', 'Accepted'],
   ['all', 'All'],
@@ -140,10 +140,10 @@ export default async function QuotesPage({
           hint="Client is waiting for you"
         />
         <Stat
-          label="Held for review"
+          label="Awaiting your approval"
           value={counts.review}
           tone={counts.review ? 'caution' : 'neutral'}
-          hint="Held by a filter"
+          hint="Requests not yet sent"
         />
         <Stat
           label="Out with clients"
@@ -229,7 +229,7 @@ export default async function QuotesPage({
                       <form action={sendQuoteNow}>
                         <input type="hidden" name="id" value={q.id} />
                         <SubmitButton className="h-9" pendingText="Sending…">
-                          Release automated quotation
+                          Approve and send
                         </SubmitButton>
                       </form>
                     ) : q.status === 'final_requested' ? (
@@ -270,8 +270,9 @@ export default async function QuotesPage({
               enough, no email or phone needed).
             </li>
             <li>
-              <strong>Screen</strong> — sent at once, or held for you (<em>Held for review</em>
-              ). Release held ones the same working day.
+              <strong>Approve</strong> — nothing is sent automatically; every request waits for you
+              (<em>Awaiting approval</em>
+              ). Review each the same working day.
             </li>
             <li>
               <strong>Automated quotation</strong> — emailed as a private link, never with a price
@@ -341,15 +342,13 @@ export default async function QuotesPage({
           description="Decide who gets a quotation automatically and who waits for you."
         >
           <form action={saveQuoteSettings} className="grid gap-4 px-6 py-5">
-            <Field label="When a request comes in" htmlFor="qs-mode">
-              <select id="qs-mode" name="mode" defaultValue={s.mode} className={ADMIN_FIELD}>
-                <option value="auto">Send to everyone who passes the checks</option>
-                <option value="qualified">
-                  Send only if the score is high enough (recommended)
-                </option>
-                <option value="manual">Hold every request for my approval</option>
-              </select>
-            </Field>
+            <input type="hidden" name="mode" value="manual" />
+            <p className="bg-accent-wash text-ink rounded-[var(--radius-md)] px-4 py-3 text-[0.875rem]">
+              <strong>Every request waits for your approval.</strong> Nothing a visitor requests on
+              /get-quote or WhatsApp is sent automatically: you read it, edit the services and
+              prices if needed, then approve and send it from here. The score and checks below are
+              shown to you as a guide only.
+            </p>
             <Field
               label="Minimum score"
               htmlFor="qs-min"

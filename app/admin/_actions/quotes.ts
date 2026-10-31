@@ -133,6 +133,13 @@ export async function saveQuote(formData: FormData): Promise<void> {
   await audit(profile.email, d.id ? 'quote.update' : 'quote.create', 'quotes', q.id, {
     number: q.number,
   });
+  if (d.id)
+    await logEvent(
+      q.id,
+      profile.email,
+      'edited',
+      `Quotation edited (${q.items.length} line${q.items.length === 1 ? '' : 's'}${q.kind === 'final' ? ', final' : ''}).`,
+    );
 
   let sent = '';
   if (d.intent === 'send') {
@@ -349,6 +356,12 @@ export async function addAddon(formData: FormData): Promise<void> {
 async function askApproval(quoteId: string, title: string, amount: number) {
   const q = await load(quoteId);
   if (!q.email || q.email.endsWith('.invalid')) return;
+  await logEvent(
+    q.id,
+    'team',
+    'addon_approval_emailed',
+    `${title} — ${inr(amount)} — emailed to ${q.email}.`,
+  );
   await sendNotice({
     to: q.email,
     subject: `Approval needed: ${title} (${q.number})`,

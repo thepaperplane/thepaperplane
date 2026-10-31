@@ -190,12 +190,12 @@ export function RequestForm({
         <h2 ref={head} tabIndex={-1} className="mt-6 text-[1.625rem] outline-none">
           {done.status === 'sent'
             ? 'Your automated quotation is on its way'
-            : 'We are preparing your quotation'}
+            : 'We have your request'}
         </h2>
         <p className="text-ink-2 mt-3 max-w-xl text-[1rem] leading-relaxed">
           {done.status === 'sent'
             ? `A private link has been emailed to ${done.email}. If you do not see it in a few minutes, check your spam folder.`
-            : `A member of the team will look over your request and email your quotation to ${done.email} shortly — usually within the working day.`}
+            : `A member of our team will read your request, prepare your quotation and email it to ${done.email} — usually within the working day.`}
         </p>
         <p className="text-ink-3 mt-3 max-w-xl text-[0.9375rem] leading-relaxed">
           It is an automated quotation, so every price on it is a starting price, not a fixed offer.

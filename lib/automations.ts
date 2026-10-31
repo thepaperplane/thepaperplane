@@ -383,6 +383,14 @@ export async function runDailyAutomations(opts: { manual?: boolean } = {}): Prom
           cta: { label: 'Open my quotation', href: quoteUrl(q.token) },
         });
         await log('quote_followup', `${q.id}:${kind}`, 'email', r.sent, `${q.number} ${kind}`);
+        await db()
+          .from('quote_events')
+          .insert({
+            quote_id: q.id,
+            actor: 'system',
+            type: r.sent ? 'followup_emailed' : 'send_failed',
+            detail: `Automatic reminder (${kind}) ${r.sent ? 'emailed to' : 'could not be sent to'} ${q.email}.`,
+          });
         if (r.sent) nudged++;
       }
     }

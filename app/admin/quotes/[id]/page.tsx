@@ -48,6 +48,31 @@ const when = new Intl.DateTimeFormat('en-IN', {
   timeZone: 'Asia/Kolkata',
 });
 
+const EVENT_LABEL: Record<string, string> = {
+  created: 'Request received',
+  sent: 'Quotation sent',
+  final_sent: 'Final quotation sent',
+  send_failed: 'Send failed',
+  message_from_client: 'Message from the client',
+  final_requested: 'Client asked for the final',
+  final_issued: 'Final approved and issued',
+  ack_emailed: 'Acknowledgement emailed',
+  checklist_sent: 'Documents list sent',
+  followup_emailed: 'Reminder emailed',
+  addon_approval_emailed: 'Add-on approval emailed',
+  addon_requested: 'Client asked for an add-on',
+  addon_priced: 'Add-on priced',
+  addon_approved: 'Client approved an add-on',
+  addon_declined: 'Client declined an add-on',
+  client_added: 'Client added a service',
+  link_generated: 'Link made live',
+  link_renewed: 'Link renewed',
+  edited: 'Edited by the team',
+  opened: 'Client opened the link',
+  accepted: 'Accepted',
+  declined: 'Declined',
+};
+
 const FLASH: Record<string, string> = {
   'sent=email': 'Emailed to the client.',
   'sent=whatsapp': 'Sent on WhatsApp.',
@@ -163,8 +188,12 @@ export default async function QuoteDetail({
           role="status"
           className="bg-caution/10 text-ink mb-5 rounded-[var(--radius-md)] px-4 py-3 text-[0.875rem]"
         >
-          <strong>Held for your review:</strong> {q.hold_reason}. Nothing has been sent. Check the
-          details, then send it.
+          <strong>Waiting for your approval.</strong> Nothing has been sent to the client. Use{' '}
+          <Link href={`/admin/quotes/${q.id}/edit`} className="text-accent font-semibold">
+            Edit
+          </Link>{' '}
+          to change the services or prices, then “Send to the client” (or “Make the link live”).
+          Screening note: {q.hold_reason}.
         </p>
       ) : null}
 
@@ -675,14 +704,17 @@ export default async function QuoteDetail({
             </div>
           </Panel>
 
-          <Panel title="Paper trail" description="Every step of this quotation, in order.">
+          <Panel
+            title="Communication timeline"
+            description="Every request, message, email, edit, approval and open on this quotation, newest first."
+          >
             {events.length ? (
               <ul className="divide-y divide-[var(--hairline)]">
                 {events.map((e) => (
                   <li key={e.id} className="grid gap-0.5 px-6 py-2.5 text-[0.8125rem]">
                     <span className="flex justify-between gap-4">
                       <span className="text-ink font-medium">
-                        {e.type.replace(/_/g, ' ')}
+                        {EVENT_LABEL[e.type] ?? e.type.replace(/_/g, ' ')}
                         <span className="text-ink-3 font-normal"> · {e.actor}</span>
                       </span>
                       <span className="text-ink-3 shrink-0">{when.format(new Date(e.at))}</span>
