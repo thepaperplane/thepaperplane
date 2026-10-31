@@ -436,9 +436,235 @@
   color: var(--positive);
 }
 
+/* ---- print / "Download as PDF" --------------------------------------------
+   The same page, laid out as an A4 document: light theme whatever the
+   visitor's setting, letterhead on top, every section opened, buttons and
+   forms gone, and page breaks that never cut a price line or a checklist in
+   half. Chrome and Edge also print "Page x of y" in the margin. */
+.print-only {
+  display: none;
+}
+
+@page {
+  size: A4;
+  margin: 14mm 12mm 16mm;
+  @bottom-center {
+    content: 'Page ' counter(page) ' of ' counter(pages);
+    font: 9pt sans-serif;
+    color: #6b6d77;
+  }
+}
+
 @media print {
-  .pf-plane {
+  :root,
+  :root:not([data-theme='light']),
+  :root[data-theme='dark'] {
+    color-scheme: light;
+    --ground: #ffffff;
+    --surface: #ffffff;
+    --sunken: #f3f3f0;
+    --ink: #12131a;
+    --ink-2: #33353d;
+    --ink-3: #5b5d67;
+    --accent: #1b6e92;
+    --accent-ink: #ffffff;
+    --accent-wash: #eef4f8;
+    --hairline: rgba(18, 19, 26, 0.16);
+    --hairline-strong: rgba(18, 19, 26, 0.28);
+    --positive: #0c6a34;
+    --caution: #8f5300;
+    --critical: #a8291f;
+  }
+  html,
+  body {
+    background: #fff !important;
+    color: var(--ink);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body {
+    font-size: 10.5pt;
+  }
+  /* Everything that only makes sense on a screen. */
+  .no-print,
+  .q-shell-header,
+  .ambient-field,
+  .fx-progress,
+  .pp-loader,
+  .pf-plane,
+  .pf-lane,
+  .pf-ill,
+  .cl-kind,
+  [data-no-print] {
+    display: none !important;
+  }
+  .print-only {
+    display: block;
+  }
+  .q-shell {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  /* No animation, no shadows, no glass in a document. */
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Letterhead */
+  .qv-letterhead {
+    display: flex !important;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+    border-bottom: 2px solid var(--accent);
+    font-size: 9.5pt;
+    line-height: 1.5;
+    color: var(--ink-2);
+  }
+  .qv-brand {
+    font-size: 15pt;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .qv-letterhead > div:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .qv-meta {
+    flex: 0 0 auto;
+    text-align: right;
+  }
+  .qv-meta p {
+    white-space: nowrap;
+  }
+  .qv-doc {
+    font-size: 13pt;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--accent);
+  }
+
+  h1 {
+    font-size: 20pt !important;
+  }
+  h2,
+  h3,
+  h4,
+  h5 {
+    break-after: avoid;
+  }
+
+  /* Cards flow across pages; the pieces inside them do not split. */
+  .qv-card {
+    border-radius: 8px !important;
+    margin: 0 0 12px;
+    background: #fff !important;
+  }
+  .qv-card-title {
+    padding: 9px 16px !important;
+  }
+  .qv-card [class*='px-6'] {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  .qv-card [class*='py-5'],
+  .qv-card [class*='py-6'] {
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+  }
+  /* Small blocks stay whole; a long service block may run across pages. */
+  .qv-keep,
+  .qv-notice,
+  .pf-step,
+  .cl-group li,
+  .qv-sign,
+  .qv-gov,
+  tr {
+    break-inside: avoid;
+  }
+  .qv-item {
+    break-inside: auto;
+  }
+  .qv-item + .qv-item {
+    break-before: auto;
+  }
+  .qv-notice {
+    border: 1px solid var(--hairline-strong);
+  }
+
+  /* The steps of "how it works" become a plain numbered list. */
+  .pf-list {
+    display: block !important;
+  }
+  .pf-step {
+    display: block !important;
+    justify-items: normal !important;
+    text-align: left !important;
+    margin-bottom: 6px;
+    padding: 6px 10px !important;
+    border-radius: 8px;
+  }
+  .pf-num {
+    display: inline-grid !important;
+  }
+  .pf-ill {
+    display: none !important;
+  }
+
+  /* Checklist: tighter, so a long list does not push the totals onto another page */
+  .cl-group {
+    padding: 8px 10px !important;
+  }
+  .cl-group ol {
+    gap: 4px !important;
+    margin-top: 6px !important;
+  }
+  .cl-group li {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    border-radius: 6px !important;
+  }
+  section.bg-sunken,
+  .qv-card .bg-sunken {
+    background: #f3f3f0 !important;
+  }
+  details > summary {
+    list-style: none;
+    color: var(--ink) !important;
+  }
+  details > summary::-webkit-details-marker {
     display: none;
+  }
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  /* Acceptance block on a final quotation */
+  .qv-sign {
+    margin: 18px 0 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--hairline-strong);
+    font-size: 9.5pt;
+    color: var(--ink-2);
+  }
+  .qv-sign > div {
+    display: grid;
+    grid-template-columns: 2fr 2fr 1fr;
+    gap: 24px;
+    margin-top: 34px;
+  }
+  .qv-sign > div > span {
+    border-top: 1px solid var(--ink-3);
+    padding-top: 4px;
+    font-size: 8.5pt;
+    color: var(--ink-3);
   }
 }
 

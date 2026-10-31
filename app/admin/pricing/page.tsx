@@ -138,12 +138,12 @@ export default async function PricingPage() {
                           <Field
                             label="Note under the price"
                             htmlFor={`n-${s.id}`}
-                            hint="For example what is included. Clients see this."
+                            hint="For example what is included. Clients see this. Write {price:careplan} to show that service's live price instead of typing an amount."
                           >
                             <input
                               id={`n-${s.id}`}
                               name="note"
-                              defaultValue={s.note}
+                              defaultValue={s.noteTemplate}
                               className={ADMIN_FIELD}
                             />
                           </Field>

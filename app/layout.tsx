@@ -12,7 +12,7 @@ import { Interactions } from '@/components/fx/interactions';
 import { ScrollProgress } from '@/components/fx';
 import { EditBridge } from '@/components/editable/edit-bridge';
 import { Analytics } from '@/components/site/analytics';
-import { Analytics as VercelAnalytics } from '@vercel/analytics/next';
+import { VercelAnalytics } from '@/components/site/vercel-analytics';
 import { Announcement } from '@/components/site/announcement';
 import { getSettings, whatsappHref } from '@/lib/settings';
 import { PublicOnly } from '@/components/site/public-only';

@@ -41,7 +41,7 @@ export function Checklist({ groups, title }: { groups: ChecklistGroup[]; title: 
           const start = n;
           n += g.items.length;
           return (
-            <section key={g.title} className="bg-sunken rounded-[var(--radius-md)] p-4">
+            <section key={g.title} className="cl-group bg-sunken rounded-[var(--radius-md)] p-4">
               <h5 className="text-ink-2 text-[0.75rem] font-semibold tracking-[0.07em] uppercase">
                 {g.title}
               </h5>

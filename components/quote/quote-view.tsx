@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import {
+  BadgeCheck,
   CalendarClock,
   Check,
   Clock,
   FileText,
+  Info,
   MessageCircle,
   PlayCircle,
   ShieldCheck,
@@ -13,15 +15,31 @@ import {
   AddButton,
   AddonDecision,
   MessageBox,
+  PrintButton,
+  PrintPrep,
+  RequestFinalPanel,
 } from '@/components/quote/quote-actions';
 import { PaymentPanel } from '@/components/quote/payment-panel';
 import { Checklist } from '@/components/quote/checklist';
 import { ProcessFlow } from '@/components/quote/process-flow';
 import { checklistFor } from '@/lib/quotes/checklists';
-import { dateIN, govTotals, inr, statement } from '@/lib/quotes/engine';
-import type { PricedService, QuoteAddonRow, QuoteItem, QuoteRow } from '@/lib/quotes/types';
+import {
+  AUTOMATED_NOTICE,
+  dateIN,
+  govTotals,
+  inr,
+  isFinal,
+  isUnpriced,
+  priceText,
+  quoteLabel,
+  resolveTokens,
+  startingText,
+  statement,
+} from '@/lib/quotes/pricing';
+import type { PricedService, QuoteAddonRow, QuoteRow } from '@/lib/quotes/types';
 import { SITE, whatsappLink } from '@/lib/site';
 import { cn } from '@/lib/utils';
+import './quote.css';
 
 export type QuoteWork = {
   name: string;
@@ -37,13 +55,6 @@ export type QuoteStory = {
   quote: string;
   video_url: string;
 };
-
-const PER: Record<string, string> = { once: '', month: ' / month', year: ' / year' };
-
-function priceText(i: QuoteItem): string {
-  const base = `${i.from ? 'from ' : ''}${inr(i.unitPrice)}${PER[i.period]}`;
-  return i.qty > 1 ? `${inr(i.unitPrice)} × ${i.qty} = ${inr(i.amount)}${PER[i.period]}` : base;
-}
 
 const perDay = (amount: number, period: string) =>
   period === 'month' ? amount / 30 : period === 'year' ? amount / 365 : 0;
@@ -91,10 +102,13 @@ function Card({
 }) {
   return (
     <section
-      className={cn('bg-surface rounded-[1.1rem] border border-[var(--hairline)]', className)}
+      className={cn(
+        'qv-card bg-surface rounded-[1.1rem] border border-[var(--hairline)]',
+        className,
+      )}
     >
       {title ? (
-        <h2 className="text-ink border-b border-[var(--hairline)] px-6 py-4 font-[family-name:var(--font-sans)] text-[0.9375rem] font-semibold tracking-normal">
+        <h2 className="qv-card-title text-ink border-b border-[var(--hairline)] px-6 py-4 font-[family-name:var(--font-sans)] text-[0.9375rem] font-semibold tracking-normal">
           {title}
         </h2>
       ) : null}
@@ -138,13 +152,20 @@ export function QuoteView({
   const gov = govTotals(q.items);
   const t = st.base;
   const accepted = q.status === 'accepted';
-  const open = (q.status === 'sent' || q.status === 'viewed') && !admin;
+  const final = isFinal(q);
+  const requested = q.status === 'final_requested';
+  // The client can still act: read, add suggestions, ask for the final, accept the final.
+  const open = (q.status === 'sent' || q.status === 'viewed' || requested) && !admin;
+  const label = quoteLabel(q);
+  const fileName = `${SITE.name.replace(/\s+/g, '-')}-Quotation-${q.number}${final ? '-Final' : '-Estimate'}`;
+  const addedLines = q.items.filter((i) => i.addedByClient);
   const byId = new Map(catalog.map((s) => [s.id, s]));
   const hasWeb = q.items.some((i) => i.serviceId && byId.get(i.serviceId)?.cat === 'web');
   const have = new Set<string | undefined>(q.items.map((i) => i.serviceId));
   q.items.forEach((i) =>
     (i.serviceId ? byId.get(i.serviceId)?.includes : [])?.forEach((x) => have.add(x)),
   );
+  const canSuggest = (open || accepted) && !admin;
   const suggestions = [
     ...new Set(q.items.flatMap((i) => (i.serviceId ? (byId.get(i.serviceId)?.related ?? []) : []))),
   ]
@@ -154,7 +175,7 @@ export function QuoteView({
     .slice(0, 4);
   const first = q.name.split(' ')[0];
   const mark = encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='420' height='240'><text x='20' y='150' transform='rotate(-22 210 120)' font-family='sans-serif' font-size='15' fill='#7a7f8a'>${esc(`Prepared for ${q.name} · ${q.number}`)}</text></svg>`,
+    `<svg xmlns='http://www.w3.org/2000/svg' width='420' height='240'><text x='20' y='150' transform='rotate(-22 210 120)' font-family='sans-serif' font-size='15' fill='#7a7f8a'>${esc(`Prepared for ${q.name} · ${q.number}${final ? '' : ' · automated estimate'}`)}</text></svg>`,
   );
   const recurringLines = q.items.filter((i) => i.period !== 'once');
 
@@ -167,21 +188,81 @@ export function QuoteView({
         style={{ backgroundImage: `url("data:image/svg+xml,${mark}")` }}
       />
       <div className="relative z-10 grid gap-6">
+        <PrintPrep />
+        {/* Letterhead: only on the printed / PDF copy. */}
+        <div className="print-only qv-letterhead">
+          <div>
+            <p className="qv-brand">{SITE.name}</p>
+            <p>{SITE.address.oneLine}</p>
+            <p>
+              {SITE.email} · {SITE.phone}
+            </p>
+          </div>
+          <div className="qv-meta">
+            <p className="qv-doc">
+              {final ? 'QUOTATION' : q.source === 'console' ? 'ESTIMATE' : 'AUTOMATED ESTIMATE'}
+            </p>
+            <p>
+              <strong>{q.number}</strong>
+              {final && q.revision > 1 ? ` · revision ${q.revision}` : ''}
+            </p>
+            <p>
+              Issued{' '}
+              {dateIN(
+                final ? (q.approved_at ?? q.sent_at ?? q.created_at) : (q.sent_at ?? q.created_at),
+              )}
+            </p>
+            <p>
+              {accepted
+                ? `Accepted ${dateIN(q.accepted_at ?? q.updated_at)}`
+                : `Valid until ${dateIN(q.valid_until)}`}
+            </p>
+          </div>
+        </div>
+
         {/* Heading */}
         <header>
-          <p className="text-accent text-[0.75rem] font-semibold tracking-[0.1em] uppercase">
-            {q.kind === 'final' ? 'Final quotation' : 'Your quotation · starting estimate'}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-accent text-[0.75rem] font-semibold tracking-[0.1em] uppercase">
+              {label}
+            </p>
+            <div className="no-print">
+              <PrintButton fileName={fileName} />
+            </div>
+          </div>
           <h1 className="mt-2 text-[length:var(--text-title-1)] leading-[1.08]">
-            {first}, here is what we propose
+            {first}, {final ? 'here is your final quotation' : 'here is what we propose'}
           </h1>
           <p className="text-ink-2 mt-3 text-[0.9375rem] leading-relaxed">
             Prepared for <strong className="text-ink">{q.name}</strong>
             {q.company ? ` · ${q.company}` : ''} · {q.number} ·{' '}
             {accepted
               ? `accepted ${dateIN(q.accepted_at ?? q.updated_at)}`
-              : `open until ${dateIN(q.valid_until)}`}
+              : requested
+                ? 'final quotation requested'
+                : `open until ${dateIN(q.valid_until)}`}
           </p>
+          {!final ? (
+            <p
+              role="note"
+              className="qv-notice bg-caution/10 text-ink mt-5 flex gap-3 rounded-[var(--radius-md)] px-5 py-4 text-[0.9375rem] leading-relaxed"
+            >
+              <Info className="text-caution mt-1 h-5 w-5 shrink-0" aria-hidden="true" />
+              <span>
+                <strong>Automated quotation — starting prices.</strong>{' '}
+                {AUTOMATED_NOTICE.replace('This is an automated quotation. ', '')}
+              </span>
+            </p>
+          ) : (
+            <p className="qv-notice bg-positive/10 text-ink mt-5 flex gap-3 rounded-[var(--radius-md)] px-5 py-4 text-[0.9375rem] leading-relaxed">
+              <BadgeCheck className="text-positive mt-1 h-5 w-5 shrink-0" aria-hidden="true" />
+              <span>
+                <strong>Final quotation.</strong> These are the actual amounts we discussed and
+                agreed, approved by {SITE.name}
+                {q.approved_at ? ` on ${dateIN(q.approved_at)}` : ''}.
+              </span>
+            </p>
+          )}
           {q.note_to_client ? (
             <p className="bg-accent-wash text-ink mt-5 rounded-[var(--radius-md)] px-5 py-4 text-[0.9375rem] leading-relaxed">
               {q.note_to_client}
@@ -190,13 +271,14 @@ export function QuoteView({
         </header>
 
         {/* The menu card */}
-        <Card title="Your services">
+        <Card title={final ? 'Your services' : 'Your services · starting prices'}>
           <ul className="divide-y divide-[var(--hairline)]">
             {q.items.map((i, idx) => {
               const svc = i.serviceId ? byId.get(i.serviceId) : undefined;
               const day = perDay(i.amount, i.period);
+              const note = resolveTokens(i.note, catalog, q.items);
               return (
-                <li key={i.key} className="px-6 py-5">
+                <li key={i.key} className="qv-item px-6 py-5">
                   <Leader
                     strong
                     left={
@@ -207,16 +289,16 @@ export function QuoteView({
                         ) : null}
                         {i.addedByClient ? (
                           <span className="bg-accent-wash text-accent ml-2 rounded-full px-2 py-0.5 align-middle text-[0.6875rem] font-semibold">
-                            added by you
+                            {final ? 'added by you' : 'added by you · awaiting approval'}
                           </span>
                         ) : null}
                       </>
                     }
-                    right={priceText(i)}
+                    right={priceText(i, final)}
                   />
                   {day > 0 ? (
                     <p className="text-ink-3 mt-1 text-right text-[0.8125rem]">
-                      about {inr(day)} a day
+                      {final ? 'about' : 'from about'} {inr(day)} a day
                     </p>
                   ) : null}
                   {i.value ? (
@@ -224,8 +306,17 @@ export function QuoteView({
                       {i.value}
                     </p>
                   ) : null}
-                  {i.note ? (
-                    <p className="text-ink-3 mt-2 text-[0.8125rem] leading-relaxed">{i.note}</p>
+                  {i.addedByClient && !final ? (
+                    <p className="text-ink-3 mt-2 text-[0.8125rem] leading-relaxed">
+                      You added this. Its price is a starting price; the actual amount comes with
+                      your final quotation, once we have approved it.
+                    </p>
+                  ) : null}
+                  {note ? (
+                    <p className="text-ink-3 mt-2 text-[0.8125rem] leading-relaxed">
+                      {note}
+                      {!final && /₹/.test(note) ? ' (starting price)' : ''}
+                    </p>
                   ) : null}
 
                   {i.includes?.length ? (
@@ -313,7 +404,7 @@ export function QuoteView({
                   ) : null}
 
                   {i.gov && i.gov.length ? (
-                    <div className="bg-sunken mt-4 rounded-[var(--radius-md)] px-4 py-3">
+                    <div className="qv-gov bg-sunken mt-4 rounded-[var(--radius-md)] px-4 py-3">
                       <p className="text-ink-3 text-[0.75rem] font-semibold tracking-[0.05em] uppercase">
                         Government charges — separate from our fee, at actual cost
                       </p>
@@ -339,13 +430,37 @@ export function QuoteView({
 
           {/* Totals */}
           <div className="bg-sunken grid gap-2.5 rounded-b-[1.1rem] border-t border-[var(--hairline)] px-6 py-5">
-            {t.once > 0 ? <Leader left="Our fees, one-time" right={inr(t.once)} /> : null}
-            {t.discount > 0 ? (
-              <Leader left="Combination saving" right={`− ${inr(t.discount)}`} />
+            {t.once > 0 ? (
+              <Leader
+                left={final ? 'Our fees, one-time' : 'Our fees, one-time (starting)'}
+                right={`${final ? '' : 'from '}${inr(t.once)}`}
+              />
             ) : null}
-            {t.once > 0 ? <Leader strong left="To begin" right={inr(t.dueNow)} /> : null}
-            {t.month > 0 ? <Leader strong left="Every month" right={inr(t.month)} /> : null}
-            {t.year > 0 ? <Leader strong left="Every year" right={inr(t.year)} /> : null}
+            {t.discount > 0 ? (
+              <Leader
+                left={final ? 'Combination saving' : 'Combination saving (estimated)'}
+                right={`− ${inr(t.discount)}`}
+              />
+            ) : null}
+            {t.once > 0 ? (
+              <Leader
+                strong
+                left={final ? 'To begin' : 'Starting total to begin'}
+                right={`${final ? '' : 'from '}${inr(t.dueNow)}`}
+              />
+            ) : null}
+            {t.month > 0 ? (
+              <Leader strong left="Every month" right={`${final ? '' : 'from '}${inr(t.month)}`} />
+            ) : null}
+            {t.year > 0 ? (
+              <Leader strong left="Every year" right={`${final ? '' : 'from '}${inr(t.year)}`} />
+            ) : null}
+            {!final ? (
+              <p className="text-ink-2 text-[0.8125rem] leading-relaxed font-medium">
+                Every figure above is a starting price from our automated quotation, not a fixed
+                offer. Your final quotation carries the actual amounts.
+              </p>
+            ) : null}
             {gov.lines.length ? (
               <p className="text-ink-3 mt-1 text-[0.8125rem] leading-relaxed">
                 Government charges are paid at actual cost and are not in the figures above
@@ -367,64 +482,94 @@ export function QuoteView({
           </div>
         </Card>
 
-        {/* Why an estimate */}
-        <Card title="Why this is an estimate, not a flat rate">
-          <div className="text-ink-2 grid gap-3 px-6 py-5 text-[0.9375rem] leading-relaxed">
-            <p>
-              Two businesses asking for the same service are rarely the same: different papers,
-              different choices, different plans. A flat rate would overcharge one of you or cut a
-              corner for the other. So this is our starting estimate from what you told us.
-            </p>
-            <p>
-              After a short conversation — where we understand your business, your papers and what
-              you prefer — we confirm your final quotation in writing. Once you agree it, that is
-              the fee for that scope.
-            </p>
-            <p className="flex gap-2.5">
-              <ShieldCheck className="text-accent mt-1 h-5 w-5 shrink-0" aria-hidden="true" />
-              <span>
-                If you ask for something beyond the agreed scope while we work, we tell you the
-                price first and begin only with your approval. Every add-on is recorded and appears
-                on your final invoice beside this quotation, so you can always see what you asked
-                for and what it cost.
-              </span>
-            </p>
-          </div>
-        </Card>
+        {/* Why an estimate / what the final means */}
+        {!final ? (
+          <Card title="Why this is an automated quotation with starting prices">
+            <div className="text-ink-2 grid gap-3 px-6 py-5 text-[0.9375rem] leading-relaxed">
+              <p>
+                Two businesses asking for the same service are rarely the same: different papers,
+                different choices, different plans. A flat rate would overcharge one of you or cut a
+                corner for the other. So this quotation was prepared automatically from what you
+                told us, and every price on it is a starting price.
+              </p>
+              <ol className="ml-5 grid list-decimal gap-1.5">
+                <li>Ask for your final quotation (or talk to us first — it is free).</li>
+                <li>
+                  We understand your business, confirm the scope and the actual amounts with you,
+                  and our team approves them.
+                </li>
+                <li>
+                  We send your final quotation with fixed amounts. Only that one can be accepted.
+                </li>
+              </ol>
+              <p className="flex gap-2.5">
+                <ShieldCheck className="text-accent mt-1 h-5 w-5 shrink-0" aria-hidden="true" />
+                <span>
+                  If you ask for something beyond the agreed scope while we work, we tell you the
+                  price first and begin only with your approval. Every add-on is recorded and
+                  appears on your final invoice beside this quotation.
+                </span>
+              </p>
+            </div>
+          </Card>
+        ) : (
+          <Card title="Terms of this quotation">
+            <div className="text-ink-2 grid gap-3 px-6 py-5 text-[0.9375rem] leading-relaxed">
+              <p>
+                The amounts above are fixed for the scope described, valid until{' '}
+                <strong className="text-ink">{dateIN(q.valid_until)}</strong>. Government charges
+                are paid at actual cost, shown beside our fee and never mixed into it.
+              </p>
+              <p className="flex gap-2.5">
+                <ShieldCheck className="text-accent mt-1 h-5 w-5 shrink-0" aria-hidden="true" />
+                <span>
+                  If you ask for something beyond this scope while we work, we tell you the price
+                  first and begin only with your approval. Every add-on is recorded with its date
+                  and appears on your final invoice beside this quotation.
+                </span>
+              </p>
+            </div>
+          </Card>
+        )}
 
-        {/* Suggestions */}
-        {suggestions.length && (open || admin) ? (
-          <Card title="People who ask for this often add">
+        {/* Suggestions: starting price ranges only; the real figure comes after approval */}
+        {suggestions.length && (canSuggest || admin) ? (
+          <Card title="People who ask for this often add" className="no-print">
+            <p className="text-ink-3 px-6 pt-4 text-[0.8125rem] leading-relaxed">
+              {final || accepted
+                ? 'Prices shown are starting prices. Ask for one and we will tell you the actual price before anything begins; it is added to your statement only after you approve it.'
+                : 'Prices shown are starting prices only. What you add here is confirmed — with the actual amount — in your final quotation, after our team approves it.'}
+            </p>
             <ul className="divide-y divide-[var(--hairline)]">
-              {suggestions.map((s) => {
-                const v = s.variants[0]!;
-                return (
-                  <li
-                    key={s.id}
-                    className="flex flex-wrap items-center justify-between gap-4 px-6 py-4"
-                  >
-                    <div className="max-w-xl min-w-0">
-                      <p className="text-ink text-[0.9375rem] font-semibold">{s.name}</p>
-                      <p className="text-ink-2 mt-0.5 text-[0.875rem]">{s.value || s.line}</p>
-                      <p className="text-ink-3 mt-1 text-[0.8125rem]">
-                        {s.from || s.variants.length > 1 ? 'from ' : ''}
-                        {inr(Math.min(...s.variants.map((x) => x.price)))}
-                        {PER[v.period]}
-                      </p>
-                    </div>
-                    {open ? (
-                      <AddButton token={q.token} serviceId={s.id} label="Add to my quotation" />
-                    ) : null}
-                  </li>
-                );
-              })}
+              {suggestions.map((s) => (
+                <li
+                  key={s.id}
+                  className="flex flex-wrap items-center justify-between gap-4 px-6 py-4"
+                >
+                  <div className="max-w-xl min-w-0">
+                    <p className="text-ink text-[0.9375rem] font-semibold">{s.name}</p>
+                    <p className="text-ink-2 mt-0.5 text-[0.875rem]">{s.value || s.line}</p>
+                    <p className="text-ink-3 mt-1 text-[0.8125rem]">
+                      Starting price {startingText(s)}
+                      <span className="text-ink-3"> · confirmed after approval</span>
+                    </p>
+                  </div>
+                  {canSuggest ? (
+                    <AddButton
+                      token={q.token}
+                      serviceId={s.id}
+                      label={final || accepted ? 'Ask us to add this' : 'Add to my request'}
+                    />
+                  ) : null}
+                </li>
+              ))}
             </ul>
           </Card>
         ) : null}
 
         {/* Web: proof */}
         {hasWeb && (work.length || stories.length) ? (
-          <Card title="Websites we have built">
+          <Card title="Websites we have built" className="no-print">
             <div className="grid gap-4 px-6 py-5">
               {work.map((w) => (
                 <div key={w.url} className="flex flex-wrap items-start justify-between gap-3">
@@ -473,7 +618,7 @@ export function QuoteView({
 
         {/* Add-ons and the running statement */}
         {accepted || addons.length ? (
-          <Card title="Statement of charges">
+          <Card title="Statement of charges" className="qv-keep">
             <div className="grid gap-2.5 px-6 py-5">
               <p className="text-ink-3 text-[0.8125rem] leading-relaxed">
                 This is the running record of what has been agreed. Anything asked for beyond the
@@ -504,30 +649,51 @@ export function QuoteView({
                 </p>
               ) : null}
             </div>
-            {st.proposed.length ? (
+            {st.proposed.some(isUnpriced) ? (
+              <div className="border-t border-[var(--hairline)] px-6 py-5">
+                <h3 className="text-ink font-[family-name:var(--font-sans)] text-[0.9375rem] font-semibold tracking-normal">
+                  You asked for — we are pricing these
+                </h3>
+                <ul className="mt-3 grid gap-3">
+                  {st.proposed.filter(isUnpriced).map((a) => (
+                    <li key={a.id} className="grid gap-1">
+                      <Leader left={a.title} right="price to follow" />
+                      {a.details ? (
+                        <p className="text-ink-3 text-[0.8125rem]">{a.details}</p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {st.proposed.some((a) => !isUnpriced(a)) ? (
               <div className="border-t border-[var(--hairline)] px-6 py-5">
                 <h3 className="text-ink font-[family-name:var(--font-sans)] text-[0.9375rem] font-semibold tracking-normal">
                   Waiting for your approval
                 </h3>
                 <ul className="mt-3 grid gap-4">
-                  {st.proposed.map((a) => (
-                    <li key={a.id} className="grid gap-2">
-                      <Leader left={a.title} right={inr(Number(a.amount))} />
-                      {a.details ? <p className="text-ink-2 text-[0.875rem]">{a.details}</p> : null}
-                      {!admin ? (
-                        <AddonDecision token={q.token} id={a.id} />
-                      ) : (
-                        <p className="text-ink-3 text-[0.8125rem]">Awaiting the client.</p>
-                      )}
-                    </li>
-                  ))}
+                  {st.proposed
+                    .filter((a) => !isUnpriced(a))
+                    .map((a) => (
+                      <li key={a.id} className="grid gap-2">
+                        <Leader left={a.title} right={inr(Number(a.amount))} />
+                        {a.details ? (
+                          <p className="text-ink-2 text-[0.875rem]">{a.details}</p>
+                        ) : null}
+                        {!admin ? (
+                          <AddonDecision token={q.token} id={a.id} />
+                        ) : (
+                          <p className="text-ink-3 text-[0.8125rem]">Awaiting the client.</p>
+                        )}
+                      </li>
+                    ))}
                 </ul>
               </div>
             ) : null}
           </Card>
         ) : null}
 
-        {accepted && q.kind === 'final' && payment?.upiId && st.grand > 0 ? (
+        {accepted && final && payment?.upiId && st.grand > 0 ? (
           <PaymentPanel
             upiId={payment.upiId}
             upiName={payment.upiName}
@@ -536,11 +702,37 @@ export function QuoteView({
           />
         ) : null}
 
+        {/* The signature block of the printed final quotation */}
+        {final && !accepted ? (
+          <div className="print-only qv-sign">
+            <p>
+              To accept this quotation, sign and return it, or accept it online from the private
+              link we sent you.
+            </p>
+            <div>
+              <span>Name</span>
+              <span>Signature</span>
+              <span>Date</span>
+            </div>
+          </div>
+        ) : null}
+
         {/* Next steps */}
         {open ? (
-          <Card title="Ready to go ahead?">
+          <Card
+            title={final ? 'Ready to go ahead?' : 'Ready for your final quotation?'}
+            className="no-print"
+          >
             <div className="grid gap-8 px-6 py-6">
-              <AcceptPanel token={q.token} defaultName={q.name} />
+              {final ? (
+                <AcceptPanel token={q.token} defaultName={q.name} />
+              ) : (
+                <RequestFinalPanel
+                  token={q.token}
+                  requested={requested}
+                  hasAdditions={addedLines.length > 0}
+                />
+              )}
               <div className="grid gap-3 border-t border-[var(--hairline)] pt-6 sm:grid-cols-2">
                 <Link
                   href="/book"
@@ -550,7 +742,9 @@ export function QuoteView({
                   <span>
                     <span className="block text-[0.9375rem] font-semibold">Talk first</span>
                     <span className="text-ink-3 block text-[0.8125rem]">
-                      A free call to confirm your final figure
+                      {final
+                        ? 'A free call before you decide'
+                        : 'A free call to confirm your final figure'}
                     </span>
                   </span>
                 </Link>
@@ -573,7 +767,7 @@ export function QuoteView({
             </div>
           </Card>
         ) : accepted && !admin ? (
-          <Card title="What happens next">
+          <Card title="What happens next" className="no-print">
             <div className="text-ink-2 grid gap-3 px-6 py-5 text-[0.9375rem] leading-relaxed">
               <p className="flex gap-2.5">
                 <FileText className="text-accent mt-1 h-5 w-5 shrink-0" aria-hidden="true" />
@@ -593,8 +787,11 @@ export function QuoteView({
 
         <footer className="text-ink-3 pb-4 text-[0.8125rem] leading-relaxed">
           <p>
-            {SITE.name} · {SITE.address.oneLine} · {SITE.email} · {SITE.phone}. This quotation is
-            private to {q.name} and stays open until {dateIN(q.valid_until)}.
+            {SITE.name} · {SITE.address.oneLine} · {SITE.email} · {SITE.phone}.{' '}
+            {final
+              ? `Final quotation ${q.number}${q.revision > 1 ? `, revision ${q.revision}` : ''}.`
+              : `Automated quotation ${q.number}: starting prices, not a fixed offer.`}{' '}
+            This quotation is private to {q.name} and valid until {dateIN(q.valid_until)}.
           </p>
         </footer>
       </div>

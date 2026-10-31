@@ -189,7 +189,7 @@ export function RequestForm({
         </span>
         <h2 ref={head} tabIndex={-1} className="mt-6 text-[1.625rem] outline-none">
           {done.status === 'sent'
-            ? 'Your quotation is on its way'
+            ? 'Your automated quotation is on its way'
             : 'We are preparing your quotation'}
         </h2>
         <p className="text-ink-2 mt-3 max-w-xl text-[1rem] leading-relaxed">
@@ -198,8 +198,9 @@ export function RequestForm({
             : `A member of the team will look over your request and email your quotation to ${done.email} shortly — usually within the working day.`}
         </p>
         <p className="text-ink-3 mt-3 max-w-xl text-[0.9375rem] leading-relaxed">
-          Every business is different, so it is our starting estimate. We confirm the final figure
-          after a short conversation to understand you fully.
+          It is an automated quotation, so every price on it is a starting price, not a fixed offer.
+          When you are ready, ask for your final quotation from the page: our team confirms the
+          actual amounts with you and sends it for your approval.
         </p>
         <a
           href="/book"

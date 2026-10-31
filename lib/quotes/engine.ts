@@ -12,16 +12,29 @@ import { SITE } from '@/lib/site';
 import { serviceClient } from '@/lib/supabase';
 import { DEFAULT_CATALOG } from './catalog-data';
 import { checklistFor } from './checklists';
+import {
+  computeTotals,
+  dateIN,
+  govTotals,
+  inr,
+  resolveTokens,
+  startingPrice,
+  statement,
+} from './pricing';
 import type {
   CatalogService,
   Period,
   PricedService,
   QuoteAddonRow,
+  QuoteEventRow,
   QuoteItem,
   QuoteRow,
   QuoteServiceRow,
-  Totals,
 } from './types';
+
+// The pure helpers live in ./pricing (shared with the page and the PDF);
+// re-exported so existing imports keep working.
+export { computeTotals, dateIN, govTotals, inr, statement };
 
 /**
  * Quotations.
@@ -48,12 +61,13 @@ export async function getCatalog(): Promise<PricedService[]> {
     const { data } = await supabase.from('quote_services').select('*');
     (data ?? []).forEach((r) => rows.set(r.service_id, r));
   }
-  return DEFAULT_CATALOG.map((svc) => {
+  const priced = DEFAULT_CATALOG.map((svc) => {
     const o = rows.get(svc.id);
-    if (!o) return { ...svc, active: true };
+    if (!o) return { ...svc, active: true, noteTemplate: svc.note };
     return {
       ...svc,
       active: o.active,
+      noteTemplate: o.note ?? svc.note,
       note: o.note ?? svc.note,
       value: o.value_note ?? svc.value,
       related: o.related ?? svc.related,
@@ -67,22 +81,18 @@ export async function getCatalog(): Promise<PricedService[]> {
       }),
     };
   });
+  // Notes that mention another service's price are filled in from the prices
+  // above, after the owner's overrides — so "Care plan ₹x per year" under a
+  // website always shows what the Care Plan costs today.
+  return priced.map((svc) => ({
+    ...svc,
+    note: resolveTokens(svc.noteTemplate, priced),
+    value: resolveTokens(svc.value, priced),
+  }));
 }
 
 export const defaultVariant = (svc: CatalogService) =>
   svc.variants.find((v) => v.id === svc.defaultVariant) ?? svc.variants[0]!;
-
-export const inr = (n: number) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(Math.round(n));
-
-export const dateIN = (d: string | Date) =>
-  new Intl.DateTimeFormat('en-IN', { dateStyle: 'long', timeZone: 'Asia/Kolkata' }).format(
-    new Date(d),
-  );
 
 /* -------------------------------------------------------------- items ---- */
 
@@ -134,7 +144,9 @@ export function buildItems(
         amount: unitPrice * qty,
         period: variant.period,
         from: svc.from,
-        note: input.note || svc.note || undefined,
+        // Kept as written, tokens and all: the page fills in today's price when it
+        // is shown, so an automated quotation never carries a stale one.
+        note: input.note || svc.noteTemplate || undefined,
         value: svc.value || undefined,
         gov: svc.govFees
           .filter((g) => !g.variants || g.variants.includes(variant.id))
@@ -195,45 +207,6 @@ export function comboDiscount(items: QuoteItem[], s: SiteSettings['quotes']): nu
   if (services.length < s.comboMinServices) return 0;
   const once = services.reduce((n, i) => n + i.amount, 0);
   return Math.round((once * Math.min(s.comboPercent, 30)) / 100);
-}
-
-export function computeTotals(items: QuoteItem[], discount: number): Totals {
-  const sum = (p: Period) => items.filter((i) => i.period === p).reduce((n, i) => n + i.amount, 0);
-  const once = sum('once');
-  return {
-    once,
-    month: sum('month'),
-    year: sum('year'),
-    discount,
-    dueNow: Math.max(0, once - discount),
-  };
-}
-
-/** Government charges across a quotation: the known amounts, and how many are still "at actual". */
-export function govTotals(items: QuoteItem[]) {
-  const lines = items.flatMap((i) => (i.gov ?? []).map((g) => ({ ...g, for: i.name })));
-  const known = lines.filter((g) => g.amount !== null && g.amount > 0);
-  return {
-    lines,
-    once: known.filter((g) => g.per === 'once').reduce((n, g) => n + (g.amount ?? 0), 0),
-    year: known.filter((g) => g.per === 'year').reduce((n, g) => n + (g.amount ?? 0), 0),
-    atActual: lines.filter((g) => g.amount === null).length,
-  };
-}
-
-/** What the client has agreed to pay for one-time work, add-ons included. */
-export function statement(q: Pick<QuoteRow, 'items' | 'discount'>, addons: QuoteAddonRow[]) {
-  const base = computeTotals(q.items, Number(q.discount));
-  const approved = addons.filter((a) => a.status === 'approved' || a.status === 'billed');
-  const proposed = addons.filter((a) => a.status === 'proposed');
-  const addonTotal = approved.reduce((n, a) => n + Number(a.amount), 0);
-  return {
-    base,
-    approved,
-    proposed,
-    addonTotal,
-    grand: base.dueNow + addonTotal,
-  };
 }
 
 /* ----------------------------------------------------------- screening --- */
@@ -460,7 +433,17 @@ export async function createQuote(input: CreateInput): Promise<QuoteRow> {
       })
       .select('*')
       .single();
-    if (!error && data) return data;
+    if (!error && data) {
+      await logEvent(
+        data.id,
+        input.source === 'console' ? (input.createdBy ?? 'team') : 'client',
+        'created',
+        hold
+          ? `Automated quotation requested via ${input.source}; held for review: ${hold}.`
+          : `Created via ${input.source}.`,
+      );
+      return data;
+    }
     if (error && error.code !== '23505') throw new Error(error.message);
   }
   throw new Error('Could not allocate a quote number. Please try again.');
@@ -533,39 +516,64 @@ async function whatsappIfOpen(to: string | null | undefined, text: string): Prom
   }
 }
 
+/** What the client is told, by kind. Prices are never in the message itself. */
+function deliveryCopy(q: QuoteRow, until: string) {
+  if (q.kind === 'final') {
+    return {
+      subject: `Your final quotation from ${SITE.name} (${q.number})`,
+      eyebrow: 'Your final quotation',
+      heading: (first: string) => `${first}, your final quotation is ready`,
+      paragraphs: [
+        'This is the final quotation, with the actual amounts we discussed and agreed. Please read it through, and accept it on the page when you are happy to begin.',
+        `The link is private to you and stays open until ${until}.`,
+      ],
+      cta: 'View my final quotation',
+      wa: (first: string, url: string) =>
+        `Hello ${first}, your final quotation from ${SITE.name} is ready: ${url}\n\nThis has the actual amounts we discussed. It is open until ${until}.`,
+    };
+  }
+  return {
+    subject: `Your automated quotation from ${SITE.name} (${q.number})`,
+    eyebrow: 'Your automated quotation',
+    heading: (first: string) => `${first}, your automated quotation is ready`,
+    paragraphs: [
+      'This is an automated quotation, put together from what you told us. Every price on it is a starting price, not a fixed offer.',
+      ...(q.note_to_client ? [q.note_to_client] : []),
+      `When you are ready, ask for your final quotation on the page. Our team reviews it, confirms the actual amounts with you and sends the final quotation. The link is private to you and stays open until ${until}.`,
+    ],
+    cta: 'View my quotation',
+    wa: (first: string, url: string) =>
+      `Hello ${first}, your automated quotation from ${SITE.name} is ready: ${url}\n\nEvery price on it is a starting price. You can ask for your final quotation from the page, and our team will confirm the actual amounts. It is open until ${until}.`,
+  };
+}
+
 /** Emails (and, if the chat is open, WhatsApps) the quotation link. Prices are never in the message. */
 export async function deliverQuote(
   q: QuoteRow,
-  opts: { skipWhatsApp?: boolean } = {},
+  opts: { skipWhatsApp?: boolean; actor?: string } = {},
 ): Promise<{ email: boolean; whatsapp: boolean; error?: string }> {
   const url = quoteUrl(q.token);
   const first = q.name.split(' ')[0] || 'there';
   const until = dateIN(q.valid_until);
+  const copy = deliveryCopy(q, until);
   let email = false;
   let error: string | undefined;
   if (!q.email || q.email.endsWith('.invalid')) error = 'This quotation has no email address.';
   else {
     const r = await sendNotice({
       to: q.email,
-      subject: `Your quotation from ${SITE.name} (${q.number})`,
-      eyebrow: 'Your quotation',
-      heading: `${first}, your quotation is ready`,
-      paragraphs: [
-        'We have put together a personalised quotation from what you told us.',
-        ...(q.note_to_client ? [q.note_to_client] : []),
-        `Every business is different, so please read it as our starting estimate — we confirm the final figure once we understand your needs fully. The link is private to you and stays open until ${until}.`,
-      ],
-      cta: { label: 'View my quotation', href: url },
+      subject: copy.subject,
+      eyebrow: copy.eyebrow,
+      heading: copy.heading(first),
+      paragraphs: copy.paragraphs,
+      cta: { label: copy.cta, href: url },
     });
     email = r.sent;
     if (!r.sent) error = r.error ?? 'The email service did not accept the message.';
   }
   const whatsapp = opts.skipWhatsApp
     ? false
-    : await whatsappIfOpen(
-        q.wa_id ?? q.phone,
-        `Hello ${first}, your personalised quotation from ${SITE.name} is ready: ${url}\n\nEvery business is different, so it is our starting estimate; we confirm the final figure once we understand your needs fully. It is open until ${until}.`,
-      );
+    : await whatsappIfOpen(q.wa_id ?? q.phone, copy.wa(first, url));
   const via = [email ? 'email' : '', whatsapp ? 'whatsapp' : ''].filter(Boolean);
   if (via.length) {
     await db()
@@ -575,9 +583,18 @@ export async function deliverQuote(
         sent_at: new Date().toISOString(),
         sent_via: via,
         hold_reason: null,
+        ...(q.kind === 'final' && !q.approved_at
+          ? { approved_at: new Date().toISOString(), approved_by: opts.actor ?? 'console' }
+          : {}),
         updated_at: new Date().toISOString(),
       })
       .eq('id', q.id);
+    await logEvent(
+      q.id,
+      opts.actor ?? 'system',
+      q.kind === 'final' ? 'final_sent' : 'sent',
+      `Sent by ${via.join(' and ')}.`,
+    );
   }
   return { email, whatsapp, error: email || whatsapp ? undefined : error };
 }
@@ -597,6 +614,181 @@ export const summarise = (items: QuoteItem[]) =>
   items
     .map((i) => `${i.name}${i.label ? ` (${i.label})` : ''}${i.qty > 1 ? ` ×${i.qty}` : ''}`)
     .join(', ');
+
+/* ------------------------------------------------------------ lifecycle --- */
+
+/** One line in a quotation's paper trail. Never throws: the trail must not break the action. */
+export async function logEvent(quoteId: string, actor: string, type: string, detail?: string) {
+  try {
+    await db()
+      .from('quote_events')
+      .insert({ quote_id: quoteId, actor, type, detail: detail?.slice(0, 600) ?? null });
+  } catch (e) {
+    console.error('[quotes] could not log an event', e instanceof Error ? e.message : e);
+  }
+}
+
+export async function getEvents(quoteId: string): Promise<QuoteEventRow[]> {
+  const { data } = await db()
+    .from('quote_events')
+    .select('*')
+    .eq('quote_id', quoteId)
+    .order('at', { ascending: false })
+    .limit(60);
+  return data ?? [];
+}
+
+/**
+ * Makes a quotation's private link live without sending anything: for a
+ * client with no email address or phone number, or when the team would rather
+ * paste the link into a chat themselves. Nothing here needs contact details.
+ */
+export async function generateLink(q: QuoteRow, actor: string): Promise<QuoteRow> {
+  const live = q.status !== 'draft' && q.status !== 'pending_review';
+  if (live) return q;
+  const now = new Date().toISOString();
+  const { data, error } = await db()
+    .from('quotes')
+    .update({
+      status: 'sent',
+      sent_at: now,
+      sent_via: ['link'],
+      hold_reason: null,
+      ...(q.kind === 'final' && !q.approved_at ? { approved_at: now, approved_by: actor } : {}),
+      updated_at: now,
+    })
+    .eq('id', q.id)
+    .select('*')
+    .single();
+  if (error || !data) throw new Error(error?.message ?? 'Could not generate the link.');
+  await logEvent(q.id, actor, 'link_generated', 'Link made live without sending a message.');
+  return data;
+}
+
+/** The client asks for the final quotation. The team now owes them a reply. */
+export async function requestFinal(q: QuoteRow, note?: string): Promise<QuoteRow> {
+  if (q.kind === 'final' || q.status === 'final_requested') return q;
+  const now = new Date().toISOString();
+  const { data, error } = await db()
+    .from('quotes')
+    .update({ status: 'final_requested', final_requested_at: now, updated_at: now })
+    .eq('id', q.id)
+    .select('*')
+    .single();
+  if (error || !data) throw new Error(error?.message ?? 'Could not record the request.');
+  await logEvent(q.id, 'client', 'final_requested', note?.slice(0, 300));
+  return data;
+}
+
+/** Tells the client their request arrived and when to expect the final quotation. */
+export async function acknowledgeFinalRequest(q: QuoteRow): Promise<void> {
+  if (!q.email || q.email.endsWith('.invalid')) return;
+  await sendNotice({
+    to: q.email,
+    subject: `We have your request — ${q.number}`,
+    eyebrow: 'Final quotation',
+    heading: `${q.name.split(' ')[0] || 'Hello'}, we are on it`,
+    paragraphs: [
+      'You asked for your final quotation. Our team will look at what you have chosen, confirm the actual amounts with you and send it to you for approval.',
+      'You will hear from us within one working day. Until then, the prices on your quotation remain starting prices.',
+    ],
+    cta: { label: 'Open my quotation', href: quoteUrl(q.token) },
+  }).catch(() => undefined);
+}
+
+/**
+ * The team approves and issues the final quotation. The amounts on it are
+ * whatever the team has set; the "from" wording, the suggestion ranges and any
+ * price-in-a-note are frozen as they are now, and the clock and the open
+ * counter start afresh. The same private link now shows the final.
+ */
+export async function issueFinal(
+  id: string,
+  actor: string,
+  opts: { validDays?: number } = {},
+): Promise<QuoteRow> {
+  const [{ data: q }, catalog, settings] = await Promise.all([
+    db().from('quotes').select('*').eq('id', id).maybeSingle(),
+    getCatalog(),
+    getSettings(),
+  ]);
+  if (!q) throw new Error('Quotation not found.');
+  if (q.status === 'accepted') throw new Error('This quotation has already been accepted.');
+  if (!q.items.length) throw new Error('A quotation needs at least one line.');
+  const items = q.items.map((i) => ({
+    ...i,
+    from: false,
+    range: undefined,
+    note: resolveTokens(i.note, catalog, q.items) || undefined,
+  }));
+  const now = new Date().toISOString();
+  const days = opts.validDays ?? settings.quotes.validDays;
+  const { data, error } = await db()
+    .from('quotes')
+    .update({
+      kind: 'final',
+      status: 'sent',
+      items: items as never,
+      approved_by: actor,
+      approved_at: now,
+      revision: q.kind === 'final' ? q.revision + 1 : q.revision,
+      valid_until: new Date(Date.now() + days * 86_400_000).toISOString(),
+      view_count: 0,
+      hold_reason: null,
+      updated_at: now,
+    })
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error || !data) throw new Error(error?.message ?? 'Could not issue the final quotation.');
+  await logEvent(
+    id,
+    actor,
+    'final_issued',
+    q.kind === 'final'
+      ? `Revised final quotation (revision ${data.revision}).`
+      : 'Approved and issued.',
+  );
+  return data;
+}
+
+/**
+ * A suggestion picked on a quotation that is already final (or accepted): the
+ * quotation itself is not touched. The request is recorded as an add-on with
+ * no price yet; the team prices it and the client approves that price.
+ */
+export async function requestAddonFromSuggestion(
+  q: QuoteRow,
+  serviceId: string,
+): Promise<{ title: string; created: boolean }> {
+  const catalog = await getCatalog();
+  const svc = catalog.find((s) => s.id === serviceId && s.active);
+  if (!svc) throw new Error('That service is not available.');
+  if (q.items.some((i) => i.serviceId === serviceId)) return { title: svc.name, created: false };
+  const { data: open } = await db()
+    .from('quote_addons')
+    .select('id')
+    .eq('quote_id', q.id)
+    .eq('title', svc.name)
+    .in('status', ['proposed', 'approved', 'billed'])
+    .limit(1);
+  if (open?.length) return { title: svc.name, created: false };
+  const sp = startingPrice(svc);
+  await db()
+    .from('quote_addons')
+    .insert({
+      quote_id: q.id,
+      title: svc.name,
+      details: `Asked for from the suggestions on the quotation. Starting price: ${
+        sp.ranged ? `${inr(sp.min)} – ${inr(sp.max)}` : `from ${inr(sp.min)}`
+      }.`,
+      amount: 0,
+      status: 'proposed',
+      requested_by: 'client',
+    });
+  await logEvent(q.id, 'client', 'addon_requested', svc.name);
+  return { title: svc.name, created: true };
+}
 
 /* ------------------------------------------------------------- access --- */
 
@@ -623,7 +815,12 @@ export async function openQuote(
   if (q.status === 'void') return { ok: false, reason: 'void' };
 
   const accepted = q.status === 'accepted';
-  if (!accepted && new Date(q.valid_until).getTime() < Date.now()) {
+  // While the team owes the client a final quotation, the link does not run out on them.
+  if (
+    !accepted &&
+    q.status !== 'final_requested' &&
+    new Date(q.valid_until).getTime() < Date.now()
+  ) {
     if (q.status !== 'expired')
       await supabase.from('quotes').update({ status: 'expired' }).eq('id', q.id);
     return { ok: false, reason: 'expired' };
@@ -724,7 +921,11 @@ export async function addServiceToQuote(q: QuoteRow, serviceId: string): Promise
   if (q.items.some((i) => i.serviceId === serviceId)) return q;
   const [added] = buildItems(catalog, [{ serviceId }], { onlyActive: true });
   if (!added) throw new Error('That service is not available.');
-  const items = applyIncludes(catalog, [...q.items, { ...added, addedByClient: true }]);
+  const sp = startingPrice(svc);
+  const items = applyIncludes(catalog, [
+    ...q.items,
+    { ...added, addedByClient: true, range: { min: sp.min, max: sp.max } },
+  ]);
   if (items.length === q.items.length && !items.some((i) => i.serviceId === serviceId)) return q;
   const discount = comboDiscount(items, settings.quotes);
   const { data, error } = await db()
@@ -733,17 +934,28 @@ export async function addServiceToQuote(q: QuoteRow, serviceId: string): Promise
       items: items as never,
       // Keep a discount the owner set by hand; otherwise recompute the combination one.
       discount: Math.max(Number(q.discount), discount),
-      kind: 'indicative',
       updated_at: new Date().toISOString(),
     })
     .eq('id', q.id)
     .select('*')
     .single();
   if (error || !data) throw new Error(error?.message ?? 'Could not update the quotation.');
+  await logEvent(
+    q.id,
+    'client',
+    'client_added',
+    `${svc.name} (starting price, to be confirmed in the final quotation)`,
+  );
   return data;
 }
 
-export async function acceptQuote(q: QuoteRow, by: string): Promise<void> {
+/** Accepting is for a final quotation. The team can still record an agreement made by phone with `force`. */
+export async function acceptQuote(
+  q: QuoteRow,
+  by: string,
+  opts: { force?: boolean } = {},
+): Promise<void> {
+  if (q.kind !== 'final' && !opts.force) throw new Error('Only a final quotation can be accepted.');
   const supabase = db();
   await supabase
     .from('quotes')
@@ -754,6 +966,12 @@ export async function acceptQuote(q: QuoteRow, by: string): Promise<void> {
       updated_at: new Date().toISOString(),
     })
     .eq('id', q.id);
+  await logEvent(
+    q.id,
+    by === 'Recorded by the team' ? 'team' : 'client',
+    'accepted',
+    `Accepted by ${by}.`,
+  );
   if (q.enquiry_id)
     await supabase
       .from('enquiries')

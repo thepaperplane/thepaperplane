@@ -12,8 +12,11 @@ import {
   dateIN,
   deliverQuote,
   ensureClient,
+  generateLink,
   getAddons,
   inr,
+  issueFinal,
+  logEvent,
   newToken,
   quoteUrl,
   sendChecklist,
@@ -60,7 +63,8 @@ const ItemSchema = z.object({
 
 const SaveSchema = z.object({
   id: uuid.optional().or(z.literal('')),
-  name: z.string().trim().min(2, 'Name is required.').max(160),
+  // A name is all a link needs: no email address or phone number is ever required.
+  name: z.string().trim().max(160).optional().default(''),
   email: z.string().trim().toLowerCase().email().max(320).optional().or(z.literal('')),
   phone: z.string().trim().max(40).optional(),
   company: z.string().trim().max(160).optional(),
@@ -72,7 +76,7 @@ const SaveSchema = z.object({
   validDays: z.coerce.number().int().min(1).max(180).default(14),
   discount: z.string().trim().optional(),
   items: z.string().min(2),
-  intent: z.enum(['draft', 'send']).default('draft'),
+  intent: z.enum(['draft', 'send', 'link']).default('draft'),
 });
 
 export async function saveQuote(formData: FormData): Promise<void> {
@@ -89,10 +93,11 @@ export async function saveQuote(formData: FormData): Promise<void> {
   const discount =
     d.discount !== undefined && d.discount !== '' ? Math.max(0, Number(d.discount)) : undefined;
 
+  const name = d.name || d.company || 'Valued client';
   let q: QuoteRow;
   if (d.id) {
     q = await updateQuoteItems(d.id, items, {
-      name: d.name,
+      name,
       email: d.email || null,
       phone: d.phone || null,
       company: d.company || null,
@@ -110,7 +115,7 @@ export async function saveQuote(formData: FormData): Promise<void> {
       source: 'console',
       draft: true,
       allowOverride: true,
-      name: d.name,
+      name,
       email: d.email || null,
       phone: d.phone || null,
       company: d.company || null,
@@ -131,10 +136,13 @@ export async function saveQuote(formData: FormData): Promise<void> {
 
   let sent = '';
   if (d.intent === 'send') {
-    const r = await deliverQuote(q);
+    const r = await deliverQuote(q, { actor: profile.email });
     sent =
       [r.email ? 'email' : '', r.whatsapp ? 'whatsapp' : ''].filter(Boolean).join('+') || 'none';
     if (sent === 'none') await recordFailure(q.id, r.error);
+  } else if (d.intent === 'link') {
+    await generateLink(q, profile.email);
+    sent = 'link';
   }
   touch(q.id);
   redirect(`/admin/quotes/${q.id}${sent ? `?sent=${sent}` : '?saved=1'}`);
@@ -154,7 +162,7 @@ export async function sendQuoteNow(formData: FormData): Promise<void> {
   const id = uuid.safeParse(formData.get('id'));
   if (!id.success) return;
   const q = await load(id.data);
-  const r = await deliverQuote(q);
+  const r = await deliverQuote(q, { actor: profile.email });
   await audit(profile.email, 'quote.send', 'quotes', q.id, {
     email: r.email,
     whatsapp: r.whatsapp,
@@ -165,6 +173,54 @@ export async function sendQuoteNow(formData: FormData): Promise<void> {
   if (sent === 'none') await recordFailure(q.id, r.error);
   touch(q.id);
   redirect(`/admin/quotes/${q.id}?sent=${sent}`);
+}
+
+/**
+ * Makes the private link live without sending anything. For a client with no
+ * email address or phone number, or when you would rather paste the link into
+ * your own chat. Needs nothing but the quotation itself.
+ */
+export async function makeLink(formData: FormData): Promise<void> {
+  const profile = await requireRole('editor');
+  const id = uuid.safeParse(formData.get('id'));
+  if (!id.success) return;
+  const q = await load(id.data);
+  await generateLink(q, profile.email);
+  await audit(profile.email, 'quote.link', 'quotes', q.id);
+  touch(q.id);
+  redirect(`/admin/quotes/${q.id}?sent=link`);
+}
+
+/**
+ * Approval: the team signs off the final quotation. The amounts are whatever
+ * is on the quotation now; they become fixed, the "starting" wording goes, the
+ * clock restarts, and the client can accept it. Optionally sent at once.
+ */
+export async function approveFinal(formData: FormData): Promise<void> {
+  const profile = await requireRole('editor');
+  const id = uuid.safeParse(formData.get('id'));
+  if (!id.success) return;
+  const days = Math.min(180, Math.max(1, Number(formData.get('days')) || 14));
+  let sent = 'issued';
+  try {
+    const q = await issueFinal(id.data, profile.email, { validDays: days });
+    await audit(profile.email, 'quote.final', 'quotes', q.id, {
+      number: q.number,
+      revision: q.revision,
+    });
+    if (formData.get('send') === 'on') {
+      const r = await deliverQuote(q, { actor: profile.email });
+      sent =
+        [r.email ? 'email' : '', r.whatsapp ? 'whatsapp' : ''].filter(Boolean).join('+') ||
+        'issued-nosend';
+      if (sent === 'issued-nosend') await recordFailure(q.id, r.error);
+    }
+  } catch (e) {
+    console.error('[quotes] approve failed', e instanceof Error ? e.message : e);
+    redirect(`/admin/quotes/${id.data}?final=failed`);
+  }
+  touch(id.data);
+  redirect(`/admin/quotes/${id.data}?final=${sent}`);
 }
 
 /** Sends the numbered documents list (and, on a final quotation, the fee and payment details). */
@@ -194,12 +250,14 @@ export async function setQuoteStatus(formData: FormData): Promise<void> {
     .safeParse(formData.get('status'));
   if (!id.success || !status.success) return;
   const q = await load(id.data);
-  if (status.data === 'accepted') await acceptQuote(q, 'Recorded by the team');
+  if (status.data === 'accepted') await acceptQuote(q, 'Recorded by the team', { force: true });
   else
     await db()
       .from('quotes')
       .update({ status: status.data, updated_at: new Date().toISOString() })
       .eq('id', q.id);
+  if (status.data !== 'accepted')
+    await logEvent(q.id, profile.email, status.data, `Marked ${status.data} by the team.`);
   await audit(profile.email, `quote.${status.data}`, 'quotes', q.id);
   touch(q.id);
 }
@@ -210,6 +268,9 @@ export async function renewQuote(formData: FormData): Promise<void> {
   const id = uuid.safeParse(formData.get('id'));
   if (!id.success) return;
   const days = Number(formData.get('days')) || 14;
+  const current = await load(id.data);
+  // A quotation the client has accepted, or asked a final for, keeps that status.
+  const keep = ['accepted', 'final_requested'].includes(current.status);
   await db()
     .from('quotes')
     .update({
@@ -218,10 +279,16 @@ export async function renewQuote(formData: FormData): Promise<void> {
       first_viewed_at: null,
       last_viewed_at: null,
       valid_until: new Date(Date.now() + Math.min(180, days) * 86_400_000).toISOString(),
-      status: 'sent',
+      ...(keep ? {} : { status: 'sent' }),
       updated_at: new Date().toISOString(),
     })
     .eq('id', id.data);
+  await logEvent(
+    id.data,
+    profile.email,
+    'link_renewed',
+    'New private link; the old one stopped working.',
+  );
   await audit(profile.email, 'quote.renew', 'quotes', id.data);
   touch(id.data);
 }
@@ -311,6 +378,27 @@ export async function setAddonStatus(formData: FormData): Promise<void> {
     .maybeSingle();
   await audit(profile.email, `quote.addon.${status.data}`, 'quote_addons', id.data);
   if (a) touch(a.quote_id);
+}
+
+/** Puts a price on an add-on the client asked for. They then approve (or decline) that price. */
+export async function priceAddon(formData: FormData): Promise<void> {
+  const profile = await requireRole('editor');
+  const id = uuid.safeParse(formData.get('id'));
+  const amount = z.coerce.number().min(1).max(1e8).safeParse(formData.get('amount'));
+  if (!id.success || !amount.success) return;
+  const { data: a } = await db()
+    .from('quote_addons')
+    .update({ amount: amount.data, status: 'proposed' })
+    .eq('id', id.data)
+    .select('quote_id, title')
+    .maybeSingle();
+  if (!a) return;
+  await logEvent(a.quote_id, profile.email, 'addon_priced', `${a.title}: ${inr(amount.data)}`);
+  await audit(profile.email, 'quote.addon.price', 'quote_addons', id.data, {
+    amount: amount.data,
+  });
+  if (formData.get('notify') === 'on') await askApproval(a.quote_id, a.title, amount.data);
+  touch(a.quote_id);
 }
 
 export async function removeAddon(formData: FormData): Promise<void> {

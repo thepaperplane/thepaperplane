@@ -18,7 +18,8 @@ export function Analytics() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (pathname.startsWith('/admin')) return;
+    // A quotation link is a private credential. Never count it, never store it.
+    if (pathname.startsWith('/admin') || pathname.startsWith('/q/')) return;
     const nav = navigator as Navigator & { globalPrivacyControl?: boolean };
     if (nav.doNotTrack === '1' || nav.globalPrivacyControl) return;
     if (document.cookie.split('; ').some((c) => c === `${EDITOR_COOKIE}=1`)) return;

@@ -148,14 +148,12 @@ export function QuoteBuilder({
       <input type="hidden" name="items" value={JSON.stringify(lines)} />
 
       <div className="bg-surface grid gap-4 rounded-[var(--radius-md)] border p-6 md:grid-cols-2">
-        <Field label="Client name" htmlFor="qb-name" required>
-          <input
-            id="qb-name"
-            name="name"
-            required
-            defaultValue={initial.name}
-            className={ADMIN_FIELD}
-          />
+        <Field
+          label="Client name"
+          htmlFor="qb-name"
+          hint="Shown as “Prepared for …”. Email and phone are both optional — a name is enough to make a link."
+        >
+          <input id="qb-name" name="name" defaultValue={initial.name} className={ADMIN_FIELD} />
         </Field>
         <Field label="Business" htmlFor="qb-company">
           <input
@@ -165,7 +163,11 @@ export function QuoteBuilder({
             className={ADMIN_FIELD}
           />
         </Field>
-        <Field label="Email" htmlFor="qb-email" hint="The quotation link is emailed here.">
+        <Field
+          label="Email"
+          htmlFor="qb-email"
+          hint="Optional. Without it you can still make the link live and share it yourself."
+        >
           <input
             id="qb-email"
             name="email"
@@ -177,7 +179,7 @@ export function QuoteBuilder({
         <Field
           label="Phone / WhatsApp"
           htmlFor="qb-phone"
-          hint="If they have messaged the assistant in the last day, the link is also sent there."
+          hint="Optional. If they have messaged the assistant in the last day, the link is also sent there."
         >
           <input id="qb-phone" name="phone" defaultValue={initial.phone} className={ADMIN_FIELD} />
         </Field>
@@ -418,11 +420,11 @@ export function QuoteBuilder({
         <Field
           label="Quotation type"
           htmlFor="qb-kind"
-          hint="Indicative is a starting estimate; Final is what you confirmed after speaking to them."
+          hint="Estimate: the client sees every price as “from” and cannot accept it — they ask for the final. Final: fixed amounts you have agreed with them; they can accept it."
         >
           <select id="qb-kind" name="kind" defaultValue={initial.kind} className={ADMIN_FIELD}>
-            <option value="indicative">Indicative — starting estimate</option>
-            <option value="final">Final — confirmed</option>
+            <option value="indicative">Estimate — starting prices only</option>
+            <option value="final">Final — fixed, agreed amounts</option>
           </select>
         </Field>
         <Field label="Open for (days)" htmlFor="qb-days">
@@ -476,11 +478,14 @@ export function QuoteBuilder({
         <SubmitButton name="intent" value="draft" tone="quiet" pendingText="Saving…">
           Save as draft
         </SubmitButton>
+        <SubmitButton name="intent" value="link" tone="quiet" pendingText="Saving…">
+          Save and make the link live
+        </SubmitButton>
         <SubmitButton name="intent" value="send" pendingText="Sending…">
           Save and send to the client
         </SubmitButton>
         <p className="text-ink-3 text-[0.8125rem]">
-          Sending emails a private link — the email itself never shows a price.
+          The link stays hidden until you send or share it. The email never shows a price.
         </p>
       </div>
     </form>

@@ -75,7 +75,11 @@ export type CatalogService = {
 };
 
 /** A catalogue service with the owner's overrides applied. */
-export type PricedService = CatalogService & { active: boolean };
+export type PricedService = CatalogService & {
+  active: boolean;
+  /** The note as written, with `{price:id}` tokens unresolved. `note` has them filled in. */
+  noteTemplate: string;
+};
 
 export type QuoteItem = {
   /** Stable within a quote. */
@@ -97,12 +101,32 @@ export type QuoteItem = {
   gov?: { label: string; amount: number | null; per: Period; note?: string }[];
   /** Names of the allied services included in this line's fee. */
   includes?: string[];
-  /** Added by the client from a suggestion on the quote page. */
+  /** Added by the client from a suggestion on the quote page. Priced in the final quotation. */
   addedByClient?: boolean;
+  /** The lowest and highest starting price across the options of a client-added line. */
+  range?: { min: number; max: number };
 };
 
+/**
+ * The life of a quotation (see docs/QUOTATION-SOP.md):
+ *
+ *   draft → pending_review → sent → viewed → final_requested → (final) sent → viewed → accepted
+ *
+ * An automated quotation is `kind: 'indicative'`: every price on it is a
+ * starting price. Only a quotation the team has approved and issued —
+ * `kind: 'final'` — carries fixed amounts, and only a final quotation can be
+ * accepted.
+ */
 export type QuoteStatus =
-  'draft' | 'pending_review' | 'sent' | 'viewed' | 'accepted' | 'declined' | 'expired' | 'void';
+  | 'draft'
+  | 'pending_review'
+  | 'sent'
+  | 'viewed'
+  | 'final_requested'
+  | 'accepted'
+  | 'declined'
+  | 'expired'
+  | 'void';
 
 export type QuoteRow = {
   id: string;
@@ -137,6 +161,13 @@ export type QuoteRow = {
   accepted_by: string | null;
   decline_reason: string | null;
   invoice_id: string | null;
+  /** When the client asked the team for the final quotation. */
+  final_requested_at: string | null;
+  /** Who approved and issued the final quotation, and when. */
+  approved_by: string | null;
+  approved_at: string | null;
+  /** Bumped each time the team issues a revised final quotation. */
+  revision: number;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -148,6 +179,15 @@ export type QuoteViewRow = {
   at: string;
   ip_hash: string | null;
   user_agent: string | null;
+};
+
+export type QuoteEventRow = {
+  id: number;
+  quote_id: string;
+  at: string;
+  actor: string;
+  type: string;
+  detail: string | null;
 };
 
 export type QuoteAddonRow = {

@@ -2,10 +2,14 @@ import { z } from 'zod';
 import { apiError, apiOk, clientIp, rateLimit, readJson, sameOrigin } from '@/lib/api';
 import {
   acceptQuote,
+  acknowledgeFinalRequest,
   addServiceToQuote,
   hashIp,
+  logEvent,
   notifyOwner,
   openQuote,
+  requestAddonFromSuggestion,
+  requestFinal,
   sendChecklist,
   summarise,
 } from '@/lib/quotes/engine';
@@ -16,6 +20,7 @@ export const dynamic = 'force-dynamic';
 
 const Body = z.discriminatedUnion('action', [
   z.object({ action: z.literal('accept'), name: z.string().trim().min(2).max(160) }),
+  z.object({ action: z.literal('request_final'), note: z.string().trim().max(600).optional() }),
   z.object({ action: z.literal('decline'), reason: z.string().trim().max(600).optional() }),
   z.object({ action: z.literal('message'), text: z.string().trim().min(2).max(1500) }),
   z.object({ action: z.literal('upsell'), serviceId: z.string().trim().max(40) }),
@@ -43,12 +48,43 @@ export async function POST(request: Request, ctx: { params: Promise<{ token: str
   const q = access.quote;
   const supabase = serviceClient();
   if (!supabase) return apiError('Unavailable right now.', 503);
-  const open = q.status === 'sent' || q.status === 'viewed';
+  const open = q.status === 'sent' || q.status === 'viewed' || q.status === 'final_requested';
   const d = body.data;
 
   switch (d.action) {
+    case 'request_final': {
+      // An automated quotation is only an estimate: the client asks, the team approves.
+      if (q.kind === 'final') return apiError('This is already your final quotation.', 409);
+      if (!open) return apiError('This quotation can no longer be changed.', 409);
+      if (q.status === 'final_requested') return apiOk({ ok: true });
+      const updated = await requestFinal(q, d.note);
+      await acknowledgeFinalRequest(updated);
+      await notifyOwner(
+        `Final quotation requested: ${q.name}`,
+        [
+          `${q.number} · ${summarise(q.items)}`,
+          `${q.name} · ${q.email ?? ''} ${q.phone ?? ''}`.trim(),
+          d.note ? `They wrote: ${d.note}` : '',
+          q.items.some((i) => i.addedByClient)
+            ? `Added by the client: ${q.items
+                .filter((i) => i.addedByClient)
+                .map((i) => i.name)
+                .join(', ')}`
+            : '',
+          'Call them, confirm the scope and amounts, then approve and issue the final quotation. Reply due within one working day.',
+        ].filter(Boolean),
+        `/admin/quotes/${q.id}`,
+      );
+      return apiOk({ ok: true });
+    }
     case 'accept': {
-      if (!open) return apiError('This quotation can no longer be accepted.', 409);
+      if (q.kind !== 'final')
+        return apiError(
+          'This is an automated quotation with starting prices. Ask for your final quotation first; you can accept that once we have approved and sent it.',
+          409,
+        );
+      if (q.status !== 'sent' && q.status !== 'viewed')
+        return apiError('This quotation can no longer be accepted.', 409);
       await acceptQuote(q, d.name);
       // The list of what we need, straight away — they are at their most willing right now.
       await sendChecklist({ ...q, status: 'accepted' }).catch(() => undefined);
@@ -69,6 +105,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ token: str
         .from('quotes')
         .update({ status: 'declined', decline_reason: d.reason ?? null })
         .eq('id', q.id);
+      await logEvent(q.id, 'client', 'declined', d.reason);
       await notifyOwner(
         `Quotation declined: ${q.name}`,
         [
@@ -88,13 +125,34 @@ export async function POST(request: Request, ctx: { params: Promise<{ token: str
       return apiOk({ ok: true });
     }
     case 'upsell': {
-      if (!open) return apiError('This quotation can no longer be changed.', 409);
       try {
+        // On a final or accepted quotation nothing in it changes: the request
+        // becomes an add-on the team prices and the client then approves.
+        if (q.kind === 'final' || q.status === 'accepted') {
+          if (q.status !== 'accepted' && !open)
+            return apiError('This quotation can no longer be changed.', 409);
+          const r = await requestAddonFromSuggestion(q, d.serviceId);
+          if (r.created)
+            await notifyOwner(
+              `${q.name} asked for an add-on on ${q.number}`,
+              [
+                `Asked for: ${r.title}`,
+                'Set its price on the quotation; they approve it from their page.',
+              ],
+              `/admin/quotes/${q.id}`,
+            );
+          return apiOk({ ok: true });
+        }
+        if (!open) return apiError('This quotation can no longer be changed.', 409);
         const updated = await addServiceToQuote(q, d.serviceId);
         if (updated !== q) {
           await notifyOwner(
             `${q.name} added a service to quotation ${q.number}`,
-            [`Added: ${updated.items.at(-1)?.name}`, `Now: ${summarise(updated.items)}`],
+            [
+              `Added: ${updated.items.at(-1)?.name} (shown to them as a starting price only)`,
+              `Now: ${summarise(updated.items)}`,
+              'Price it in the final quotation after you confirm the scope with them.',
+            ],
             `/admin/quotes/${q.id}`,
           );
         }
@@ -111,6 +169,8 @@ export async function POST(request: Request, ctx: { params: Promise<{ token: str
         .eq('quote_id', q.id)
         .maybeSingle();
       if (!addon || addon.status !== 'proposed') return apiError('Already decided.', 409);
+      if (Number(addon.amount) === 0 && addon.requested_by === 'client')
+        return apiError('We are still pricing this. We will tell you as soon as it is ready.', 409);
       await supabase
         .from('quote_addons')
         .update({
