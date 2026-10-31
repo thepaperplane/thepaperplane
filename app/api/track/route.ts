@@ -50,7 +50,7 @@ export async function POST(request: Request) {
   const parsed = Body.safeParse(await readJson(request));
   if (!parsed.success) return new Response(null, { status: 204 });
   const { path, ref, source, medium, campaign } = parsed.data;
-  if (path.startsWith('/admin') || path.startsWith('/api'))
+  if (path.startsWith('/admin') || path.startsWith('/api') || path.startsWith('/q/'))
     return new Response(null, { status: 204 });
 
   const supabase = serviceClient();

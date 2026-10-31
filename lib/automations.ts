@@ -309,12 +309,19 @@ export async function runDailyAutomations(opts: { manual?: boolean } = {}): Prom
 
   /* 4b. Quotations: nudge the unopened, the unanswered and the expiring ---- */
   let quotesHeld = 0;
+  let finalsWaiting = 0;
   {
     const { data: held } = await db()
       .from('quotes')
       .select('id', { count: 'exact', head: false })
       .eq('status', 'pending_review');
     quotesHeld = held?.length ?? 0;
+    // Clients who asked for a final quotation: the team owes each a reply within a working day.
+    const { data: asked } = await db()
+      .from('quotes')
+      .select('id', { count: 'exact', head: false })
+      .eq('status', 'final_requested');
+    finalsWaiting = asked?.length ?? 0;
     let nudged = 0;
     if (a.quoteFollowUps) {
       const now = Date.now();
@@ -344,7 +351,7 @@ export async function runDailyAutomations(opts: { manual?: boolean } = {}): Prom
             subject: `Your quotation is waiting — ${SITE.name}`,
             heading: `${first}, in case it got lost in your inbox`,
             body: [
-              'We prepared a personalised quotation for you, and it has not been opened yet.',
+              'We prepared an automated quotation for you, with starting prices, and it has not been opened yet.',
               'If your plans have changed, no problem at all. If you would like to talk it through first, you can book a free call from the quotation page.',
             ],
           },
@@ -352,8 +359,10 @@ export async function runDailyAutomations(opts: { manual?: boolean } = {}): Prom
             subject: `Any questions about your quotation?`,
             heading: `${first}, shall we talk it through?`,
             body: [
-              'Every business is different, so the best next step is usually a short conversation where we understand you fully and confirm the final figure.',
-              'Your quotation is still open — you can ask us a question, add or remove a service, or book a free call from the page.',
+              q.kind === 'final'
+                ? 'This is your final quotation, with the actual amounts we agreed. You can accept it, ask us a question or book a free call from the page.'
+                : 'The prices on your automated quotation are starting prices. The best next step is usually a short conversation where we confirm the actual amounts — or you can ask for your final quotation from the page.',
+              'Your quotation is still open.',
             ],
           },
           expiring: {
@@ -374,10 +383,20 @@ export async function runDailyAutomations(opts: { manual?: boolean } = {}): Prom
           cta: { label: 'Open my quotation', href: quoteUrl(q.token) },
         });
         await log('quote_followup', `${q.id}:${kind}`, 'email', r.sent, `${q.number} ${kind}`);
+        await db()
+          .from('quote_events')
+          .insert({
+            quote_id: q.id,
+            actor: 'system',
+            type: r.sent ? 'followup_emailed' : 'send_failed',
+            detail: `Automatic reminder (${kind}) ${r.sent ? 'emailed to' : 'could not be sent to'} ${q.email}.`,
+          });
         if (r.sent) nudged++;
       }
     }
-    out.push(`Quotations: ${quotesHeld} waiting for review, ${nudged} followed up`);
+    out.push(
+      `Quotations: ${quotesHeld} waiting for review, ${finalsWaiting} final quotation${finalsWaiting === 1 ? '' : 's'} owed, ${nudged} followed up`,
+    );
   }
 
   /* 5. The owner's digest (once a day, from the scheduled run) ------------ */
@@ -405,6 +424,7 @@ export async function runDailyAutomations(opts: { manual?: boolean } = {}): Prom
       `Waiting for you on WhatsApp: ${(waiting ?? []).map((w) => w.name ?? `+${w.wa_id}`).join(', ') || 'nobody'}`,
       `Website assistant conversations (24h): ${chats ?? 0}`,
       `Quotations waiting for your review: ${quotesHeld}`,
+      `Final quotations clients are waiting for: ${finalsWaiting}`,
       `Overdue invoices: ${overdueCount} (${inr(overdueTotal)})`,
       `Client deadlines in the next 3 days: ${(soon ?? []).map((t) => t.title).join(', ') || 'none'}`,
       '',

@@ -31,7 +31,8 @@ const when = new Intl.DateTimeFormat('en-IN', {
 });
 
 const TABS: [string, string][] = [
-  ['review', 'Needs review'],
+  ['final', 'Final requested'],
+  ['review', 'Awaiting approval'],
   ['open', 'Out with clients'],
   ['accepted', 'Accepted'],
   ['all', 'All'],
@@ -40,6 +41,7 @@ const TABS: [string, string][] = [
 const TONE: Record<string, 'neutral' | 'accent' | 'positive' | 'caution' | 'critical'> = {
   draft: 'neutral',
   pending_review: 'caution',
+  final_requested: 'caution',
   sent: 'accent',
   viewed: 'accent',
   accepted: 'positive',
@@ -69,10 +71,28 @@ export default async function QuotesPage({
   searchParams: Promise<{ tab?: string; error?: string }>;
 }) {
   await requireRole('editor');
-  const { tab = 'review', error } = await searchParams;
+  const { tab: askedTab, error } = await searchParams;
   const settings = await getSettings();
   const s = settings.quotes;
   const supabase = serviceClient();
+  const counts = { final: 0, review: 0, open: 0, accepted: 0, openValue: 0 };
+  if (supabase) {
+    const { data } = await supabase
+      .from('quotes')
+      .select('status, items, discount')
+      .in('status', ['pending_review', 'final_requested', 'sent', 'viewed', 'accepted']);
+    for (const r of data ?? []) {
+      if (r.status === 'final_requested') counts.final++;
+      else if (r.status === 'pending_review') counts.review++;
+      else if (r.status === 'accepted') counts.accepted++;
+      else {
+        counts.open++;
+        counts.openValue += computeTotals(r.items, Number(r.discount)).dueNow;
+      }
+    }
+  }
+  // Land on whatever is waiting for the team, most urgent first.
+  const tab = askedTab ?? (counts.final ? 'final' : 'review');
   let rows: QuoteRow[] = [];
   if (supabase) {
     let query = supabase
@@ -80,26 +100,12 @@ export default async function QuotesPage({
       .select('*')
       .order('created_at', { ascending: false })
       .limit(200);
-    if (tab === 'review') query = query.eq('status', 'pending_review');
+    if (tab === 'final') query = query.eq('status', 'final_requested');
+    else if (tab === 'review') query = query.eq('status', 'pending_review');
     else if (tab === 'open') query = query.in('status', ['sent', 'viewed']);
     else if (tab === 'accepted') query = query.eq('status', 'accepted');
     const { data } = await query;
     rows = data ?? [];
-  }
-  const counts = { review: 0, open: 0, accepted: 0, openValue: 0 };
-  if (supabase) {
-    const { data } = await supabase
-      .from('quotes')
-      .select('status, items, discount')
-      .in('status', ['pending_review', 'sent', 'viewed', 'accepted']);
-    for (const r of data ?? []) {
-      if (r.status === 'pending_review') counts.review++;
-      else if (r.status === 'accepted') counts.accepted++;
-      else {
-        counts.open++;
-        counts.openValue += computeTotals(r.items, Number(r.discount)).dueNow;
-      }
-    }
   }
   const base = `${SITE.url}/get-quote`;
 
@@ -126,18 +132,24 @@ export default async function QuotesPage({
         </p>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Stat
-          label="Needs your review"
+          label="Final quotation requested"
+          value={counts.final}
+          tone={counts.final ? 'caution' : 'neutral'}
+          hint="Client is waiting for you"
+        />
+        <Stat
+          label="Awaiting your approval"
           value={counts.review}
           tone={counts.review ? 'caution' : 'neutral'}
-          hint="Held by a filter"
+          hint="Requests not yet sent"
         />
         <Stat
           label="Out with clients"
           value={counts.open}
           tone="accent"
-          hint={`${inr(counts.openValue)} to begin`}
+          hint={`from ${inr(counts.openValue)} to begin`}
         />
         <Stat label="Accepted" value={counts.accepted} tone="positive" />
         <Stat
@@ -164,6 +176,7 @@ export default async function QuotesPage({
           >
             {label}
             {k === 'review' && counts.review ? ` · ${counts.review}` : ''}
+            {k === 'final' && counts.final ? ` · ${counts.final}` : ''}
           </Link>
         ))}
       </div>
@@ -192,11 +205,15 @@ export default async function QuotesPage({
                     <span className="text-ink-3 block text-[0.75rem]">via {q.source}</span>
                   </td>
                   <td className="text-ink px-6 py-3 text-[0.8125rem] whitespace-nowrap tabular-nums">
+                    {q.kind === 'final' ? '' : 'from '}
                     {inr(t.dueNow)}
                     {t.month ? <span className="text-ink-3 block">+ {inr(t.month)}/mo</span> : null}
                   </td>
                   <td className="px-6 py-3">
                     <Pill tone={TONE[q.status] ?? 'neutral'}>{q.status.replace('_', ' ')}</Pill>
+                    <span className="text-ink-3 mt-1 block text-[0.75rem]">
+                      {q.kind === 'final' ? 'final' : 'automated · starting'}
+                    </span>
                     {q.hold_reason && q.status === 'pending_review' ? (
                       <span className="text-ink-3 mt-1 block max-w-[14rem] text-[0.75rem]">
                         {q.hold_reason}
@@ -215,6 +232,13 @@ export default async function QuotesPage({
                           Approve and send
                         </SubmitButton>
                       </form>
+                    ) : q.status === 'final_requested' ? (
+                      <Link
+                        href={`/admin/quotes/${q.id}`}
+                        className="bg-accent text-accent-ink inline-flex h-9 items-center rounded-[var(--radius-md)] px-4 text-[0.8125rem] font-semibold"
+                      >
+                        Review and approve
+                      </Link>
                     ) : null}
                   </td>
                 </tr>
@@ -229,6 +253,57 @@ export default async function QuotesPage({
           />
         )}
       </Panel>
+
+      <details className="bg-surface mt-6 rounded-[var(--radius-md)] border">
+        <summary className="text-ink cursor-pointer px-6 py-4 text-[0.9375rem] font-semibold">
+          How a quotation moves — the approval cycle (SOP)
+        </summary>
+        <div className="text-ink-2 grid gap-4 border-t border-[var(--hairline)] px-6 py-5 text-[0.875rem] leading-relaxed">
+          <p>
+            <strong className="text-ink">The rule:</strong> an automated quotation shows starting
+            prices only (“from ₹…”). Nothing becomes a fixed amount, and nothing can be accepted,
+            until someone here approves a <strong>final quotation</strong>.
+          </p>
+          <ol className="grid list-decimal gap-1.5 pl-5">
+            <li>
+              <strong>Request</strong> — the client picks services (or you build one here; a name is
+              enough, no email or phone needed).
+            </li>
+            <li>
+              <strong>Approve</strong> — nothing is sent automatically; every request waits for you
+              (<em>Awaiting approval</em>
+              ). Review each the same working day.
+            </li>
+            <li>
+              <strong>Automated quotation</strong> — emailed as a private link, never with a price
+              in the message. Suggestions they add show a starting range only.
+            </li>
+            <li>
+              <strong>Final requested</strong> — the client presses{' '}
+              <em>Request my final quotation</em>. You have one working day.
+            </li>
+            <li>
+              <strong>Confirm and edit</strong> — talk to them, then set the real amount on every
+              line (including added services) under Edit.
+            </li>
+            <li>
+              <strong>Approve</strong> — <em>Approve and issue the final quotation</em> on the
+              quotation. Amounts freeze; who approved, and when, is recorded.
+            </li>
+            <li>
+              <strong>Accept</strong> — only the final can be accepted. Then the client record,
+              documents checklist and payment details follow.
+            </li>
+            <li>
+              <strong>Add-ons</strong> — priced first, approved by the client, then added to the
+              invoice with their date.
+            </li>
+          </ol>
+          <p className="text-ink-3">
+            Full procedure, targets and rules: <code className="ref">docs/QUOTATION-SOP.md</code>.
+          </p>
+        </div>
+      </details>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <Panel
@@ -267,15 +342,13 @@ export default async function QuotesPage({
           description="Decide who gets a quotation automatically and who waits for you."
         >
           <form action={saveQuoteSettings} className="grid gap-4 px-6 py-5">
-            <Field label="When a request comes in" htmlFor="qs-mode">
-              <select id="qs-mode" name="mode" defaultValue={s.mode} className={ADMIN_FIELD}>
-                <option value="auto">Send to everyone who passes the checks</option>
-                <option value="qualified">
-                  Send only if the score is high enough (recommended)
-                </option>
-                <option value="manual">Hold every request for my approval</option>
-              </select>
-            </Field>
+            <input type="hidden" name="mode" value="manual" />
+            <p className="bg-accent-wash text-ink rounded-[var(--radius-md)] px-4 py-3 text-[0.875rem]">
+              <strong>Every request waits for your approval.</strong> Nothing a visitor requests on
+              /get-quote or WhatsApp is sent automatically: you read it, edit the services and
+              prices if needed, then approve and send it from here. The score and checks below are
+              shown to you as a guide only.
+            </p>
             <Field
               label="Minimum score"
               htmlFor="qs-min"

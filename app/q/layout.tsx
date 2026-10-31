@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 export default function QuoteLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-ground min-h-dvh">
-      <header className="border-b border-[var(--hairline)] bg-[var(--surface)]">
+      <header className="q-shell-header border-b border-[var(--hairline)] bg-[var(--surface)]">
         <div className="mx-auto flex h-16 max-w-3xl items-center gap-3 px-4 sm:px-6">
           <Link
             href="/"
@@ -34,7 +34,7 @@ export default function QuoteLayout({ children }: { children: React.ReactNode })
           <span className="text-ink-3 text-[0.8125rem]">Quotation</span>
         </div>
       </header>
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">{children}</div>
+      <div className="q-shell mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">{children}</div>
     </div>
   );
 }

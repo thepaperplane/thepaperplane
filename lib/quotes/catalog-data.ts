@@ -6,6 +6,11 @@
  * (quote_services), and lib/quotes/engine.ts layers them on top. Nothing in
  * this file is ever rendered on a public page — it reaches a visitor only
  * inside a quotation addressed to them.
+ *
+ * Text that mentions another service's price (a note like "Care plan
+ * {price:careplan} per year") uses a token, never a typed amount, so editing
+ * that service's price on the Pricing page updates every note that mentions
+ * it. See resolveTokens in ./pricing.ts.
  */
 import type { CatalogService } from './types';
 
@@ -1052,7 +1057,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     line: 'Your business, beautifully online',
     unit: 'starting from',
     from: true,
-    note: 'Care plan (hosting, backups, updates) ₹5,000 per year',
+    note: 'Care plan (hosting, backups, updates) {price:careplan} per year',
     what: [
       'Elegant design that looks perfect on phones, tablets and computers',
       'Built to be found on Google, with SEO included',
@@ -1179,7 +1184,7 @@ export const DEFAULT_CATALOG: CatalogService[] = [
     line: 'Sell your products online, around the clock',
     unit: 'starting from',
     from: true,
-    note: 'Care plan ₹10,000 per year',
+    note: 'Care plan {price:storecare} per year',
     what: [
       'A store designed for your brand that looks great on every device',
       'Your product catalogue set up for you',

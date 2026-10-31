@@ -2,7 +2,7 @@ import { after } from 'next/server';
 import { z } from 'zod';
 import { apiError, apiOk, clientIp, rateLimit, readJson, sameOrigin } from '@/lib/api';
 import { autoPushLead } from '@/lib/integrations/zoho';
-import { createQuote, deliverQuote, notifyOwner, summarise } from '@/lib/quotes/engine';
+import { createQuote, notifyOwner, summarise } from '@/lib/quotes/engine';
 import { serviceClient } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
@@ -119,34 +119,20 @@ export async function POST(request: Request) {
       items: d.services.map((s) => ({ serviceId: s.id, variantId: s.variant, qty: s.qty })),
     });
 
-    let sent = false;
-    if (q.status === 'sent') {
-      const r = await deliverQuote(q, { skipWhatsApp: true });
-      sent = r.email;
-      if (!sent) {
-        q.hold_reason = `Not delivered: ${(r.error ?? 'the email service did not accept it').slice(0, 200)}`;
-        await supabase
-          .from('quotes')
-          .update({ status: 'pending_review', hold_reason: q.hold_reason })
-          .eq('id', q.id);
-      }
-    }
-
     after(() =>
       notifyOwner(
-        sent
-          ? `Quotation sent automatically: ${q.name}`
-          : `Quotation waiting for your review: ${q.name}`,
+        `Quotation request waiting for your approval: ${q.name}`,
         [
           `${q.number} · ${summarise(q.items)}`,
           `${q.name} · ${q.email}${q.phone ? ` · ${q.phone}` : ''}${q.company ? ` · ${q.company}` : ''}`,
           q.requirement ? `They wrote: ${q.requirement}` : '',
-          `Score ${q.score}.${q.hold_reason ? ` Held because: ${q.hold_reason}.` : ''}`,
+          `Score ${q.score}. Screening note: ${q.hold_reason ?? 'none'}.`,
+          'Nothing has been sent. Open it to edit the services and prices, then approve and send.',
         ].filter(Boolean),
         `/admin/quotes/${q.id}`,
       ),
     );
-    return apiOk({ status: sent ? 'sent' : 'review', email: d.email });
+    return apiOk({ status: 'review', email: d.email });
   } catch (e) {
     console.error('[quotes] request failed', e instanceof Error ? e.message : e);
     return apiError(

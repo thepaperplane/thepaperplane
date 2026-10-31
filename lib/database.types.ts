@@ -547,8 +547,20 @@ export type AutomationLogRow = {
   detail: string | null;
 };
 
-export type { QuoteAddonRow, QuoteRow, QuoteServiceRow, QuoteViewRow } from './quotes/types';
-import type { QuoteAddonRow, QuoteRow, QuoteServiceRow, QuoteViewRow } from './quotes/types';
+export type {
+  QuoteAddonRow,
+  QuoteEventRow,
+  QuoteRow,
+  QuoteServiceRow,
+  QuoteViewRow,
+} from './quotes/types';
+import type {
+  QuoteAddonRow,
+  QuoteEventRow,
+  QuoteRow,
+  QuoteServiceRow,
+  QuoteViewRow,
+} from './quotes/types';
 
 /** Shape expected by `createClient<Database>()`. */
 type TableDef<Row> = {
@@ -600,6 +612,7 @@ export type Database = {
       quote_services: TableDef<QuoteServiceRow>;
       quotes: TableDef<QuoteRow>;
       quote_views: TableDef<QuoteViewRow>;
+      quote_events: TableDef<QuoteEventRow>;
       quote_addons: TableDef<QuoteAddonRow>;
       project_videos: TableDef<ProjectVideoRow>;
     };
